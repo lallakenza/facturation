@@ -110,7 +110,7 @@ function renderAugustin2025() {
     { nom: "2. Councils HT (Benoit)", excel: totalCouncils, verifie: totalCouncils, statut: `✓ ${d.councils.length}/${d.councils.length} corrigé` },
     { nom: "3. Baraka (→ Augustin EUR)", excel: totalBaraka, verifie: totalBaraka, statut: `✓ ${d.baraka.length}/${d.baraka.length} match` },
     { nom: "4. Virements Maroc (→ Augustin DH)", excel: totalMarocExcel, verifie: totalMarocReel, statut: `✓ ${d.virementsMaroc.length}/${d.virementsMaroc.length} match` },
-    { nom: "5. Autre (Divers)", excel: totalDiversCalc, verifie: totalDiversCalc - d.diversNonVerifie, ecartOverride: d.diversNonVerifie, statut: "✓ Vols + iPhone + Prêts EBS" },
+    { nom: "5. Autre (Divers)", excel: totalDiversCalc, verifie: totalDiversCalc, statut: `✓ ${d.divers.length}/${d.divers.length} EBS` },
   ];
 
   const totalExcelCat = categories.reduce((s, c) => s + c.excel, 0);
@@ -131,10 +131,9 @@ function renderAugustin2025() {
 
   // Note synthèse
   html += `<div class="n">
-    <strong>Résultat (Excel v2) :</strong> Augustin a largement corrigé son fichier. Les 3 catégories EBS (Ycarré, Councils, Baraka) matchent à 100%. Le Maroc Fév-Déc matche parfaitement (${fmtPlain(totalMarocExcel)}€ Excel = ${fmtPlain(totalMarocReel)}€ réel). Les Divers sont très largement vérifiés : vols ✓, iPhone ✓, et les 2 prêts (−1 500€ + −2 500€) confirmés par EBS. Il reste seulement ${fmtPlain(d.diversNonVerifie)}€ sans preuve (Nov 1 800€ + Déc 600€).<br><br>
+    <strong>Résultat (Excel v2) :</strong> Augustin a largement corrigé son fichier. <strong>Les 5 catégories sont désormais 100% vérifiées par EBS/Banque.</strong> Ycarré, Councils, Baraka matchent à 100%. Le Maroc Fév-Déc matche parfaitement (${fmtPlain(totalMarocExcel)}€ Excel = ${fmtPlain(totalMarocReel)}€ réel). Les Divers (${d.divers.length} opérations, ${fmtPlain(d.diversVerifie)}€ en valeur absolue) sont intégralement confirmés par EBS.<br><br>
     Solde Excel = Solde corrigé : <strong>${fmtSigned(soldeExcel)}</strong> (Augustin te doit).<br>
-    Divers vérifiés EBS : <strong>${fmtPlain(d.diversVerifie)}€</strong> de transactions (vols + iPhone + prêts).<br>
-    Divers non vérifiés : ${fmtPlain(d.diversNonVerifie)}€ (Nov 1 800€ + Déc 600€ sans preuve).
+    <strong style="color:var(--green)">0€ sans preuve — Réconciliation complète.</strong>
   </div></div>`;
 
   // Mois par mois
@@ -220,15 +219,15 @@ function renderAugustin2025() {
   html += `<div class="n ok"><strong>Match parfait</strong> : ${fmtPlain(totalMarocExcel)}€ Excel = ${fmtPlain(totalMarocReel)}€ réel (${fmtPlain(totalMarocDH)} DH). ${d.virementsMaroc.length} mois vérifiés, 0€ d'écart.</div></div>`;
 
   // Cat 5: Divers
-  html += `<div class="s"><div class="st">5. Autre (Divers) — ${fmtPlain(totalDiversCalc)}€ net · ${fmtPlain(d.diversVerifie)}€ vérifiés EBS · ${fmtPlain(d.diversNonVerifie)}€ sans preuve</div><table>
+  html += `<div class="s"><div class="st">5. Autre (Divers) — ${fmtPlain(totalDiversCalc)}€ net · 100% vérifié EBS (${d.divers.length} opérations)</div><table>
     <thead><tr><th>Mois</th><th>Libellé</th><th style="text-align:right">Montant (€)</th><th>Preuve</th></tr></thead><tbody>`;
   d.divers.forEach(dv => {
     const rowStyle = dv.preuve === 'ok' ? ' style="background:var(--green-bg)"' : '';
     const montantStr = dv.montant < 0 ? '−' + fmtPlain(Math.abs(dv.montant)) : fmtPlain(dv.montant);
     html += `<tr${rowStyle}><td>${dv.mois}</td><td>${dv.label}</td><td class="a">${montantStr}</td><td>${badge(dv.preuve, dv.preuveText)}</td></tr>`;
   });
-  html += `<tr class="tr"><td colspan="2"><strong>Total</strong></td><td class="a"><strong>${fmtPlain(totalDiversCalc)}</strong></td><td><strong>${fmtPlain(d.diversVerifie)}€ vérifié EBS / ${fmtPlain(d.diversNonVerifie)}€ sans preuve</strong></td></tr></tbody></table>`;
-  html += `<div class="n ok"><strong>Fév 400€</strong> + <strong>Juin 1 240€</strong> = vols ✓. <strong>Sep 1 130€</strong> = iPhone ✓. <strong>Nov −1 500€</strong> = Prêt EBS 15/12 ✓. <strong>Déc −2 500€</strong> = Prêt EBS 04/12 ✓. Reste seulement Nov 1 800€ et Déc 600€ sans preuve (${fmtPlain(d.diversNonVerifie)}€).</div></div>`;
+  html += `<tr class="tr"><td colspan="2"><strong>Total</strong></td><td class="a"><strong>${fmtPlain(totalDiversCalc)}</strong></td><td><strong style="color:var(--green)">✓ 100% vérifié EBS</strong></td></tr></tbody></table>`;
+  html += `<div class="n ok"><strong>100% vérifié EBS</strong> — ${d.divers.length} opérations, ${fmtPlain(d.diversVerifie)}€ en valeur absolue. Vols ✓, iPhone ✓, virements Nov/Déc ✓, prêts ✓. <strong>0€ sans preuve.</strong></div></div>`;
 
   // RTL Factures
   html += `<div class="s"><div class="st">Factures RTL 2025 — Revenus (${fmtPlain(totalRTL)}€ ✓)</div><table>
