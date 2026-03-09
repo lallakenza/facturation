@@ -484,12 +484,17 @@ function renderFXP2P() {
   const avgSpreadPctLeg3 = ((wavgPrixLeg3 - wavgMktLeg3) / wavgMktLeg3) * 100;
 
   // ===== CONSOLIDATION : tout en MAD =====
-  // Leg 1 perte en AED → convertir en MAD via le taux effectif AED/MAD du P2P
-  // Taux effectif AED→MAD = totalMAD / totalAED (des legs 2+3 combinés)
-  // On va utiliser une approche plus simple : Leg 1 spread en AED × (USD/MAD_moyen / AED/USD_peg) ≈ AED × 2.5
-  // Mieux : utiliser wavgPrixLeg3 / wavgPrixLeg2 comme taux AED→MAD effectif
+  // Taux effectif AED→MAD via P2P = prix vente MAD / prix achat USDT en AED
   const tauxAEDtoMAD = wavgPrixLeg3 / wavgPrixLeg2;
-  const leg1PerteMAD = totalSpreadLeg1 * tauxAEDtoMAD;
+
+  // Leg 1 : TOUTES les conversions IFX (pas seulement P2P)
+  const leg1PerteTotaleAED = totalSpreadLeg1;
+  const leg1PerteTotaleMAD = leg1PerteTotaleAED * tauxAEDtoMAD;
+
+  // Leg 1 proratisé : seulement la part AED qui a transité par P2P
+  const ratioP2P = totalAEDleg2 / totalAEDleg1; // part de l'AED qui est allée en P2P
+  const leg1PerteP2PAED = totalSpreadLeg1 * ratioP2P;
+  const leg1PerteP2PMAD = leg1PerteP2PAED * tauxAEDtoMAD;
 
   // Leg 2 perte en AED → convertir en MAD
   const leg2PerteMAD = totalSpreadAEDLeg2 * tauxAEDtoMAD;
@@ -497,19 +502,24 @@ function renderFXP2P() {
   // Leg 3 gain déjà en MAD
   const leg3GainMAD = totalSpreadMADLeg3;
 
-  // Net
-  const netGainMAD = leg3GainMAD - leg1PerteMAD - leg2PerteMAD;
+  // Net P2P (proratisé Leg 1 + Leg 2 + Leg 3)
+  const netGainMAD = leg3GainMAD - leg1PerteP2PMAD - leg2PerteMAD;
+
+  // Taux effectif EUR→MAD pour la portion P2P
+  // EUR utilisé pour P2P = AED P2P / taux IFX moyen pondéré
+  const eurP2P = totalAEDleg2 / wavgTauxIFX;
+  const effectiveEURMAD = totalMADleg3 / eurP2P;
 
   let html = `<h2 style="font-size:1.05rem;margin-bottom:6px">${d.title}</h2>`;
   html += `<p style="color:var(--muted);font-size:.8rem;margin-bottom:18px">${d.subtitle}</p>`;
 
   // ===== CARDS CONSOLIDATION =====
   html += `<div class="cards">
-    <div class="card"><div class="l">Leg 1 — Spread IFX</div><div class="v red">−${fmtPlain(Math.round(leg1PerteMAD))} MAD</div></div>
+    <div class="card"><div class="l">Leg 1 — Spread IFX (P2P)</div><div class="v red">−${fmtPlain(Math.round(leg1PerteP2PMAD))} MAD</div></div>
     <div class="card"><div class="l">Leg 2 — Spread P2P Buy</div><div class="v red">−${fmtPlain(Math.round(leg2PerteMAD))} MAD</div></div>
     <div class="card"><div class="l">Leg 3 — Spread P2P Sell</div><div class="v green">+${fmtPlain(Math.round(leg3GainMAD))} MAD</div></div>
-    <div class="card"><div class="l">Gain net (tout en MAD)</div><div class="v ${netGainMAD >= 0 ? 'green' : 'red'}">${netGainMAD >= 0 ? '+' : '−'}${fmtPlain(Math.round(Math.abs(netGainMAD)))} MAD</div></div>
-    <div class="card"><div class="l">Total EUR converti</div><div class="v blue">${fmtPlain(Math.round(totalEURleg1))} EUR</div></div>
+    <div class="card"><div class="l">Gain net P2P</div><div class="v ${netGainMAD >= 0 ? 'green' : 'red'}">${netGainMAD >= 0 ? '+' : '−'}${fmtPlain(Math.round(Math.abs(netGainMAD)))} MAD</div></div>
+    <div class="card"><div class="l">Taux effectif EUR→MAD</div><div class="v green">${effectiveEURMAD.toFixed(2)}</div></div>
     <div class="card"><div class="l">USDT restant</div><div class="v blue">${d.usdtRemaining.toFixed(0)} USDT</div></div>
   </div>`;
 
@@ -519,11 +529,11 @@ function renderFXP2P() {
 
   html += `<tr>
     <td><strong>1. EUR → AED</strong> (IFX)</td>
-    <td>${fmtPlain(Math.round(totalEURleg1))} EUR</td>
+    <td>${fmtPlain(Math.round(totalEURleg1))} EUR <span style="font-size:.65rem;color:var(--muted)">(${(ratioP2P*100).toFixed(0)}% P2P)</span></td>
     <td class="a">${wavgTauxIFX.toFixed(4).replace('.', ',')}</td>
     <td class="a">${wavgTauxMarcheLeg1.toFixed(4).replace('.', ',')}</td>
     <td class="a" style="color:var(--red)">−${avgSpreadPctLeg1.toFixed(2)}%</td>
-    <td class="a" style="color:var(--red)">−${fmtPlain(Math.round(leg1PerteMAD))}</td>
+    <td class="a" style="color:var(--red)">−${fmtPlain(Math.round(leg1PerteP2PMAD))} <span style="font-size:.65rem;color:var(--muted)">(prorata)</span></td>
     <td>${badge('e', 'Perte')}</td></tr>`;
 
   html += `<tr>
@@ -550,7 +560,7 @@ function renderFXP2P() {
     <td>${netGainMAD >= 0 ? badge('ok', 'Gain net') : badge('e', 'Perte nette')}</td></tr>`;
   html += `</tbody></table>`;
 
-  html += `<div class="n">Le spread de chaque étape est calculé en comparant le taux obtenu au taux marché du jour. Les impacts Leg 1 et Leg 2 (en AED) sont convertis en MAD via le taux effectif AED→MAD du P2P (${tauxAEDtoMAD.toFixed(4)}). Le taux de référence AED/USD est le peg officiel (3,6725).</div></div>`;
+  html += `<div class="n">Le spread de chaque étape est calculé en comparant le taux obtenu au taux marché du jour. <strong>Leg 1 proratisé</strong> : seuls ${(ratioP2P*100).toFixed(0)}% des AED convertis (${fmtPlain(Math.round(totalAEDleg2))} / ${fmtPlain(Math.round(totalAEDleg1))}) ont transité par P2P — le spread IFX est donc proratisé. Impacts AED→MAD convertis au taux P2P (${tauxAEDtoMAD.toFixed(4)}). Peg AED/USD = 3,6725.</div></div>`;
 
   // ===== LEG 1 DETAIL =====
   html += `<div class="s"><div class="st">Leg 1 — EUR → AED (conversions IFX) — ${leg1.length} transactions</div><table>
@@ -619,20 +629,21 @@ function renderFXP2P() {
   html += `<div class="s"><div class="st">Insights — Analyse du circuit P2P</div>`;
 
   // Insight 1: Net gain
-  const gainPctNet = (netGainMAD / totalMADMarcheLeg3) * 100;
-  html += `<div class="insight ${netGainMAD >= 0 ? 'pass' : 'fail'}"><div class="t">${netGainMAD >= 0 ? '✅' : '❌'} Bilan net : ${netGainMAD >= 0 ? 'gain' : 'perte'} de ${fmtPlain(Math.round(Math.abs(netGainMAD)))} MAD (${Math.abs(gainPctNet).toFixed(2)}% du volume)</div><div class="d">
-    En consolidant les 3 legs, le circuit EUR → AED → USDT → MAD génère un ${netGainMAD >= 0 ? 'gain' : 'coût'} net de <strong>${netGainMAD >= 0 ? '+' : '−'}${fmtPlain(Math.round(Math.abs(netGainMAD)))} MAD</strong> sur ${fmtPlain(Math.round(totalMADleg3))} MAD reçus. Le gain du Leg 3 (vente USDT→MAD) ${netGainMAD >= 0 ? 'compense largement' : 'ne compense pas'} les pertes des Legs 1 et 2.
+  const gainPctNet = (netGainMAD / totalMADleg3) * 100;
+  html += `<div class="insight ${netGainMAD >= 0 ? 'pass' : 'fail'}"><div class="t">${netGainMAD >= 0 ? '✅' : '❌'} Bilan net P2P : ${netGainMAD >= 0 ? 'gain' : 'perte'} de ${fmtPlain(Math.round(Math.abs(netGainMAD)))} MAD (${Math.abs(gainPctNet).toFixed(2)}% du volume)</div><div class="d">
+    En consolidant les 3 legs pour la portion P2P uniquement (${(ratioP2P*100).toFixed(0)}% de l'AED), le circuit génère un ${netGainMAD >= 0 ? 'gain' : 'coût'} net de <strong>${netGainMAD >= 0 ? '+' : '−'}${fmtPlain(Math.round(Math.abs(netGainMAD)))} MAD</strong> sur ${fmtPlain(Math.round(totalMADleg3))} MAD reçus. Le gain du Leg 3 (vente USDT→MAD) ${netGainMAD >= 0 ? 'compense largement' : 'ne compense pas'} les pertes des Legs 1 et 2. Taux effectif : <strong>${effectiveEURMAD.toFixed(2)} MAD/EUR</strong>.
   </div></div>`;
 
   // Insight 2: Leg 3 dominance
-  const leg3Ratio = leg3GainMAD / (leg1PerteMAD + leg2PerteMAD);
+  const totalPertesP2P = leg1PerteP2PMAD + leg2PerteMAD;
+  const leg3Ratio = leg3GainMAD / totalPertesP2P;
   html += `<div class="insight pass"><div class="t">📊 Le Leg 3 (USDT→MAD) est le moteur du gain — ratio ${leg3Ratio.toFixed(1)}x</div><div class="d">
-    Le premium P2P MAD (+${avgSpreadPctLeg3.toFixed(2)}% en moyenne) génère <strong>+${fmtPlain(Math.round(leg3GainMAD))} MAD</strong> de gain. C'est <strong>${leg3Ratio.toFixed(1)}x</strong> les pertes combinées des Legs 1 et 2 (${fmtPlain(Math.round(leg1PerteMAD + leg2PerteMAD))} MAD). La forte demande de MAD au Maroc via P2P crée un premium structurel en ta faveur.
+    Le premium P2P MAD (+${avgSpreadPctLeg3.toFixed(2)}% en moyenne) génère <strong>+${fmtPlain(Math.round(leg3GainMAD))} MAD</strong> de gain. C'est <strong>${leg3Ratio.toFixed(1)}x</strong> les pertes combinées des Legs 1 et 2 (${fmtPlain(Math.round(totalPertesP2P))} MAD proratisé). La forte demande de MAD au Maroc via P2P crée un premium structurel en ta faveur.
   </div></div>`;
 
   // Insight 3: Leg 1 IFX spread
-  html += `<div class="insight warn"><div class="t">🏦 Spread IFX (Leg 1) : −${avgSpreadPctLeg1.toFixed(2)}% soit −${fmtPlain(Math.round(totalSpreadLeg1))} AED perdus</div><div class="d">
-    IFX prend en moyenne <strong>${avgSpreadPctLeg1.toFixed(2)}%</strong> de spread sur la conversion EUR→AED. Sur ${fmtPlain(Math.round(totalEURleg1))} EUR convertis, tu as reçu ${fmtPlain(Math.round(totalAEDleg1))} AED au lieu de ${fmtPlain(Math.round(totalAEDMarcheLeg1))} AED (taux marché). Perte : <strong>${fmtPlain(Math.round(totalSpreadLeg1))} AED</strong> ≈ <strong>${fmtPlain(Math.round(leg1PerteMAD))} MAD</strong>.
+  html += `<div class="insight warn"><div class="t">🏦 Spread IFX (Leg 1) : −${avgSpreadPctLeg1.toFixed(2)}% soit −${fmtPlain(Math.round(totalSpreadLeg1))} AED perdus au total</div><div class="d">
+    IFX prend en moyenne <strong>${avgSpreadPctLeg1.toFixed(2)}%</strong> de spread sur la conversion EUR→AED. Sur ${fmtPlain(Math.round(totalEURleg1))} EUR convertis, tu as reçu ${fmtPlain(Math.round(totalAEDleg1))} AED au lieu de ${fmtPlain(Math.round(totalAEDMarcheLeg1))} AED (taux marché). Perte totale : <strong>${fmtPlain(Math.round(totalSpreadLeg1))} AED</strong> ≈ <strong>${fmtPlain(Math.round(leg1PerteTotaleMAD))} MAD</strong>. Prorata P2P (${(ratioP2P*100).toFixed(0)}%) : <strong>${fmtPlain(Math.round(leg1PerteP2PMAD))} MAD</strong>.
   </div></div>`;
 
   // Insight 4: Leg 2 minimal
@@ -648,10 +659,9 @@ function renderFXP2P() {
   </div></div>`;
 
   // Insight 6: Effective EUR/MAD rate
-  const effectiveEURMAD = totalMADleg3 / totalEURleg1;
-  // Compute what market EUR/MAD would have been (using leg1 market rates and leg3 market rates is approximate)
-  html += `<div class="insight pass"><div class="t">🌍 Taux effectif EUR→MAD P2P : ${effectiveEURMAD.toFixed(3)}</div><div class="d">
-    En combinant les 3 étapes, tu obtiens un taux effectif de <strong>${effectiveEURMAD.toFixed(3)} MAD/EUR</strong>. À titre de comparaison, un virement classique EUR→MAD via banque donne environ 10,5–10,8 MAD/EUR (après frais et spread bancaire). Le circuit P2P est donc ${effectiveEURMAD > 10.8 ? 'nettement plus avantageux' : 'comparable'} au circuit bancaire traditionnel.
+  // effectiveEURMAD already computed above (totalMADleg3 / eurP2P)
+  html += `<div class="insight pass"><div class="t">🌍 Taux effectif EUR→MAD P2P : ${effectiveEURMAD.toFixed(2)}</div><div class="d">
+    Pour la portion P2P (~${fmtPlain(Math.round(eurP2P))} EUR → ${fmtPlain(Math.round(totalMADleg3))} MAD), le taux effectif est de <strong>${effectiveEURMAD.toFixed(2)} MAD/EUR</strong>. À titre de comparaison, un virement classique EUR→MAD via banque donne environ 10,5–10,8 MAD/EUR (après frais et spread bancaire). Le circuit P2P est donc <strong>${effectiveEURMAD > 10.8 ? 'nettement plus avantageux' : effectiveEURMAD > 10.5 ? 'comparable ou légèrement avantageux' : 'comparable'}</strong> au circuit bancaire traditionnel.
   </div></div>`;
 
   // Insight 7: USDT remaining
