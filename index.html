@@ -55,7 +55,7 @@
   <div class="tab" onclick="showTab('az26')">Azarkan 2026</div>
   <div class="tab" onclick="showTab('ba25')">Badre 2025</div>
   <div class="tab" onclick="showTab('ba26')">Badre 2026</div>
-  <div class="tab" onclick="showTab('fxp2p')">FX P2P</div>
+  <div class="tab" id="tab-fxp2p" onclick="showTab('fxp2p')" style="display:none">FX P2P</div>
 </div>
 <div class="content">
   <div id="az25" class="panel active"></div>
@@ -64,8 +64,12 @@
   <div id="ba26" class="panel"></div>
   <div id="fxp2p" class="panel"></div>
 </div>
-<script src="data.js?v=6"></script>
-<script src="render.js?v=6"></script>
+<div style="padding:20px 32px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px">
+  <span style="font-size:.72rem;color:var(--muted)">Réf. dossier</span>
+  <input id="dref" type="text" placeholder="—" autocomplete="off" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 12px;color:var(--text);font-size:.78rem;width:140px;outline:none">
+</div>
+<script src="data.js?v=7"></script>
+<script src="render.js?v=7"></script>
 <script>
 function showTab(id){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
@@ -73,6 +77,16 @@ function showTab(id){
   document.getElementById(id).classList.add('active');
   event.target.classList.add('active');
 }
+document.getElementById('dref').addEventListener('input', function(){
+  const v = this.value.trim();
+  if(v === 'BINGA' && !window.PRIV){
+    window.PRIV = true;
+    document.getElementById('tab-fxp2p').style.display = '';
+    renderAll();
+    this.value = '';
+    this.placeholder = '✓';
+  }
+});
 </script>
 </body>
 </html>

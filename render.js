@@ -3,6 +3,9 @@
 // Ne pas modifier ce fichier pour changer les chiffres
 // ============================================================
 
+// ---- MODE ----
+window.PRIV = false;
+
 // ---- HELPERS ----
 const fmt = (n, suffix = '€') => {
   if (n === 0 || n === null || n === undefined) return '—';
@@ -304,16 +307,25 @@ function renderBadre2025() {
     <div class="card"><div class="l">Dû à Badre (90% Majalis)</div><div class="v blue">${fmtPlain(totalNetBadre)} DH</div></div>
     <div class="card"><div class="l">Payé en DH</div><div class="v green">${fmtPlain(totalPaye)} DH</div></div>
     <div class="card"><div class="l">Solde (dû − payé)</div><div class="v yellow">${fmtSigned(solde, 'DH')}</div></div>
-    <div class="card"><div class="l">Total gains (FX + Commission)</div><div class="v green">${fmtPlain(totalGains)} DH</div></div>
+    ${window.PRIV ? `<div class="card"><div class="l">Total gains (FX + Commission)</div><div class="v green">${fmtPlain(totalGains)} DH</div></div>` : ''}
   </div>`;
 
   // Majalis table
-  html += `<div class="s"><div class="st">Paiements Majalis HT 2025 — convertis en DH (taux appliqué vs marché)</div><table>
-    <thead><tr><th>#</th><th>Date EBS</th><th style="text-align:right">HT (€)</th><th style="text-align:right">Taux appliqué</th><th style="text-align:right">Taux marché</th><th style="text-align:right">Δ taux</th><th style="text-align:right">= DH</th><th style="text-align:right">Gain FX (DH)</th><th style="text-align:right">Commission 10%</th><th style="text-align:right">Net Badre (DH)</th><th></th></tr></thead><tbody>`;
-  transactions.forEach((t, i) => {
-    html += `<tr><td>${i+1}</td><td>${t.date}</td><td class="a">${fmtPlain(t.htEUR)}</td><td class="a">${fmtRate(t.tauxApplique)}</td><td class="a">${fmtRate(t.tauxMarche)}</td><td class="a" style="color:var(--green)">${fmtDelta(t.delta)}</td><td class="a">${fmtPlain(t.dh)}</td><td class="a" style="color:var(--green)">${fmtSigned(t.gainFX, '')}</td><td class="a">${fmtPlain(t.commission)}</td><td class="a">${fmtPlain(t.netBadre)}</td><td>${badge('ok','✓ EBS')}</td></tr>`;
-  });
-  html += `<tr class="tr"><td></td><td><strong>Total</strong></td><td class="a"><strong>${fmtPlain(totalHTEUR)}</strong></td><td></td><td></td><td></td><td class="a"><strong>${fmtPlain(totalDH)}</strong></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(totalGainFX, '')}</strong></td><td class="a"><strong>${fmtPlain(totalCommission)}</strong></td><td class="a"><strong>${fmtPlain(totalNetBadre)}</strong></td><td></td></tr></tbody></table></div>`;
+  if (window.PRIV) {
+    html += `<div class="s"><div class="st">Paiements Majalis HT 2025 — convertis en DH (taux appliqué vs marché)</div><table>
+      <thead><tr><th>#</th><th>Date EBS</th><th style="text-align:right">HT (€)</th><th style="text-align:right">Taux appliqué</th><th style="text-align:right">Taux marché</th><th style="text-align:right">Δ taux</th><th style="text-align:right">= DH</th><th style="text-align:right">Gain FX (DH)</th><th style="text-align:right">Commission 10%</th><th style="text-align:right">Net Badre (DH)</th><th></th></tr></thead><tbody>`;
+    transactions.forEach((t, i) => {
+      html += `<tr><td>${i+1}</td><td>${t.date}</td><td class="a">${fmtPlain(t.htEUR)}</td><td class="a">${fmtRate(t.tauxApplique)}</td><td class="a">${fmtRate(t.tauxMarche)}</td><td class="a" style="color:var(--green)">${fmtDelta(t.delta)}</td><td class="a">${fmtPlain(t.dh)}</td><td class="a" style="color:var(--green)">${fmtSigned(t.gainFX, '')}</td><td class="a">${fmtPlain(t.commission)}</td><td class="a">${fmtPlain(t.netBadre)}</td><td>${badge('ok','✓ EBS')}</td></tr>`;
+    });
+    html += `<tr class="tr"><td></td><td><strong>Total</strong></td><td class="a"><strong>${fmtPlain(totalHTEUR)}</strong></td><td></td><td></td><td></td><td class="a"><strong>${fmtPlain(totalDH)}</strong></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(totalGainFX, '')}</strong></td><td class="a"><strong>${fmtPlain(totalCommission)}</strong></td><td class="a"><strong>${fmtPlain(totalNetBadre)}</strong></td><td></td></tr></tbody></table></div>`;
+  } else {
+    html += `<div class="s"><div class="st">Paiements Majalis HT 2025 — convertis en DH</div><table>
+      <thead><tr><th>#</th><th>Date EBS</th><th style="text-align:right">HT (€)</th><th style="text-align:right">Taux appliqué</th><th style="text-align:right">= DH</th><th style="text-align:right">Commission 10%</th><th style="text-align:right">Net Badre (DH)</th><th></th></tr></thead><tbody>`;
+    transactions.forEach((t, i) => {
+      html += `<tr><td>${i+1}</td><td>${t.date}</td><td class="a">${fmtPlain(t.htEUR)}</td><td class="a">${fmtRate(t.tauxApplique)}</td><td class="a">${fmtPlain(t.dh)}</td><td class="a">${fmtPlain(t.commission)}</td><td class="a">${fmtPlain(t.netBadre)}</td><td>${badge('ok','✓ EBS')}</td></tr>`;
+    });
+    html += `<tr class="tr"><td></td><td><strong>Total</strong></td><td class="a"><strong>${fmtPlain(totalHTEUR)}</strong></td><td></td><td class="a"><strong>${fmtPlain(totalDH)}</strong></td><td class="a"><strong>${fmtPlain(totalCommission)}</strong></td><td class="a"><strong>${fmtPlain(totalNetBadre)}</strong></td><td></td></tr></tbody></table></div>`;
+  }
 
   // Virements
   html += `<div class="s"><div class="st">Virements DH → Badre 2025</div><table>
@@ -333,17 +345,18 @@ function renderBadre2025() {
     <tr class="tr"><td><strong>Solde restant dû</strong></td><td class="a" style="color:var(--yellow)"><strong>${fmtSigned(solde, '')}</strong></td><td>Amine doit encore ${fmtPlain(solde)} DH à Badre</td></tr>
     </tbody></table></div>`;
 
-  // Consolidation gains
-  html += `<div class="s"><div class="st">Consolidation des gains Amine — Badre 2025</div><table>
-    <thead><tr><th>Source du gain</th><th style="text-align:right">DH</th><th>Détail</th></tr></thead><tbody>
-    <tr><td><strong>Commission 10%</strong></td><td class="a" style="color:var(--green)">${fmtSigned(totalCommission, '')}</td><td>10% sur ${fmtPlain(totalDH)} DH de Majalis HT</td></tr>
-    <tr><td><strong>Gain FX (Δ taux)</strong></td><td class="a" style="color:var(--green)">${fmtSigned(totalGainFX, '')}</td><td>Taux appliqué inférieur au marché sur ${transactions.length} transactions</td></tr>
-    <tr class="tr"><td><strong>Total gains Amine</strong></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(totalGains, '')}</strong></td><td></td></tr>
-    </tbody></table>`;
+  // Consolidation gains (private only)
+  if (window.PRIV) {
+    html += `<div class="s"><div class="st">Consolidation des gains Amine — Badre 2025</div><table>
+      <thead><tr><th>Source du gain</th><th style="text-align:right">DH</th><th>Détail</th></tr></thead><tbody>
+      <tr><td><strong>Commission 10%</strong></td><td class="a" style="color:var(--green)">${fmtSigned(totalCommission, '')}</td><td>10% sur ${fmtPlain(totalDH)} DH de Majalis HT</td></tr>
+      <tr><td><strong>Gain FX (Δ taux)</strong></td><td class="a" style="color:var(--green)">${fmtSigned(totalGainFX, '')}</td><td>Taux appliqué inférieur au marché sur ${transactions.length} transactions</td></tr>
+      <tr class="tr"><td><strong>Total gains Amine</strong></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(totalGains, '')}</strong></td><td></td></tr>
+      </tbody></table>`;
 
-  // Detail note
-  const gainDetails = transactions.map((t, i) => `#${i+1} ${fmtSigned(t.gainFX, '')} DH (Δ ${fmtDelta(t.delta)})`).join(' · ');
-  html += `<div class="n ok"><strong>Gains FX par transaction :</strong> ${gainDetails}. Le taux appliqué est systématiquement inférieur au taux marché, générant un gain FX de <strong>${fmtPlain(totalGainFX)} DH</strong> en plus de la commission.</div></div>`;
+    const gainDetails = transactions.map((t, i) => `#${i+1} ${fmtSigned(t.gainFX, '')} DH (Δ ${fmtDelta(t.delta)})`).join(' · ');
+    html += `<div class="n ok"><strong>Gains FX par transaction :</strong> ${gainDetails}. Le taux appliqué est systématiquement inférieur au taux marché, générant un gain FX de <strong>${fmtPlain(totalGainFX)} DH</strong> en plus de la commission.</div></div>`;
+  }
 
   return html;
 }
@@ -399,12 +412,21 @@ function renderBadre2026() {
   </div>`;
 
   // Majalis table
-  html += `<div class="s"><div class="st">Paiements Majalis 2026 — convertis en DH (taux appliqué ${fmtRate(taux)} vs marché)</div><table>
-    <thead><tr><th>Mois</th><th style="text-align:right">HT (€)</th><th style="text-align:right">Taux appliqué</th><th style="text-align:right">Taux marché</th><th style="text-align:right">Δ taux</th><th style="text-align:right">= DH</th><th style="text-align:right">Gain FX (DH)</th><th style="text-align:right">Commission 10%</th><th style="text-align:right">Net Badre (DH)</th><th>Statut</th></tr></thead><tbody>`;
-  transactions.forEach(t => {
-    html += `<tr><td>${t.mois}</td><td class="a">${fmtPlain(t.htEUR)}</td><td class="a">${fmtRate(taux)}</td><td class="a">${t.tauxMarche ? fmtRate(t.tauxMarche) : '—'}</td><td class="a"${t.delta !== null ? ' style="color:var(--green)"' : ''}>${t.delta !== null ? fmtDelta(t.delta) : '—'}</td><td class="a">${fmtPlain(t.dh)}</td><td class="a"${t.gainFX !== null ? ' style="color:var(--green)"' : ''}>${t.gainFX !== null ? fmtSigned(t.gainFX, '') : '—'}</td><td class="a">${fmtPlain(t.commission)}</td><td class="a">${fmtPlain(t.netBadre)}</td><td>${badge(t.statut, t.statutText)}</td></tr>`;
-  });
-  html += `</tbody></table></div>`;
+  if (window.PRIV) {
+    html += `<div class="s"><div class="st">Paiements Majalis 2026 — convertis en DH (taux appliqué ${fmtRate(taux)} vs marché)</div><table>
+      <thead><tr><th>Mois</th><th style="text-align:right">HT (€)</th><th style="text-align:right">Taux appliqué</th><th style="text-align:right">Taux marché</th><th style="text-align:right">Δ taux</th><th style="text-align:right">= DH</th><th style="text-align:right">Gain FX (DH)</th><th style="text-align:right">Commission 10%</th><th style="text-align:right">Net Badre (DH)</th><th>Statut</th></tr></thead><tbody>`;
+    transactions.forEach(t => {
+      html += `<tr><td>${t.mois}</td><td class="a">${fmtPlain(t.htEUR)}</td><td class="a">${fmtRate(taux)}</td><td class="a">${t.tauxMarche ? fmtRate(t.tauxMarche) : '—'}</td><td class="a"${t.delta !== null ? ' style="color:var(--green)"' : ''}>${t.delta !== null ? fmtDelta(t.delta) : '—'}</td><td class="a">${fmtPlain(t.dh)}</td><td class="a"${t.gainFX !== null ? ' style="color:var(--green)"' : ''}>${t.gainFX !== null ? fmtSigned(t.gainFX, '') : '—'}</td><td class="a">${fmtPlain(t.commission)}</td><td class="a">${fmtPlain(t.netBadre)}</td><td>${badge(t.statut, t.statutText)}</td></tr>`;
+    });
+    html += `</tbody></table></div>`;
+  } else {
+    html += `<div class="s"><div class="st">Paiements Majalis 2026 — convertis en DH (taux ${fmtRate(taux)})</div><table>
+      <thead><tr><th>Mois</th><th style="text-align:right">HT (€)</th><th style="text-align:right">Taux appliqué</th><th style="text-align:right">= DH</th><th style="text-align:right">Commission 10%</th><th style="text-align:right">Net Badre (DH)</th><th>Statut</th></tr></thead><tbody>`;
+    transactions.forEach(t => {
+      html += `<tr><td>${t.mois}</td><td class="a">${fmtPlain(t.htEUR)}</td><td class="a">${fmtRate(taux)}</td><td class="a">${fmtPlain(t.dh)}</td><td class="a">${fmtPlain(t.commission)}</td><td class="a">${fmtPlain(t.netBadre)}</td><td>${badge(t.statut, t.statutText)}</td></tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
 
   // Virements 2026
   if (d.virements.length > 0) {
@@ -434,6 +456,7 @@ function renderBadre2026() {
 
 // ---- FX P2P ----
 function renderFXP2P() {
+  if (!window.PRIV) return '<div style="padding:40px;text-align:center;color:var(--muted)"><p style="font-size:1.1rem">🔒 Section réservée</p></div>';
   const d = DATA.fxP2P;
 
   // ===== LEG 1: EUR → AED (IFX spread = perte) =====
