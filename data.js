@@ -165,6 +165,8 @@ const DATA = {
       { mois: "Février", htEUR: 5000, tauxMarche: null, statut: "w", statutText: "Invoiced" },
     ],
 
-    virements: [], // Pas encore de virements propres à 2026
+    virements: [
+      { date: "09/03/2026", beneficiaire: "Badre Cheikh El Mouksit", dh: 50000, motif: "Remboursement" },
+    ],
   },
 };

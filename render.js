@@ -375,16 +375,26 @@ function renderBadre2026() {
     return { ...m, dh, delta, gainFX, commission, netBadre };
   });
 
-  const totalDH = sum(transactions, 'dh');
+  // Only paid transactions count for reconciliation
+  const paidTransactions = transactions.filter(t => t.statut === 'ok');
+  const totalDHPaid = sum(paidTransactions, 'dh');
+  const totalNetBadrePaid = sum(paidTransactions, 'netBadre');
+  const totalCommissionPaid = sum(paidTransactions, 'commission');
+  const totalGainFXPaid = sum(paidTransactions, t => t.gainFX || 0);
   const totalPaye = sum(d.virements, 'dh');
 
+  // Solde = report 2025 + net dû 2026 (paid only) − payé 2026
+  const soldeDu = report + totalNetBadrePaid;
+  const solde2026 = soldeDu - totalPaye;
+
   let html = `<h2 style="font-size:1.05rem;margin-bottom:6px">${d.title}</h2>`;
-  html += `<p style="color:var(--muted);font-size:.8rem;margin-bottom:18px">Report 2025 : ${fmtSigned(report, 'DH')} (dû à Badre). Taux appliqué 2026 : <strong>${fmtRate(taux)}</strong>. Paiements Majalis convertis en DH.</p>`;
+  html += `<p style="color:var(--muted);font-size:.8rem;margin-bottom:18px">Report 2025 : ${fmtSigned(report, 'DH')} (dû à Badre). Taux appliqué 2026 : <strong>${fmtRate(taux)}</strong>. Réconciliation sur paiements Majalis reçus uniquement.</p>`;
 
   html += `<div class="cards">
     <div class="card"><div class="l">Report 2025</div><div class="v yellow">${fmtSigned(report, 'DH')}</div></div>
-    <div class="card"><div class="l">Majalis 2026 (DH)</div><div class="v blue">${fmtPlain(totalDH)} DH</div></div>
-    <div class="card"><div class="l">Payé DH 2026</div><div class="v blue">${fmtPlain(totalPaye)} DH</div></div>
+    <div class="card"><div class="l">Majalis payé 2026 (DH)</div><div class="v blue">${fmtPlain(totalDHPaid)} DH</div></div>
+    <div class="card"><div class="l">Payé DH 2026</div><div class="v green">${fmtPlain(totalPaye)} DH</div></div>
+    <div class="card"><div class="l">Solde (report + dû − payé)</div><div class="v ${solde2026 > 0 ? 'yellow' : solde2026 < 0 ? 'green' : 'green'}">${fmtSigned(solde2026, 'DH')}</div></div>
   </div>`;
 
   // Majalis table
@@ -395,7 +405,28 @@ function renderBadre2026() {
   });
   html += `</tbody></table></div>`;
 
-  html += `<div class="n">Le virement du 06/03/2026 (31 750 DH) a été comptabilisé dans la clôture 2025. Pas encore de virements DH propres à 2026. Taux appliqué 2026 : <strong>${fmtRate(taux)}</strong> (fixe).</div>`;
+  // Virements 2026
+  if (d.virements.length > 0) {
+    html += `<div class="s"><div class="st">Virements DH → Badre 2026</div><table>
+      <thead><tr><th>#</th><th>Date</th><th>Bénéficiaire</th><th style="text-align:right">DH</th><th>Motif</th></tr></thead><tbody>`;
+    d.virements.forEach((v, i) => {
+      html += `<tr><td>${i+1}</td><td>${v.date}</td><td>${v.beneficiaire}</td><td class="a">${fmtPlain(v.dh)}</td><td>${v.motif}</td></tr>`;
+    });
+    html += `<tr class="tr"><td></td><td colspan="2"><strong>Total payé 2026</strong></td><td class="a"><strong>${fmtPlain(totalPaye)}</strong></td><td></td></tr></tbody></table></div>`;
+  }
+
+  // Réconciliation 2026
+  html += `<div class="s"><div class="st">Réconciliation Badre 2026 (payé uniquement)</div><table>
+    <thead><tr><th>Ligne</th><th style="text-align:right">DH</th><th>Détail</th></tr></thead><tbody>
+    <tr><td>Report 2025</td><td class="a" style="color:var(--yellow)">${fmtSigned(report, '')}</td><td>Solde clôture 2025 (dû à Badre)</td></tr>
+    <tr><td>Majalis HT payé 2026 (taux ${fmtRate(taux)})</td><td class="a">${fmtPlain(totalDHPaid)}</td><td>${paidTransactions.length} paiement(s) reçu(s)</td></tr>
+    <tr><td>Commission 10%</td><td class="a" style="color:var(--yellow)">−${fmtPlain(totalCommissionPaid)}</td><td>Retenue par Amine</td></tr>
+    <tr><td><strong>Total dû à Badre</strong></td><td class="a"><strong>${fmtPlain(soldeDu)}</strong></td><td>Report + net Majalis payé</td></tr>
+    <tr><td>Virements DH 2026</td><td class="a" style="color:var(--green)">−${fmtPlain(totalPaye)}</td><td>${d.virements.length} virement(s)</td></tr>
+    <tr class="tr"><td><strong>Solde 2026</strong></td><td class="a" style="color:${solde2026 > 0 ? 'var(--yellow)' : 'var(--green)'}"><strong>${fmtSigned(solde2026, '')}</strong></td><td>${solde2026 > 0 ? 'Amine doit encore ' + fmtPlain(solde2026) + ' DH à Badre' : solde2026 < 0 ? 'Badre a un excédent de ' + fmtPlain(Math.abs(solde2026)) + ' DH' : 'Soldé'}</td></tr>
+    </tbody></table></div>`;
+
+  html += `<div class="n">Le virement du 06/03/2026 (31 750 DH) a été comptabilisé dans la clôture 2025. Taux appliqué 2026 : <strong>${fmtRate(taux)}</strong> (fixe). La réconciliation ne prend en compte que les Majalis effectivement payés.</div>`;
 
   return html;
 }
