@@ -9,14 +9,14 @@ const crypto = require('crypto');
 const fs = require('fs');
 
 const PASSWORD = 'BINGA';
-const SALT = 'facturation-azarkan-2025'; // fixed salt for reproducibility
+const SALT = 'facturation-augustin-2025'; // fixed salt for reproducibility
 
 // ---- Private data to encrypt ----
 const PRIV_DATA = {
-  // Badre commission & taux details
-  badre2025: {
+  // Benoit commission & taux details
+  benoit2025: {
     commissionRate: 0.10,
-    majalisTaux: [
+    councilsTaux: [
       { date: "18/08/2025", tauxMarche: 10.505 },
       { date: "12/09/2025", tauxMarche: 10.577 },
       { date: "29/09/2025", tauxMarche: 10.530 },
@@ -25,10 +25,10 @@ const PRIV_DATA = {
       { date: "31/12/2025", tauxMarche: 10.706 },
     ],
   },
-  badre2026: {
+  benoit2026: {
     tauxApplique: 10.700,
     commissionRate: 0.10,
-    majalisTauxMarche: [
+    councilsTauxMarche: [
       { mois: "Janvier", tauxMarche: 10.836 },
       { mois: "Février", tauxMarche: null },
     ],

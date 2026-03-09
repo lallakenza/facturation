@@ -56,8 +56,8 @@ function yearToggle(section, activeYear) {
 }
 
 // ---- AZARKAN 2025 ----
-function renderAzarkan2025() {
-  const d = DATA.azarkan2025;
+function renderAugustin2025() {
+  const d = DATA.augustin2025;
   const mois = d.mois;
 
   // Computed values
@@ -76,8 +76,8 @@ function renderAzarkan2025() {
 
   // Ysquare total
   const totalYsquare = sum(d.ysquare, 'montant');
-  // Majalis total
-  const totalMajalis = sum(d.majalis, 'ebsHT');
+  // Councils total
+  const totalCouncils = sum(d.councils, 'ebsHT');
   // Bairok total
   const totalBairok = sum(d.bairok, 'montant');
   // Maroc total (from virements)
@@ -107,9 +107,9 @@ function renderAzarkan2025() {
   // Synthèse 5 catégories
   const categories = [
     { nom: "1. Ysquare (Kenza)", excel: totalYsquare, verifie: totalYsquare, statut: `✓ ${d.ysquare.length}/${d.ysquare.length} match` },
-    { nom: "2. Majalis HT (Badre)", excel: totalMajalis, verifie: totalMajalis, statut: `✓ ${d.majalis.length}/${d.majalis.length} corrigé` },
-    { nom: "3. Bairok (→ Azarkan EUR)", excel: totalBairok, verifie: totalBairok, statut: `✓ ${d.bairok.length}/${d.bairok.length} match` },
-    { nom: "4. Virements Maroc (→ Azarkan DH)", excel: totalMarocExcel, verifie: totalMarocReel, statut: `✓ ${d.virementsMaroc.length}/${d.virementsMaroc.length} match` },
+    { nom: "2. Councils HT (Benoit)", excel: totalCouncils, verifie: totalCouncils, statut: `✓ ${d.councils.length}/${d.councils.length} corrigé` },
+    { nom: "3. Bairok (→ Augustin EUR)", excel: totalBairok, verifie: totalBairok, statut: `✓ ${d.bairok.length}/${d.bairok.length} match` },
+    { nom: "4. Virements Maroc (→ Augustin DH)", excel: totalMarocExcel, verifie: totalMarocReel, statut: `✓ ${d.virementsMaroc.length}/${d.virementsMaroc.length} match` },
     { nom: "5. Autre (Divers)", excel: totalDiversCalc, verifie: d.diversVerifie, ecartOverride: -(d.diversVerifie - totalDiversCalc) < 0 ? totalDiversCalc - d.diversVerifie : -(d.diversVerifie - totalDiversCalc), statut: "✓ Vols + iPhone EBS" },
   ];
 
@@ -131,8 +131,8 @@ function renderAzarkan2025() {
 
   // Note synthèse
   html += `<div class="n">
-    <strong>Résultat (Excel v2) :</strong> Azarkan a largement corrigé son fichier. Les 3 catégories EBS (Ysquare, Majalis, Bairok) matchent à 100%. Le Maroc Fév-Déc matche parfaitement (${fmtPlain(totalMarocExcel)}€ Excel = ${fmtPlain(totalMarocReel)}€ réel). Les Divers sont maintenant largement vérifiés : <strong>Fév 400€ + Juin 1 240€ = vols pour Azarkan</strong>, <strong>Sep 1 130€ = iPhone 1 305,41 USD (EBS)</strong>. Il reste seulement Nov 300€ et Déc −1 900€ sans preuve (net ${fmtSigned(d.diversNonVerifie, '€')}).<br><br>
-    Solde Excel = Solde corrigé : <strong>${fmtSigned(soldeExcel)}</strong> (Azarkan te doit).<br>
+    <strong>Résultat (Excel v2) :</strong> Augustin a largement corrigé son fichier. Les 3 catégories EBS (Ysquare, Councils, Bairok) matchent à 100%. Le Maroc Fév-Déc matche parfaitement (${fmtPlain(totalMarocExcel)}€ Excel = ${fmtPlain(totalMarocReel)}€ réel). Les Divers sont maintenant largement vérifiés : <strong>Fév 400€ + Juin 1 240€ = vols pour Augustin</strong>, <strong>Sep 1 130€ = iPhone 1 305,41 USD (EBS)</strong>. Il reste seulement Nov 300€ et Déc −1 900€ sans preuve (net ${fmtSigned(d.diversNonVerifie, '€')}).<br><br>
+    Solde Excel = Solde corrigé : <strong>${fmtSigned(soldeExcel)}</strong> (Augustin te doit).<br>
     Divers vérifiés : <strong>${fmtPlain(d.diversVerifie)}€</strong> sur ${fmtPlain(totalDiversCalc)}€ total (vols + iPhone).<br>
     Divers non vérifiés : Nov 300€ et Déc −1 900€ (net ${fmtSigned(d.diversNonVerifie, '€')}, dont le crédit Déc est en ta faveur).
   </div></div>`;
@@ -170,7 +170,7 @@ function renderAzarkan2025() {
     <td class="a"><strong>${fmtSigned(totalSoldeMois, '')}</strong></td>
     <td style="font-size:.7rem;color:var(--muted)">Maroc Fév-Déc = Excel (${fmtPlain(totalMarocExcel)}€)</td></tr>`;
   html += `</tbody></table>`;
-  html += `<div class="n"><strong>Note :</strong> Le solde cumulé (${fmtSigned(totalSoldeMois, '€')}) inclut Janvier (${fmtPlain(mois[0].actuals)}€ d'Actuals sans dépenses). Le solde "Balance" d'Azarkan (${fmtSigned(soldeExcel)}) est calculé <strong>sans Janvier</strong> (Fév-Déc uniquement) : ${fmtPlain(actualsFevDec)} − ${fmtPlain(depFevDec)} = ${fmtSigned(soldeExcel)}. Maroc réel = Excel (${fmtPlain(totalMarocExcel)}€) — parfait match.</div></div>`;
+  html += `<div class="n"><strong>Note :</strong> Le solde cumulé (${fmtSigned(totalSoldeMois, '€')}) inclut Janvier (${fmtPlain(mois[0].actuals)}€ d'Actuals sans dépenses). Le solde "Balance" d'Augustin (${fmtSigned(soldeExcel)}) est calculé <strong>sans Janvier</strong> (Fév-Déc uniquement) : ${fmtPlain(actualsFevDec)} − ${fmtPlain(depFevDec)} = ${fmtSigned(soldeExcel)}. Maroc réel = Excel (${fmtPlain(totalMarocExcel)}€) — parfait match.</div></div>`;
 
   // Insights
   html += `<div class="s"><div class="st">Insights clés — Fichier v2 vs v1</div>`;
@@ -188,18 +188,18 @@ function renderAzarkan2025() {
   });
   html += `<tr class="tr"><td></td><td><strong>Total</strong></td><td class="a"><strong>${fmtPlain(totalYsquare)}</strong></td><td></td></tr></tbody></table></div>`;
 
-  // Cat 2: Majalis
-  html += `<div class="s"><div class="st">2. Majalis HT (Badre) — ${fmtPlain(totalMajalis)}€ ✓ (corrigé v2)</div><table>
+  // Cat 2: Councils
+  html += `<div class="s"><div class="st">2. Councils HT (Benoit) — ${fmtPlain(totalCouncils)}€ ✓ (corrigé v2)</div><table>
     <thead><tr><th>#</th><th>Date EBS</th><th style="text-align:right">Excel HT (€)</th><th style="text-align:right">EBS HT (€)</th><th style="text-align:right">Écart</th><th></th></tr></thead><tbody>`;
-  d.majalis.forEach((m, i) => {
+  d.councils.forEach((m, i) => {
     const ecart = m.excelHT - m.ebsHT;
     html += `<tr><td>${i+1}</td><td>${m.date}</td><td class="a">${fmtPlain(m.excelHT)}</td><td class="a">${fmtPlain(m.ebsHT)}</td><td class="a">${ecart}</td><td>${badge('ok', m.note ? '✓ ' + m.note : '✓')}</td></tr>`;
   });
-  const totalMajExcel = sum(d.majalis, 'excelHT');
-  html += `<tr class="tr"><td></td><td><strong>Total</strong></td><td class="a"><strong>${fmtPlain(totalMajExcel)}</strong></td><td class="a"><strong>${fmtPlain(totalMajalis)}</strong></td><td class="a" style="color:var(--green)"><strong>0</strong></td><td></td></tr></tbody></table></div>`;
+  const totalMajExcel = sum(d.councils, 'excelHT');
+  html += `<tr class="tr"><td></td><td><strong>Total</strong></td><td class="a"><strong>${fmtPlain(totalMajExcel)}</strong></td><td class="a"><strong>${fmtPlain(totalCouncils)}</strong></td><td class="a" style="color:var(--green)"><strong>0</strong></td><td></td></tr></tbody></table></div>`;
 
   // Cat 3: Bairok
-  html += `<div class="s"><div class="st">3. Bairok EUR (→ Azarkan) — ${fmtPlain(totalBairok)}€ ✓</div><table>
+  html += `<div class="s"><div class="st">3. Bairok EUR (→ Augustin) — ${fmtPlain(totalBairok)}€ ✓</div><table>
     <thead><tr><th>#</th><th>Date EBS</th><th style="text-align:right">Montant (€)</th><th></th></tr></thead><tbody>`;
   d.bairok.forEach((b, i) => {
     html += `<tr><td>${i+1}</td><td>${b.date}</td><td class="a">${fmtPlain(b.montant)}</td><td>${badge('ok','✓ EBS')}</td></tr>`;
@@ -208,7 +208,7 @@ function renderAzarkan2025() {
   html += `<div class="n ok">${d.bairok.length}/${d.bairok.length} paiements 2025 vérifiés. Les 4 autres résultats EBS sont de 2024, hors périmètre.</div></div>`;
 
   // Cat 4: Virements Maroc
-  html += `<div class="s"><div class="st">4. Virements Maroc → Azarkan (DH) — ${fmtPlain(totalMarocExcel)}€ ✓ match parfait</div><table>
+  html += `<div class="s"><div class="st">4. Virements Maroc → Augustin (DH) — ${fmtPlain(totalMarocExcel)}€ ✓ match parfait</div><table>
     <thead><tr><th>Mois</th><th style="text-align:right">Excel v2 (€)</th><th>Virements réels</th><th style="text-align:right">Total DH</th><th style="text-align:right">= EUR (÷10)</th><th style="text-align:right">Écart (€)</th><th></th></tr></thead><tbody>`;
   d.virementsMaroc.forEach(v => {
     const eurEquiv = v.totalDH / d.tauxMaroc;
@@ -228,7 +228,7 @@ function renderAzarkan2025() {
     html += `<tr${rowStyle}><td>${dv.mois}</td><td class="a">${fmtPlain(dv.d1)}</td><td class="a">${dv.d2 ? (dv.d2 < 0 ? '−' + fmtPlain(Math.abs(dv.d2)) : fmtPlain(dv.d2)) : '—'}</td><td class="a">${total < 0 ? '−' + fmtPlain(Math.abs(total)) : fmtPlain(total)}</td><td>${badge(dv.preuve, dv.preuveText)}</td></tr>`;
   });
   html += `<tr class="tr"><td><strong>Total</strong></td><td></td><td></td><td class="a"><strong>${fmtPlain(totalDiversCalc)}</strong></td><td><strong>${fmtPlain(d.diversVerifie)}€ vérifié / ${fmtSigned(d.diversNonVerifie, '€')} sans preuve</strong></td></tr></tbody></table>`;
-  html += `<div class="n ok"><strong>Fév 400€</strong> + <strong>Juin 1 240€</strong> = vols payés pour Azarkan ✓. <strong>Sep 1 130€</strong> = iPhone 1 305,41 USD (EBS 09/10, taux 0,8648) ✓. Reste Nov 300€ et Déc −1 900€ sans preuve (net ${fmtSigned(d.diversNonVerifie, '€')}). Le crédit Déc est en ta faveur.</div></div>`;
+  html += `<div class="n ok"><strong>Fév 400€</strong> + <strong>Juin 1 240€</strong> = vols payés pour Augustin ✓. <strong>Sep 1 130€</strong> = iPhone 1 305,41 USD (EBS 09/10, taux 0,8648) ✓. Reste Nov 300€ et Déc −1 900€ sans preuve (net ${fmtSigned(d.diversNonVerifie, '€')}). Le crédit Déc est en ta faveur.</div></div>`;
 
   // RTL Factures
   html += `<div class="s"><div class="st">Factures RTL 2025 — Revenus (${fmtPlain(totalRTL)}€ ✓)</div><table>
@@ -242,8 +242,8 @@ function renderAzarkan2025() {
 }
 
 // ---- AZARKAN 2026 ----
-function renderAzarkan2026() {
-  const d = DATA.azarkan2026;
+function renderAugustin2026() {
+  const d = DATA.augustin2026;
 
   const totalMAD = sum(d.virementsMaroc, 'dh');
   const totalEUR = totalMAD / d.tauxMaroc;
@@ -254,10 +254,10 @@ function renderAzarkan2026() {
   const totalFactureEmis = sum(d.rtl.filter(r => r.ref !== '—'), 'montant');
   // Amine a reçu = factures RTL effectivement payées (statut 'ok')
   const amineRecu = sum(d.rtl.filter(r => r.statut === 'ok'), 'montant');
-  // Azarkan a reçu = virements Maroc en EUR
-  const azarkanRecuEUR = totalEUR;
-  // Delta = Amine reçu − Azarkan reçu + report 2025
-  const delta = amineRecu - azarkanRecuEUR + d.report2025;
+  // Augustin a reçu = virements Maroc en EUR
+  const augustinRecuEUR = totalEUR;
+  // Delta = Amine reçu − Augustin reçu + report 2025
+  const delta = amineRecu - augustinRecuEUR + d.report2025;
 
   let html = yearToggle('Az', 2026);
   html += `<h2 style="font-size:1.05rem;margin-bottom:16px">${d.title}</h2>`;
@@ -265,8 +265,8 @@ function renderAzarkan2026() {
   html += `<div class="cards">
     <div class="card"><div class="l">Facturé (accrual)</div><div class="v yellow">${fmtPlain(totalFacture)} €</div></div>
     <div class="card"><div class="l">Amine a reçu</div><div class="v ${amineRecu > 0 ? 'green' : 'red'}">${fmtPlain(amineRecu)} €</div></div>
-    <div class="card"><div class="l">Azarkan a reçu</div><div class="v blue">${fmtPlain(azarkanRecuEUR)} €</div></div>
-    <div class="card"><div class="l">Delta (Amine − Azarkan)</div><div class="v ${delta >= 0 ? 'green' : 'red'}">${fmtSigned(delta)}</div></div>
+    <div class="card"><div class="l">Augustin a reçu</div><div class="v blue">${fmtPlain(augustinRecuEUR)} €</div></div>
+    <div class="card"><div class="l">Delta (Amine − Augustin)</div><div class="v ${delta >= 0 ? 'green' : 'red'}">${fmtSigned(delta)}</div></div>
   </div>`;
 
   // Réconciliation résumé
@@ -275,9 +275,9 @@ function renderAzarkan2026() {
     <tr><td>Facturé RTL (accrual)</td><td class="a" style="color:var(--yellow)">${fmtPlain(totalFacture)}</td><td>${d.rtl.length} factures (Jan–Mar 2026)</td></tr>
     <tr><td>dont émises (en attente paiement)</td><td class="a">${fmtPlain(totalFactureEmis)}</td><td>${d.rtl.filter(r => r.ref !== '—').length} factures émises</td></tr>
     <tr><td>Amine a reçu (cash in)</td><td class="a" style="color:var(--green)">${fmtPlain(amineRecu)}</td><td>Factures RTL payées à ce jour</td></tr>
-    <tr><td>Azarkan a reçu (cash out)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(azarkanRecuEUR)}</td><td>${fmtPlain(totalMAD)} DH ÷ ${d.tauxMaroc}</td></tr>
+    <tr><td>Augustin a reçu (cash out)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(augustinRecuEUR)}</td><td>${fmtPlain(totalMAD)} DH ÷ ${d.tauxMaroc}</td></tr>
     <tr><td>Report 2025</td><td class="a" style="color:var(--red)">${fmtSigned(d.report2025)}</td><td>Solde clôture 2025</td></tr>
-    <tr class="tr"><td><strong>Delta net</strong></td><td class="a" style="color:${delta >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(delta)}</strong></td><td>${delta < 0 ? 'Amine a avancé ' + fmtPlain(Math.abs(delta)) + '€ de plus' : 'Azarkan doit ' + fmtPlain(delta) + '€'}</td></tr>
+    <tr class="tr"><td><strong>Delta net</strong></td><td class="a" style="color:${delta >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(delta)}</strong></td><td>${delta < 0 ? 'Amine a avancé ' + fmtPlain(Math.abs(delta)) + '€ de plus' : 'Augustin doit ' + fmtPlain(delta) + '€'}</td></tr>
     </tbody></table></div>`;
 
   // Factures RTL 2026
@@ -289,7 +289,7 @@ function renderAzarkan2026() {
   html += `<tr class="tr"><td colspan="3"><strong>Total facturé</strong></td><td class="a"><strong>${fmtPlain(totalFacture)}</strong></td><td></td></tr></tbody></table></div>`;
 
   // Virements Maroc
-  html += `<div class="s"><div class="st">Azarkan a reçu — Virements Maroc 2026</div><table>
+  html += `<div class="s"><div class="st">Augustin a reçu — Virements Maroc 2026</div><table>
     <thead><tr><th>#</th><th>Date</th><th>Bénéficiaire</th><th style="text-align:right">DH</th><th style="text-align:right">= EUR (÷${d.tauxMaroc})</th></tr></thead><tbody>`;
   d.virementsMaroc.forEach((v, i) => {
     html += `<tr><td>${i+1}</td><td>${v.date}</td><td>${v.beneficiaire}</td><td class="a">${fmtPlain(v.dh)}</td><td class="a">${fmtPlain(v.dh / d.tauxMaroc)}</td></tr>`;
@@ -298,34 +298,34 @@ function renderAzarkan2026() {
 
   html += `<div class="n">${delta < 0
     ? `<strong>Amine a avancé ${fmtPlain(Math.abs(delta))}€</strong> de plus qu'il n'a reçu. Les ${totalFactureEmis > 0 ? fmtPlain(totalFactureEmis) + '€ de factures RTL en attente' : 'factures RTL'} couvriront ce delta une fois payées.`
-    : `Le solde est positif : Azarkan doit ${fmtPlain(delta)}€ à Amine.`
+    : `Le solde est positif : Augustin doit ${fmtPlain(delta)}€ à Amine.`
   } Report 2025 : <strong>${fmtSigned(d.report2025)}</strong>.</div>`;
 
   return html;
 }
 
 // ---- BADRE 2025 ----
-function renderBadre2025() {
-  const d = DATA.badre2025;
+function renderBenoit2025() {
+  const d = DATA.benoit2025;
   const rate = d.commissionRate || 0; // 0 in public mode (encrypted)
 
   // Computed per transaction
-  const transactions = d.majalis.map(m => {
+  const transactions = d.councils.map(m => {
     const dh = Math.round(m.htEUR * m.tauxApplique);
     const delta = m.tauxMarche ? m.tauxApplique - m.tauxMarche : null;
     const gainFX = m.tauxMarche ? Math.round(m.htEUR * (m.tauxMarche - m.tauxApplique)) : 0;
     const commission = Math.round(dh * rate);
-    const netBadre = dh - commission;
-    return { ...m, dh, delta, gainFX, commission, netBadre };
+    const netBenoit = dh - commission;
+    return { ...m, dh, delta, gainFX, commission, netBenoit };
   });
 
   const totalHTEUR = sum(transactions, 'htEUR');
   const totalDH = sum(transactions, 'dh');
   const totalGainFX = sum(transactions, 'gainFX');
   const totalCommission = sum(transactions, 'commission');
-  const totalNetBadre = sum(transactions, 'netBadre');
+  const totalNetBenoit = sum(transactions, 'netBenoit');
   const totalPaye = sum(d.virements, 'dh');
-  const solde = totalNetBadre - totalPaye;
+  const solde = totalNetBenoit - totalPaye;
   const totalGains = totalCommission + totalGainFX;
 
   let html = yearToggle('Ba', 2025);
@@ -335,28 +335,28 @@ function renderBadre2025() {
   // Cards
   if (window.PRIV) {
     html += `<div class="cards">
-      <div class="card"><div class="l">Dû à Badre (90% Majalis)</div><div class="v blue">${fmtPlain(totalNetBadre)} DH</div></div>
+      <div class="card"><div class="l">Dû à Benoit (90% Councils)</div><div class="v blue">${fmtPlain(totalNetBenoit)} DH</div></div>
       <div class="card"><div class="l">Payé en DH</div><div class="v green">${fmtPlain(totalPaye)} DH</div></div>
       <div class="card"><div class="l">Solde (dû − payé)</div><div class="v yellow">${fmtSigned(solde, 'DH')}</div></div>
       <div class="card"><div class="l">Total gains (FX + Commission)</div><div class="v green">${fmtPlain(totalGains)} DH</div></div>
     </div>`;
   } else {
     html += `<div class="cards">
-      <div class="card"><div class="l">Total Majalis HT</div><div class="v blue">${fmtPlain(totalDH)} DH</div></div>
+      <div class="card"><div class="l">Total Councils HT</div><div class="v blue">${fmtPlain(totalDH)} DH</div></div>
       <div class="card"><div class="l">Payé en DH</div><div class="v green">${fmtPlain(totalPaye)} DH</div></div>
     </div>`;
   }
 
-  // Majalis table
+  // Councils table
   if (window.PRIV) {
-    html += `<div class="s"><div class="st">Paiements Majalis HT 2025 — convertis en DH (taux appliqué vs marché)</div><table>
-      <thead><tr><th>#</th><th>Date EBS</th><th style="text-align:right">HT (€)</th><th style="text-align:right">Taux appliqué</th><th style="text-align:right">Taux marché</th><th style="text-align:right">Δ taux</th><th style="text-align:right">= DH</th><th style="text-align:right">Gain FX (DH)</th><th style="text-align:right">Commission 10%</th><th style="text-align:right">Net Badre (DH)</th><th></th></tr></thead><tbody>`;
+    html += `<div class="s"><div class="st">Paiements Councils HT 2025 — convertis en DH (taux appliqué vs marché)</div><table>
+      <thead><tr><th>#</th><th>Date EBS</th><th style="text-align:right">HT (€)</th><th style="text-align:right">Taux appliqué</th><th style="text-align:right">Taux marché</th><th style="text-align:right">Δ taux</th><th style="text-align:right">= DH</th><th style="text-align:right">Gain FX (DH)</th><th style="text-align:right">Commission 10%</th><th style="text-align:right">Net Benoit (DH)</th><th></th></tr></thead><tbody>`;
     transactions.forEach((t, i) => {
-      html += `<tr><td>${i+1}</td><td>${t.date}</td><td class="a">${fmtPlain(t.htEUR)}</td><td class="a">${fmtRate(t.tauxApplique)}</td><td class="a">${fmtRate(t.tauxMarche)}</td><td class="a" style="color:var(--green)">${fmtDelta(t.delta)}</td><td class="a">${fmtPlain(t.dh)}</td><td class="a" style="color:var(--green)">${fmtSigned(t.gainFX, '')}</td><td class="a">${fmtPlain(t.commission)}</td><td class="a">${fmtPlain(t.netBadre)}</td><td>${badge('ok','✓ EBS')}</td></tr>`;
+      html += `<tr><td>${i+1}</td><td>${t.date}</td><td class="a">${fmtPlain(t.htEUR)}</td><td class="a">${fmtRate(t.tauxApplique)}</td><td class="a">${fmtRate(t.tauxMarche)}</td><td class="a" style="color:var(--green)">${fmtDelta(t.delta)}</td><td class="a">${fmtPlain(t.dh)}</td><td class="a" style="color:var(--green)">${fmtSigned(t.gainFX, '')}</td><td class="a">${fmtPlain(t.commission)}</td><td class="a">${fmtPlain(t.netBenoit)}</td><td>${badge('ok','✓ EBS')}</td></tr>`;
     });
-    html += `<tr class="tr"><td></td><td><strong>Total</strong></td><td class="a"><strong>${fmtPlain(totalHTEUR)}</strong></td><td></td><td></td><td></td><td class="a"><strong>${fmtPlain(totalDH)}</strong></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(totalGainFX, '')}</strong></td><td class="a"><strong>${fmtPlain(totalCommission)}</strong></td><td class="a"><strong>${fmtPlain(totalNetBadre)}</strong></td><td></td></tr></tbody></table></div>`;
+    html += `<tr class="tr"><td></td><td><strong>Total</strong></td><td class="a"><strong>${fmtPlain(totalHTEUR)}</strong></td><td></td><td></td><td></td><td class="a"><strong>${fmtPlain(totalDH)}</strong></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(totalGainFX, '')}</strong></td><td class="a"><strong>${fmtPlain(totalCommission)}</strong></td><td class="a"><strong>${fmtPlain(totalNetBenoit)}</strong></td><td></td></tr></tbody></table></div>`;
   } else {
-    html += `<div class="s"><div class="st">Paiements Majalis HT 2025 — convertis en DH</div><table>
+    html += `<div class="s"><div class="st">Paiements Councils HT 2025 — convertis en DH</div><table>
       <thead><tr><th>#</th><th>Date EBS</th><th style="text-align:right">HT (€)</th><th style="text-align:right">Taux appliqué</th><th style="text-align:right">= DH</th><th></th></tr></thead><tbody>`;
     transactions.forEach((t, i) => {
       html += `<tr><td>${i+1}</td><td>${t.date}</td><td class="a">${fmtPlain(t.htEUR)}</td><td class="a">${fmtRate(t.tauxApplique)}</td><td class="a">${fmtPlain(t.dh)}</td><td>${badge('ok','✓ EBS')}</td></tr>`;
@@ -365,7 +365,7 @@ function renderBadre2025() {
   }
 
   // Virements
-  html += `<div class="s"><div class="st">Virements DH → Badre 2025</div><table>
+  html += `<div class="s"><div class="st">Virements DH → Benoit 2025</div><table>
     <thead><tr><th>#</th><th>Date</th><th>Bénéficiaire</th><th style="text-align:right">DH</th><th>Motif</th></tr></thead><tbody>`;
   d.virements.forEach((v, i) => {
     html += `<tr><td>${i+1}</td><td>${v.date}</td><td>${v.beneficiaire}</td><td class="a">${fmtPlain(v.dh)}</td><td>${v.motif}</td></tr>`;
@@ -374,21 +374,21 @@ function renderBadre2025() {
 
   // Réconciliation
   if (window.PRIV) {
-    html += `<div class="s"><div class="st">Réconciliation Badre 2025</div><table>
+    html += `<div class="s"><div class="st">Réconciliation Benoit 2025</div><table>
       <thead><tr><th>Ligne</th><th style="text-align:right">DH</th><th>Détail</th></tr></thead><tbody>
-      <tr><td>Majalis HT total (taux appliqué)</td><td class="a">${fmtPlain(totalDH)}</td><td>${transactions.length} paiements EBS × taux Amine</td></tr>
+      <tr><td>Councils HT total (taux appliqué)</td><td class="a">${fmtPlain(totalDH)}</td><td>${transactions.length} paiements EBS × taux Amine</td></tr>
       <tr><td>Commission 10%</td><td class="a" style="color:var(--yellow)">−${fmtPlain(totalCommission)}</td><td>Retenue par Amine</td></tr>
-      <tr><td><strong>Net dû à Badre</strong></td><td class="a"><strong>${fmtPlain(totalNetBadre)}</strong></td><td></td></tr>
+      <tr><td><strong>Net dû à Benoit</strong></td><td class="a"><strong>${fmtPlain(totalNetBenoit)}</strong></td><td></td></tr>
       <tr><td>Total virements DH</td><td class="a" style="color:var(--green)">−${fmtPlain(totalPaye)}</td><td>${d.virements.length} virements (Jul-Mar)</td></tr>
-      <tr class="tr"><td><strong>Solde restant dû</strong></td><td class="a" style="color:var(--yellow)"><strong>${fmtSigned(solde, '')}</strong></td><td>Amine doit encore ${fmtPlain(solde)} DH à Badre</td></tr>
+      <tr class="tr"><td><strong>Solde restant dû</strong></td><td class="a" style="color:var(--yellow)"><strong>${fmtSigned(solde, '')}</strong></td><td>Amine doit encore ${fmtPlain(solde)} DH à Benoit</td></tr>
       </tbody></table></div>`;
   }
 
   // Consolidation gains (private only)
   if (window.PRIV) {
-    html += `<div class="s"><div class="st">Consolidation des gains Amine — Badre 2025</div><table>
+    html += `<div class="s"><div class="st">Consolidation des gains Amine — Benoit 2025</div><table>
       <thead><tr><th>Source du gain</th><th style="text-align:right">DH</th><th>Détail</th></tr></thead><tbody>
-      <tr><td><strong>Commission 10%</strong></td><td class="a" style="color:var(--green)">${fmtSigned(totalCommission, '')}</td><td>10% sur ${fmtPlain(totalDH)} DH de Majalis HT</td></tr>
+      <tr><td><strong>Commission 10%</strong></td><td class="a" style="color:var(--green)">${fmtSigned(totalCommission, '')}</td><td>10% sur ${fmtPlain(totalDH)} DH de Councils HT</td></tr>
       <tr><td><strong>Gain FX (Δ taux)</strong></td><td class="a" style="color:var(--green)">${fmtSigned(totalGainFX, '')}</td><td>Taux appliqué inférieur au marché sur ${transactions.length} transactions</td></tr>
       <tr class="tr"><td><strong>Total gains Amine</strong></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(totalGains, '')}</strong></td><td></td></tr>
       </tbody></table>`;
@@ -401,74 +401,74 @@ function renderBadre2025() {
 }
 
 // ---- BADRE 2026 ----
-function renderBadre2026() {
-  const d = DATA.badre2026;
+function renderBenoit2026() {
+  const d = DATA.benoit2026;
   const taux = d.tauxApplique || 0;
   const rate = d.commissionRate || 0;
 
-  // Get report from Badre 2025 computed (only if PRIV data available)
-  const b25 = DATA.badre2025;
+  // Get report from Benoit 2025 computed (only if PRIV data available)
+  const b25 = DATA.benoit2025;
   const b25rate = b25.commissionRate || 0;
-  const tx25 = b25.majalis.map(m => {
+  const tx25 = b25.councils.map(m => {
     const dh = Math.round(m.htEUR * m.tauxApplique);
     const commission = Math.round(dh * b25rate);
     return dh - commission;
   });
-  const netBadre25 = tx25.reduce((s, n) => s + n, 0);
+  const netBenoit25 = tx25.reduce((s, n) => s + n, 0);
   const paye25 = sum(b25.virements, 'dh');
-  const report = netBadre25 - paye25;
+  const report = netBenoit25 - paye25;
 
   // Compute 2026 transactions
-  const transactions = d.majalis.map(m => {
+  const transactions = d.councils.map(m => {
     const dh = taux ? Math.round(m.htEUR * taux) : 0;
     const delta = m.tauxMarche && taux ? taux - m.tauxMarche : null;
     const gainFX = m.tauxMarche && taux ? Math.round(m.htEUR * (m.tauxMarche - taux)) : null;
     const commission = Math.round(dh * rate);
-    const netBadre = dh - commission;
-    return { ...m, dh, delta, gainFX, commission, netBadre };
+    const netBenoit = dh - commission;
+    return { ...m, dh, delta, gainFX, commission, netBenoit };
   });
 
   // Only paid transactions count for reconciliation
   const paidTransactions = transactions.filter(t => t.statut === 'ok');
   const totalDHPaid = sum(paidTransactions, 'dh');
-  const totalNetBadrePaid = sum(paidTransactions, 'netBadre');
+  const totalNetBenoitPaid = sum(paidTransactions, 'netBenoit');
   const totalCommissionPaid = sum(paidTransactions, 'commission');
   const totalGainFXPaid = sum(paidTransactions, t => t.gainFX || 0);
   const totalPaye = sum(d.virements, 'dh');
 
   // Solde = report 2025 + net dû 2026 (paid only) − payé 2026
-  const soldeDu = report + totalNetBadrePaid;
+  const soldeDu = report + totalNetBenoitPaid;
   const solde2026 = soldeDu - totalPaye;
 
   let html = yearToggle('Ba', 2026);
   html += `<h2 style="font-size:1.05rem;margin-bottom:6px">${d.title}</h2>`;
   if (window.PRIV) {
-    html += `<p style="color:var(--muted);font-size:.8rem;margin-bottom:18px">Report 2025 : ${fmtSigned(report, 'DH')} (dû à Badre). Taux appliqué 2026 : <strong>${fmtRate(taux)}</strong>. Réconciliation sur paiements Majalis reçus uniquement.</p>`;
+    html += `<p style="color:var(--muted);font-size:.8rem;margin-bottom:18px">Report 2025 : ${fmtSigned(report, 'DH')} (dû à Benoit). Taux appliqué 2026 : <strong>${fmtRate(taux)}</strong>. Réconciliation sur paiements Councils reçus uniquement.</p>`;
     html += `<div class="cards">
       <div class="card"><div class="l">Report 2025</div><div class="v yellow">${fmtSigned(report, 'DH')}</div></div>
-      <div class="card"><div class="l">Majalis payé 2026 (brut)</div><div class="v blue">${fmtPlain(totalDHPaid)} DH</div></div>
-      <div class="card"><div class="l">Majalis payé 2026 (net −10%)</div><div class="v blue">${fmtPlain(totalNetBadrePaid)} DH</div></div>
+      <div class="card"><div class="l">Councils payé 2026 (brut)</div><div class="v blue">${fmtPlain(totalDHPaid)} DH</div></div>
+      <div class="card"><div class="l">Councils payé 2026 (net −10%)</div><div class="v blue">${fmtPlain(totalNetBenoitPaid)} DH</div></div>
       <div class="card"><div class="l">Payé DH 2026</div><div class="v green">${fmtPlain(totalPaye)} DH</div></div>
       <div class="card"><div class="l">Solde (report + dû − payé)</div><div class="v ${solde2026 > 0 ? 'yellow' : solde2026 < 0 ? 'green' : 'green'}">${fmtSigned(solde2026, 'DH')}</div></div>
     </div>`;
   } else {
-    html += `<p style="color:var(--muted);font-size:.8rem;margin-bottom:18px">Paiements Majalis 2026 en cours.</p>`;
+    html += `<p style="color:var(--muted);font-size:.8rem;margin-bottom:18px">Paiements Councils 2026 en cours.</p>`;
     html += `<div class="cards">
-      <div class="card"><div class="l">Paiements Majalis</div><div class="v blue">${d.majalis.length} factures</div></div>
+      <div class="card"><div class="l">Paiements Councils</div><div class="v blue">${d.councils.length} factures</div></div>
       <div class="card"><div class="l">Payé DH 2026</div><div class="v green">${fmtPlain(totalPaye)} DH</div></div>
     </div>`;
   }
 
-  // Majalis table
+  // Councils table
   if (window.PRIV) {
-    html += `<div class="s"><div class="st">Paiements Majalis 2026 — convertis en DH (taux appliqué ${fmtRate(taux)} vs marché)</div><table>
-      <thead><tr><th>Mois</th><th style="text-align:right">HT (€)</th><th style="text-align:right">Taux appliqué</th><th style="text-align:right">Taux marché</th><th style="text-align:right">Δ taux</th><th style="text-align:right">= DH</th><th style="text-align:right">Gain FX (DH)</th><th style="text-align:right">Commission 10%</th><th style="text-align:right">Net Badre (DH)</th><th>Statut</th></tr></thead><tbody>`;
+    html += `<div class="s"><div class="st">Paiements Councils 2026 — convertis en DH (taux appliqué ${fmtRate(taux)} vs marché)</div><table>
+      <thead><tr><th>Mois</th><th style="text-align:right">HT (€)</th><th style="text-align:right">Taux appliqué</th><th style="text-align:right">Taux marché</th><th style="text-align:right">Δ taux</th><th style="text-align:right">= DH</th><th style="text-align:right">Gain FX (DH)</th><th style="text-align:right">Commission 10%</th><th style="text-align:right">Net Benoit (DH)</th><th>Statut</th></tr></thead><tbody>`;
     transactions.forEach(t => {
-      html += `<tr><td>${t.mois}</td><td class="a">${fmtPlain(t.htEUR)}</td><td class="a">${fmtRate(taux)}</td><td class="a">${t.tauxMarche ? fmtRate(t.tauxMarche) : '—'}</td><td class="a"${t.delta !== null ? ' style="color:var(--green)"' : ''}>${t.delta !== null ? fmtDelta(t.delta) : '—'}</td><td class="a">${fmtPlain(t.dh)}</td><td class="a"${t.gainFX !== null ? ' style="color:var(--green)"' : ''}>${t.gainFX !== null ? fmtSigned(t.gainFX, '') : '—'}</td><td class="a">${fmtPlain(t.commission)}</td><td class="a">${fmtPlain(t.netBadre)}</td><td>${badge(t.statut, t.statutText)}</td></tr>`;
+      html += `<tr><td>${t.mois}</td><td class="a">${fmtPlain(t.htEUR)}</td><td class="a">${fmtRate(taux)}</td><td class="a">${t.tauxMarche ? fmtRate(t.tauxMarche) : '—'}</td><td class="a"${t.delta !== null ? ' style="color:var(--green)"' : ''}>${t.delta !== null ? fmtDelta(t.delta) : '—'}</td><td class="a">${fmtPlain(t.dh)}</td><td class="a"${t.gainFX !== null ? ' style="color:var(--green)"' : ''}>${t.gainFX !== null ? fmtSigned(t.gainFX, '') : '—'}</td><td class="a">${fmtPlain(t.commission)}</td><td class="a">${fmtPlain(t.netBenoit)}</td><td>${badge(t.statut, t.statutText)}</td></tr>`;
     });
     html += `</tbody></table></div>`;
   } else {
-    html += `<div class="s"><div class="st">Paiements Majalis 2026</div><table>
+    html += `<div class="s"><div class="st">Paiements Councils 2026</div><table>
       <thead><tr><th>Mois</th><th style="text-align:right">HT (€)</th><th>Statut</th></tr></thead><tbody>`;
     transactions.forEach(t => {
       html += `<tr><td>${t.mois}</td><td class="a">${fmtPlain(t.htEUR)}</td><td>${badge(t.statut, t.statutText)}</td></tr>`;
@@ -478,7 +478,7 @@ function renderBadre2026() {
 
   // Virements 2026
   if (d.virements.length > 0) {
-    html += `<div class="s"><div class="st">Virements DH → Badre 2026</div><table>
+    html += `<div class="s"><div class="st">Virements DH → Benoit 2026</div><table>
       <thead><tr><th>#</th><th>Date</th><th>Bénéficiaire</th><th style="text-align:right">DH</th><th>Motif</th></tr></thead><tbody>`;
     d.virements.forEach((v, i) => {
       html += `<tr><td>${i+1}</td><td>${v.date}</td><td>${v.beneficiaire}</td><td class="a">${fmtPlain(v.dh)}</td><td>${v.motif}</td></tr>`;
@@ -488,16 +488,16 @@ function renderBadre2026() {
 
   // Réconciliation 2026 (PRIV only)
   if (window.PRIV) {
-    html += `<div class="s"><div class="st">Réconciliation Badre 2026 (payé uniquement)</div><table>
+    html += `<div class="s"><div class="st">Réconciliation Benoit 2026 (payé uniquement)</div><table>
       <thead><tr><th>Ligne</th><th style="text-align:right">DH</th><th>Détail</th></tr></thead><tbody>
-      <tr><td>Report 2025</td><td class="a" style="color:var(--yellow)">${fmtSigned(report, '')}</td><td>Solde clôture 2025 (dû à Badre)</td></tr>
-      <tr><td>Majalis HT payé 2026 (taux ${fmtRate(taux)})</td><td class="a">${fmtPlain(totalDHPaid)}</td><td>${paidTransactions.length} paiement(s) reçu(s)</td></tr>
+      <tr><td>Report 2025</td><td class="a" style="color:var(--yellow)">${fmtSigned(report, '')}</td><td>Solde clôture 2025 (dû à Benoit)</td></tr>
+      <tr><td>Councils HT payé 2026 (taux ${fmtRate(taux)})</td><td class="a">${fmtPlain(totalDHPaid)}</td><td>${paidTransactions.length} paiement(s) reçu(s)</td></tr>
       <tr><td>Commission 10%</td><td class="a" style="color:var(--yellow)">−${fmtPlain(totalCommissionPaid)}</td><td>Retenue par Amine</td></tr>
-      <tr><td><strong>Total dû à Badre</strong></td><td class="a"><strong>${fmtPlain(soldeDu)}</strong></td><td>Report + net Majalis payé</td></tr>
+      <tr><td><strong>Total dû à Benoit</strong></td><td class="a"><strong>${fmtPlain(soldeDu)}</strong></td><td>Report + net Councils payé</td></tr>
       <tr><td>Virements DH 2026</td><td class="a" style="color:var(--green)">−${fmtPlain(totalPaye)}</td><td>${d.virements.length} virement(s)</td></tr>
-      <tr class="tr"><td><strong>Solde 2026</strong></td><td class="a" style="color:${solde2026 > 0 ? 'var(--yellow)' : 'var(--green)'}"><strong>${fmtSigned(solde2026, '')}</strong></td><td>${solde2026 > 0 ? 'Amine doit encore ' + fmtPlain(solde2026) + ' DH à Badre' : solde2026 < 0 ? 'Badre a un excédent de ' + fmtPlain(Math.abs(solde2026)) + ' DH' : 'Soldé'}</td></tr>
+      <tr class="tr"><td><strong>Solde 2026</strong></td><td class="a" style="color:${solde2026 > 0 ? 'var(--yellow)' : 'var(--green)'}"><strong>${fmtSigned(solde2026, '')}</strong></td><td>${solde2026 > 0 ? 'Amine doit encore ' + fmtPlain(solde2026) + ' DH à Benoit' : solde2026 < 0 ? 'Benoit a un excédent de ' + fmtPlain(Math.abs(solde2026)) + ' DH' : 'Soldé'}</td></tr>
       </tbody></table></div>`;
-    html += `<div class="n">Le virement du 06/03/2026 (31 750 DH) a été comptabilisé dans la clôture 2025. Taux appliqué 2026 : <strong>${fmtRate(taux)}</strong> (fixe). La réconciliation ne prend en compte que les Majalis effectivement payés.</div>`;
+    html += `<div class="n">Le virement du 06/03/2026 (31 750 DH) a été comptabilisé dans la clôture 2025. Taux appliqué 2026 : <strong>${fmtRate(taux)}</strong> (fixe). La réconciliation ne prend en compte que les Councils effectivement payés.</div>`;
   }
 
   return html;
@@ -855,8 +855,8 @@ function renderMesGains() {
   const mktEURMAD = wavgTauxMkt1 * wavgMktSell / peg;
 
   // ===== 1. VIREMENTS AZARKAN — Rate arbitrage + P2P spread =====
-  const az25 = DATA.azarkan2025;
-  const az26 = DATA.azarkan2026;
+  const az25 = DATA.augustin2025;
+  const az26 = DATA.augustin2026;
   const tauxAz = az25.tauxMaroc; // 10
 
   // 2025 virements
@@ -868,7 +868,7 @@ function renderMesGains() {
 
   // Decompose: rate arbitrage (tauxAz vs market) + P2P spread (market vs effective)
   const eurCoutMarche25 = totalDH25 / mktEURMAD;
-  const gainRateArb25 = (eurCredite25 - eurCoutMarche25) * mktEURMAD; // Azarkan rate vs market, in MAD
+  const gainRateArb25 = (eurCredite25 - eurCoutMarche25) * mktEURMAD; // Augustin rate vs market, in MAD
   const gainP2PSpread25 = (eurCoutMarche25 - eurCoutP2P25) * effEURMAD; // P2P vs market, in MAD
 
   // 2026 virements
@@ -891,34 +891,34 @@ function renderMesGains() {
   const commYsquareMAD = Math.round(commYsquareEUR * mktEURMAD);
 
   // ===== 3. COMMISSION BADRE 10% =====
-  const b25 = DATA.badre2025;
-  const b26 = DATA.badre2026;
+  const b25 = DATA.benoit2025;
+  const b26 = DATA.benoit2026;
 
-  const commBadre25 = b25.majalis.reduce((s, m) => s + Math.round(m.htEUR * m.tauxApplique * b25.commissionRate), 0);
-  const commBadre26 = b26.majalis.filter(m => m.statut === 'ok').reduce((s, m) => s + Math.round(m.htEUR * b26.tauxApplique * b26.commissionRate), 0);
-  const totalComm = commBadre25 + commBadre26;
+  const commBenoit25 = b25.councils.reduce((s, m) => s + Math.round(m.htEUR * m.tauxApplique * b25.commissionRate), 0);
+  const commBenoit26 = b26.councils.filter(m => m.statut === 'ok').reduce((s, m) => s + Math.round(m.htEUR * b26.tauxApplique * b26.commissionRate), 0);
+  const totalComm = commBenoit25 + commBenoit26;
 
   // ===== 4. ÉCART TAUX BADRE (appliqué vs marché) =====
-  const fxBadre25 = b25.majalis.reduce((s, m) => s + Math.round(m.htEUR * (m.tauxMarche - m.tauxApplique)), 0);
-  const fxBadre26 = b26.majalis.filter(m => m.statut === 'ok' && m.tauxMarche).reduce((s, m) => s + Math.round(m.htEUR * (m.tauxMarche - b26.tauxApplique)), 0);
-  const totalFxBadre = fxBadre25 + fxBadre26;
+  const fxBenoit25 = b25.councils.reduce((s, m) => s + Math.round(m.htEUR * (m.tauxMarche - m.tauxApplique)), 0);
+  const fxBenoit26 = b26.councils.filter(m => m.statut === 'ok' && m.tauxMarche).reduce((s, m) => s + Math.round(m.htEUR * (m.tauxMarche - b26.tauxApplique)), 0);
+  const totalFxBenoit = fxBenoit25 + fxBenoit26;
 
-  // ===== 5. P2P SPREAD on Badre payments =====
-  // The MAD paid to Badre via P2P costs less EUR than at bank rate
-  const totalNetBadre25 = b25.majalis.reduce((s, m) => {
+  // ===== 5. P2P SPREAD on Benoit payments =====
+  // The MAD paid to Benoit via P2P costs less EUR than at bank rate
+  const totalNetBenoit25 = b25.councils.reduce((s, m) => {
     const dh = Math.round(m.htEUR * m.tauxApplique);
     return s + dh - Math.round(dh * b25.commissionRate);
   }, 0);
-  const totalNetBadre26 = b26.majalis.filter(m => m.statut === 'ok').reduce((s, m) => {
+  const totalNetBenoit26 = b26.councils.filter(m => m.statut === 'ok').reduce((s, m) => {
     const dh = Math.round(m.htEUR * b26.tauxApplique);
     return s + dh - Math.round(dh * b26.commissionRate);
   }, 0);
-  const totalNetBadreDH = totalNetBadre25 + totalNetBadre26;
+  const totalNetBenoitDH = totalNetBenoit25 + totalNetBenoit26;
   // P2P saving: cost at market - cost at P2P (in EUR) * effRate
-  const p2pSavingBadre = totalNetBadreDH * (1 - mktEURMAD / effEURMAD);
+  const p2pSavingBenoit = totalNetBenoitDH * (1 - mktEURMAD / effEURMAD);
 
   // ===== GRAND TOTAL =====
-  const grandTotal = totalGainAz + commYsquareMAD + totalComm + totalFxBadre + p2pSavingBadre;
+  const grandTotal = totalGainAz + commYsquareMAD + totalComm + totalFxBenoit + p2pSavingBenoit;
 
   // ===== BUILD HTML =====
   let html = `<h2 style="font-size:1.05rem;margin-bottom:6px">Mes Gains — Synthèse complète</h2>`;
@@ -936,31 +936,31 @@ function renderMesGains() {
   html += `<div class="s"><div class="st">Récapitulatif des gains par source</div><table>
     <thead><tr><th>Source</th><th>Détail</th><th style="text-align:right">Gain (DH)</th></tr></thead><tbody>`;
 
-  // Azarkan 2025
-  html += `<tr><td><strong>Virements Azarkan 2025</strong></td><td>${fmtPlain(totalDH25)} DH envoyés, crédités ${fmtPlain(eurCredite25)} € (taux ${tauxAz}), coût réel ${fmtPlain(Math.round(eurCoutP2P25))} € via P2P</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(gainMAD_az25), '')}</td></tr>`;
+  // Augustin 2025
+  html += `<tr><td><strong>Virements Augustin 2025</strong></td><td>${fmtPlain(totalDH25)} DH envoyés, crédités ${fmtPlain(eurCredite25)} € (taux ${tauxAz}), coût réel ${fmtPlain(Math.round(eurCoutP2P25))} € via P2P</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(gainMAD_az25), '')}</td></tr>`;
 
-  // Azarkan 2026
-  html += `<tr><td><strong>Virements Azarkan 2026</strong></td><td>${fmtPlain(totalDH26)} DH envoyés, crédités ${fmtPlain(eurCredite26)} € (taux ${az26.tauxMaroc}), coût réel ${fmtPlain(Math.round(eurCoutP2P26))} € via P2P</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(gainMAD_az26), '')}</td></tr>`;
+  // Augustin 2026
+  html += `<tr><td><strong>Virements Augustin 2026</strong></td><td>${fmtPlain(totalDH26)} DH envoyés, crédités ${fmtPlain(eurCredite26)} € (taux ${az26.tauxMaroc}), coût réel ${fmtPlain(Math.round(eurCoutP2P26))} € via P2P</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(gainMAD_az26), '')}</td></tr>`;
 
   // Commission Ysquare
   html += `<tr><td><strong>Commission Ysquare (Kenza) 8%</strong></td><td>${fmtPlain(ysquareTotal)} € × 8% = ${fmtPlain(commYsquareEUR)} € (≈ ${fmtPlain(commYsquareMAD)} DH au taux marché)</td><td class="a" style="color:var(--green)">${fmtSigned(commYsquareMAD, '')}</td></tr>`;
 
-  // Commission Badre
-  html += `<tr><td><strong>Commission Badre 10%</strong></td><td>2025 : ${fmtPlain(commBadre25)} DH · 2026 : ${fmtPlain(commBadre26)} DH</td><td class="a" style="color:var(--green)">${fmtSigned(totalComm, '')}</td></tr>`;
+  // Commission Benoit
+  html += `<tr><td><strong>Commission Benoit 10%</strong></td><td>2025 : ${fmtPlain(commBenoit25)} DH · 2026 : ${fmtPlain(commBenoit26)} DH</td><td class="a" style="color:var(--green)">${fmtSigned(totalComm, '')}</td></tr>`;
 
-  // FX Badre
-  html += `<tr><td><strong>Écart taux Badre</strong></td><td>Taux appliqué &lt; taux marché (2025 : ${fmtPlain(fxBadre25)} DH · 2026 : ${fmtPlain(fxBadre26)} DH)</td><td class="a" style="color:var(--green)">${fmtSigned(totalFxBadre, '')}</td></tr>`;
+  // FX Benoit
+  html += `<tr><td><strong>Écart taux Benoit</strong></td><td>Taux appliqué &lt; taux marché (2025 : ${fmtPlain(fxBenoit25)} DH · 2026 : ${fmtPlain(fxBenoit26)} DH)</td><td class="a" style="color:var(--green)">${fmtSigned(totalFxBenoit, '')}</td></tr>`;
 
-  // P2P spread on Badre
-  html += `<tr><td><strong>Spread P2P (paiements Badre)</strong></td><td>Envoi de ${fmtPlain(totalNetBadreDH)} DH via Binance au lieu de banque</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(p2pSavingBadre), '')}</td></tr>`;
+  // P2P spread on Benoit
+  html += `<tr><td><strong>Spread P2P (paiements Benoit)</strong></td><td>Envoi de ${fmtPlain(totalNetBenoitDH)} DH via Binance au lieu de banque</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(p2pSavingBenoit), '')}</td></tr>`;
 
   // Total
   html += `<tr class="tr"><td><strong>TOTAL GAINS</strong></td><td></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(Math.round(grandTotal), ' DH')}</strong></td></tr>`;
   html += `</tbody></table></div>`;
 
   // ===== BREAKDOWN AZARKAN =====
-  html += `<div class="s"><div class="st">Détail — Virements Azarkan (Maroc)</div>`;
-  html += `<div class="n ok">Quand tu envoies des MAD à Azarkan via Binance P2P, le taux appliqué par Azarkan est <strong>${tauxAz} MAD/EUR</strong>. Ton taux effectif P2P est <strong>${effEURMAD.toFixed(3).replace('.',',')} MAD/EUR</strong>. La différence (${(effEURMAD - tauxAz).toFixed(3).replace('.',',')} MAD/EUR) est ton gain pour chaque EUR crédité.</div>`;
+  html += `<div class="s"><div class="st">Détail — Virements Augustin (Maroc)</div>`;
+  html += `<div class="n ok">Quand tu envoies des MAD à Augustin via Binance P2P, le taux appliqué par Augustin est <strong>${tauxAz} MAD/EUR</strong>. Ton taux effectif P2P est <strong>${effEURMAD.toFixed(3).replace('.',',')} MAD/EUR</strong>. La différence (${(effEURMAD - tauxAz).toFixed(3).replace('.',',')} MAD/EUR) est ton gain pour chaque EUR crédité.</div>`;
 
   html += `<table><thead><tr><th>Période</th><th style="text-align:right">DH envoyés</th><th style="text-align:right">EUR crédités (÷${tauxAz})</th><th style="text-align:right">Coût réel EUR (P2P)</th><th style="text-align:right">Gain EUR</th><th style="text-align:right">Gain MAD</th></tr></thead><tbody>`;
   html += `<tr><td>2025 (Fév-Déc)</td><td class="a">${fmtPlain(totalDH25)}</td><td class="a">${fmtPlain(eurCredite25)}</td><td class="a">${fmtPlain(Math.round(eurCoutP2P25))}</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(gainEUR_az25), '')}</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(gainMAD_az25), '')}</td></tr>`;
@@ -969,20 +969,20 @@ function renderMesGains() {
   html += `</tbody></table></div>`;
 
   // ===== BREAKDOWN BADRE =====
-  html += `<div class="s"><div class="st">Détail — Gains Badre (Commission + Taux + P2P)</div>`;
+  html += `<div class="s"><div class="st">Détail — Gains Benoit (Commission + Taux + P2P)</div>`;
 
-  // Per-transaction table for Badre 2025
+  // Per-transaction table for Benoit 2025
   html += `<table><thead><tr><th>Date</th><th style="text-align:right">HT (€)</th><th style="text-align:right">Taux appliqué</th><th style="text-align:right">Taux marché</th><th style="text-align:right">Commission 10% (DH)</th><th style="text-align:right">Gain taux (DH)</th></tr></thead><tbody>`;
   let sumComm = 0, sumFxB = 0;
-  b25.majalis.forEach(m => {
+  b25.councils.forEach(m => {
     const dh = Math.round(m.htEUR * m.tauxApplique);
     const comm = Math.round(dh * b25.commissionRate);
     const fx = Math.round(m.htEUR * (m.tauxMarche - m.tauxApplique));
     sumComm += comm; sumFxB += fx;
     html += `<tr><td>${m.date}</td><td class="a">${fmtPlain(m.htEUR)}</td><td class="a">${fmtRate(m.tauxApplique)}</td><td class="a">${fmtRate(m.tauxMarche)}</td><td class="a" style="color:var(--green)">${fmtPlain(comm)}</td><td class="a" style="color:var(--green)">${fmtSigned(fx, '')}</td></tr>`;
   });
-  // Badre 2026 paid
-  b26.majalis.filter(m => m.statut === 'ok').forEach(m => {
+  // Benoit 2026 paid
+  b26.councils.filter(m => m.statut === 'ok').forEach(m => {
     const dh = Math.round(m.htEUR * b26.tauxApplique);
     const comm = Math.round(dh * b26.commissionRate);
     const fx = m.tauxMarche ? Math.round(m.htEUR * (m.tauxMarche - b26.tauxApplique)) : 0;
@@ -995,9 +995,9 @@ function renderMesGains() {
   // ===== INSIGHTS =====
   html += `<div class="s"><div class="st">Insights</div>`;
 
-  // Insight 1: effective vs Azarkan rate
+  // Insight 1: effective vs Augustin rate
   const gainPerEUR_az = effEURMAD - tauxAz;
-  html += `<div class="insight pass"><div class="t">💰 Gain de ${gainPerEUR_az.toFixed(2).replace('.',',')} DH par EUR crédité chez Azarkan</div><div class="d">Le taux Azarkan est ${tauxAz} MAD/EUR. Ton taux effectif via Binance P2P est ${effEURMAD.toFixed(3).replace('.',',')} MAD/EUR. Pour chaque 1 000€ crédité, tu gagnes <strong>${fmtPlain(Math.round(gainPerEUR_az * 1000))} DH</strong>.</div></div>`;
+  html += `<div class="insight pass"><div class="t">💰 Gain de ${gainPerEUR_az.toFixed(2).replace('.',',')} DH par EUR crédité chez Augustin</div><div class="d">Le taux Augustin est ${tauxAz} MAD/EUR. Ton taux effectif via Binance P2P est ${effEURMAD.toFixed(3).replace('.',',')} MAD/EUR. Pour chaque 1 000€ crédité, tu gagnes <strong>${fmtPlain(Math.round(gainPerEUR_az * 1000))} DH</strong>.</div></div>`;
 
   // Insight 2: P2P vs market
   const p2pAdvantage = effEURMAD - mktEURMAD;
@@ -1006,17 +1006,17 @@ function renderMesGains() {
   // Insight 3: Ysquare commission
   html += `<div class="insight pass"><div class="t">👩 Ysquare (Kenza) : ${fmtPlain(commYsquareEUR)} € de commission</div><div class="d">${fmtPlain(ysquareTotal)} € payés à Kenza en 2025 (6 paiements EBS). Commission moyenne de 8% retenue = <strong>${fmtPlain(commYsquareEUR)} €</strong> (≈ ${fmtPlain(commYsquareMAD)} DH).</div></div>`;
 
-  // Insight 4: Badre commission total
-  const totalGainsBadre = totalComm + totalFxBadre + Math.round(p2pSavingBadre);
-  html += `<div class="insight pass"><div class="t">🤝 Badre génère ${fmtPlain(totalGainsBadre)} DH de gains cumulés</div><div class="d">Commission 10% : <strong>${fmtPlain(totalComm)} DH</strong> · Écart taux : <strong>${fmtPlain(totalFxBadre)} DH</strong> · P2P spread : <strong>${fmtPlain(Math.round(p2pSavingBadre))} DH</strong>. La commission reste la source principale.</div></div>`;
+  // Insight 4: Benoit commission total
+  const totalGainsBenoit = totalComm + totalFxBenoit + Math.round(p2pSavingBenoit);
+  html += `<div class="insight pass"><div class="t">🤝 Benoit génère ${fmtPlain(totalGainsBenoit)} DH de gains cumulés</div><div class="d">Commission 10% : <strong>${fmtPlain(totalComm)} DH</strong> · Écart taux : <strong>${fmtPlain(totalFxBenoit)} DH</strong> · P2P spread : <strong>${fmtPlain(Math.round(p2pSavingBenoit))} DH</strong>. La commission reste la source principale.</div></div>`;
 
   // Insight 5: breakdown percentage
   const pctAz = (totalGainAz / grandTotal * 100).toFixed(1);
   const pctYsq = (commYsquareMAD / grandTotal * 100).toFixed(1);
   const pctComm = (totalComm / grandTotal * 100).toFixed(1);
-  const pctFx = (totalFxBadre / grandTotal * 100).toFixed(1);
-  const pctP2P = (p2pSavingBadre / grandTotal * 100).toFixed(1);
-  html += `<div class="insight"><div class="t">📊 Répartition des gains</div><div class="d">Virements Azarkan : <strong>${pctAz}%</strong> · Ysquare 8% : <strong>${pctYsq}%</strong> · Commission Badre : <strong>${pctComm}%</strong> · Écart taux Badre : <strong>${pctFx}%</strong> · Spread P2P Badre : <strong>${pctP2P}%</strong></div></div>`;
+  const pctFx = (totalFxBenoit / grandTotal * 100).toFixed(1);
+  const pctP2P = (p2pSavingBenoit / grandTotal * 100).toFixed(1);
+  html += `<div class="insight"><div class="t">📊 Répartition des gains</div><div class="d">Virements Augustin : <strong>${pctAz}%</strong> · Ysquare 8% : <strong>${pctYsq}%</strong> · Commission Benoit : <strong>${pctComm}%</strong> · Écart taux Benoit : <strong>${pctFx}%</strong> · Spread P2P Benoit : <strong>${pctP2P}%</strong></div></div>`;
 
   // Insight 6: monthly average
   const months = 13; // Feb 2025 to Mar 2026
@@ -1032,8 +1032,8 @@ function renderMesGains() {
 function renderAll() {
   const azY = window.azYear || 2026;
   const baY = window.baYear || 2026;
-  document.getElementById('azarkan').innerHTML = (azY === 2025) ? renderAzarkan2025() : renderAzarkan2026();
-  document.getElementById('badre').innerHTML = (baY === 2025) ? renderBadre2025() : renderBadre2026();
+  document.getElementById('augustin').innerHTML = (azY === 2025) ? renderAugustin2025() : renderAugustin2026();
+  document.getElementById('benoit').innerHTML = (baY === 2025) ? renderBenoit2025() : renderBenoit2026();
   document.getElementById('fxp2p').innerHTML = renderFXP2P();
   document.getElementById('gains').innerHTML = renderMesGains();
 }

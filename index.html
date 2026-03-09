@@ -101,17 +101,17 @@
 <div class="site-wrap" id="siteWrap">
 <div class="header">
   <h1>Réconciliation Facturation 2025-2026</h1>
-  <p>Audit croisé : Excel Azarkan × EBS × Attijariwafa — Taux Azarkan : 10 000 DH = 1 000€</p>
+  <p>Audit croisé : Excel Augustin × EBS × Attijariwafa — Taux Augustin : 10 000 DH = 1 000€</p>
 </div>
 <div class="tabs">
-  <div class="tab active" onclick="showTab('azarkan')">Azarkan</div>
-  <div class="tab" onclick="showTab('badre')">Badre</div>
+  <div class="tab active" onclick="showTab('augustin')">Augustin</div>
+  <div class="tab" onclick="showTab('benoit')">Benoit</div>
   <div class="tab" id="tab-fxp2p" onclick="showTab('fxp2p')" style="display:none">FX P2P</div>
   <div class="tab" id="tab-gains" onclick="showTab('gains')" style="display:none">Mes Gains</div>
 </div>
 <div class="content">
-  <div id="azarkan" class="panel active"></div>
-  <div id="badre" class="panel"></div>
+  <div id="augustin" class="panel active"></div>
+  <div id="benoit" class="panel"></div>
   <div id="fxp2p" class="panel"></div>
   <div id="gains" class="panel"></div>
 </div>
@@ -128,11 +128,14 @@
   </div>
 </div>
 </div><!-- /site-wrap -->
-<script src="data.js?v=13"></script>
-<script src="data-priv.enc.js?v=13"></script>
-<script src="render.js?v=13"></script>
+<script src="data.js?v=14"></script>
+<script src="data-priv.enc.js?v=14"></script>
+<script src="render.js?v=14"></script>
 <script>
-// ---- GATE: BRIDGEVALE access code ----
+// ---- ACCESS MODE ----
+window.ACCESS_MODE = null; // 'full' or 'benoit'
+
+// ---- GATE: BRIDGEVALE / COUPA access codes ----
 (function(){
   const gate = document.getElementById('gate');
   const gateInput = document.getElementById('gateInput');
@@ -143,10 +146,25 @@
   gateInput.addEventListener('keydown', function(e){
     if(e.key === 'Enter'){
       const v = this.value.trim();
-      if(v === 'BRIDGEVALE'){
+      if(v === 'BRIDGEVALE' || v === 'COUPA'){
+        window.ACCESS_MODE = (v === 'COUPA') ? 'benoit' : 'full';
         gate.classList.add('hide');
         setTimeout(()=>{ gate.style.display='none'; }, 700);
         siteWrap.classList.add('visible');
+
+        if(window.ACCESS_MODE === 'benoit'){
+          // COUPA: hide Augustin tab, show only Benoit
+          document.querySelectorAll('.tab').forEach(t => {
+            if(t.textContent.trim() === 'Augustin') t.style.display = 'none';
+          });
+          // Activate Benoit tab
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+          document.querySelector('.tab[onclick*="benoit"]').classList.add('active');
+          document.getElementById('benoit').classList.add('active');
+          // Hide Réf. dossier footer (BINGA not available in COUPA mode)
+          document.getElementById('dref').parentElement.style.display = 'none';
+        }
         renderAll();
       } else {
         attempts++;
@@ -183,22 +201,22 @@ window.azYear = 2026;
 window.baYear = 2026;
 function switchAzYear(y){
   window.azYear = y;
-  document.getElementById('azarkan').innerHTML = (y === 2025) ? renderAzarkan2025() : renderAzarkan2026();
-  document.querySelectorAll('#azarkan .year-btn').forEach(b => {
+  document.getElementById('augustin').innerHTML = (y === 2025) ? renderAugustin2025() : renderAugustin2026();
+  document.querySelectorAll('#augustin .year-btn').forEach(b => {
     b.classList.toggle('active', parseInt(b.dataset.year) === y);
   });
 }
 function switchBaYear(y){
   window.baYear = y;
-  document.getElementById('badre').innerHTML = (y === 2025) ? renderBadre2025() : renderBadre2026();
-  document.querySelectorAll('#badre .year-btn').forEach(b => {
+  document.getElementById('benoit').innerHTML = (y === 2025) ? renderBenoit2025() : renderBenoit2026();
+  document.querySelectorAll('#benoit .year-btn').forEach(b => {
     b.classList.toggle('active', parseInt(b.dataset.year) === y);
   });
 }
 
 // ---- Crypto: Decrypt private data with Web Crypto API ----
 async function decryptPrivData(password) {
-  const SALT = 'facturation-azarkan-2025';
+  const SALT = 'facturation-augustin-2025';
   const enc = new TextEncoder();
 
   // Derive key from password using PBKDF2 (same params as Node script)
@@ -222,20 +240,20 @@ async function decryptPrivData(password) {
 }
 
 function injectPrivData(priv) {
-  // Inject commission rate and taux marché into Badre 2025
-  DATA.badre2025.commissionRate = priv.badre2025.commissionRate;
-  priv.badre2025.majalisTaux.forEach((t, i) => {
-    if (DATA.badre2025.majalis[i]) {
-      DATA.badre2025.majalis[i].tauxMarche = t.tauxMarche;
+  // Inject commission rate and taux marché into Benoit 2025
+  DATA.benoit2025.commissionRate = priv.benoit2025.commissionRate;
+  priv.benoit2025.councilsTaux.forEach((t, i) => {
+    if (DATA.benoit2025.councils[i]) {
+      DATA.benoit2025.councils[i].tauxMarche = t.tauxMarche;
     }
   });
 
-  // Inject Badre 2026 private fields
-  DATA.badre2026.tauxApplique = priv.badre2026.tauxApplique;
-  DATA.badre2026.commissionRate = priv.badre2026.commissionRate;
-  priv.badre2026.majalisTauxMarche.forEach((t, i) => {
-    if (DATA.badre2026.majalis[i]) {
-      DATA.badre2026.majalis[i].tauxMarche = t.tauxMarche;
+  // Inject Benoit 2026 private fields
+  DATA.benoit2026.tauxApplique = priv.benoit2026.tauxApplique;
+  DATA.benoit2026.commissionRate = priv.benoit2026.commissionRate;
+  priv.benoit2026.councilsTauxMarche.forEach((t, i) => {
+    if (DATA.benoit2026.councils[i]) {
+      DATA.benoit2026.councils[i].tauxMarche = t.tauxMarche;
     }
   });
 
@@ -247,10 +265,10 @@ function injectPrivData(priv) {
   DATA._ysquareTotal = priv.ysquareTotal;
 }
 
-// ---- Binga ----
+// ---- Binga (only available in full mode) ----
 document.getElementById('dref').addEventListener('input', async function(){
   const v = this.value.trim();
-  if(v === 'BINGA' && !window.PRIV){
+  if(v === 'BINGA' && !window.PRIV && window.ACCESS_MODE === 'full'){
     this.value = '';
     this.placeholder = '...';
 
