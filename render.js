@@ -885,11 +885,11 @@ function renderMesGains() {
   const tauxAz25 = az25.tauxMaroc; // 10
   const tauxAz26 = az26.tauxMaroc;
 
-  // Use year-specific effective rates
-  const eff25 = r2025 ? r2025.effEURMAD : effEURMAD;
-  const mkt25 = r2025 ? r2025.mktEURMAD : mktEURMAD;
-  const eff26 = r2026 ? r2026.effEURMAD : effEURMAD;
-  const mkt26 = r2026 ? r2026.mktEURMAD : mktEURMAD;
+  // Use year-specific effective rates (fallback to global if year data incomplete)
+  const eff25 = (r2025 && r2025.effEURMAD) ? r2025.effEURMAD : effEURMAD;
+  const mkt25 = (r2025 && r2025.mktEURMAD) ? r2025.mktEURMAD : mktEURMAD;
+  const eff26 = (r2026 && r2026.effEURMAD) ? r2026.effEURMAD : effEURMAD;
+  const mkt26 = (r2026 && r2026.mktEURMAD) ? r2026.mktEURMAD : mktEURMAD;
 
   // 2025 virements
   const totalDH25 = sum(az25.virementsMaroc, 'totalDH');
