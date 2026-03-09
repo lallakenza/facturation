@@ -63,7 +63,18 @@ function yearToggle3(section, activeYear) {
 }
 
 // ---- AUGUSTIN 2025 ----
-function renderAugustin2025() {
+function renderAugustinAll() {
+  let html = yearToggle3('Az', 0);
+  html += `<h2 style="font-size:1.05rem;margin-bottom:18px">Augustin — Vue combinée 2025 / 2026</h2>`;
+  // Render 2026 first (current), then 2025
+  html += `<div style="margin-bottom:30px;padding-bottom:20px;border-bottom:2px solid var(--border)">`;
+  html += renderAugustin2026(true);
+  html += `</div>`;
+  html += renderAugustin2025(true);
+  return html;
+}
+
+function renderAugustin2025(embedded) {
   const d = DATA.augustin2025;
   const mois = d.mois;
 
@@ -97,7 +108,7 @@ function renderAugustin2025() {
   const totalRTL = sum(d.rtl, 'montant');
   const totalRecuRTL = sum(d.rtl, 'recu');
 
-  let html = yearToggle('Az', 2025);
+  let html = embedded ? '' : yearToggle3('Az', 2025);
 
   // Title
   html += `<h2 style="font-size:1.05rem;margin-bottom:6px">${d.title}</h2>`;
@@ -248,7 +259,7 @@ function renderAugustin2025() {
 }
 
 // ---- AUGUSTIN 2026 ----
-function renderAugustin2026() {
+function renderAugustin2026(embedded) {
   const d = DATA.augustin2026;
 
   const totalMAD = sum(d.virementsMaroc, 'dh');
@@ -265,7 +276,7 @@ function renderAugustin2026() {
   // Delta = Amine reçu − Augustin reçu + report 2025
   const delta = amineRecu - augustinRecuEUR + d.report2025;
 
-  let html = yearToggle('Az', 2026);
+  let html = embedded ? '' : yearToggle3('Az', 2026);
   html += `<h2 style="font-size:1.05rem;margin-bottom:16px">${d.title}</h2>`;
 
   html += `<div class="cards">
@@ -310,8 +321,19 @@ function renderAugustin2026() {
   return html;
 }
 
+// ---- BENOIT ALL ----
+function renderBenoitAll() {
+  let html = yearToggle3('Ba', 0);
+  html += `<h2 style="font-size:1.05rem;margin-bottom:18px">Benoit — Vue combinée 2025 / 2026</h2>`;
+  html += `<div style="margin-bottom:30px;padding-bottom:20px;border-bottom:2px solid var(--border)">`;
+  html += renderBenoit2026(true);
+  html += `</div>`;
+  html += renderBenoit2025(true);
+  return html;
+}
+
 // ---- BENOIT 2025 ----
-function renderBenoit2025() {
+function renderBenoit2025(embedded) {
   const d = DATA.benoit2025;
   const rate = d.commissionRate || 0; // 0 in public mode (encrypted)
 
@@ -334,7 +356,7 @@ function renderBenoit2025() {
   const solde = totalNetBenoit - totalPaye;
   const totalGains = totalCommission + totalGainFX;
 
-  let html = yearToggle('Ba', 2025);
+  let html = embedded ? '' : yearToggle3('Ba', 2025);
   html += `<h2 style="font-size:1.05rem;margin-bottom:6px">${d.title}</h2>`;
   html += `<p style="color:var(--muted);font-size:.8rem;margin-bottom:18px">${d.subtitle}</p>`;
 
@@ -407,7 +429,7 @@ function renderBenoit2025() {
 }
 
 // ---- BENOIT 2026 ----
-function renderBenoit2026() {
+function renderBenoit2026(embedded) {
   const d = DATA.benoit2026;
   const taux = d.tauxApplique || 0;
   const rate = d.commissionRate || 0;
@@ -446,7 +468,7 @@ function renderBenoit2026() {
   const soldeDu = report + totalNetBenoitPaid;
   const solde2026 = soldeDu - totalPaye;
 
-  let html = yearToggle('Ba', 2026);
+  let html = embedded ? '' : yearToggle3('Ba', 2026);
   html += `<h2 style="font-size:1.05rem;margin-bottom:6px">${d.title}</h2>`;
   if (window.PRIV) {
     html += `<p style="color:var(--muted);font-size:.8rem;margin-bottom:18px">Report 2025 : ${fmtSigned(report, 'DH')} (dû à Benoit). Taux appliqué 2026 : <strong>${fmtRate(taux)}</strong>. Réconciliation sur paiements Councils reçus uniquement.</p>`;
@@ -1137,8 +1159,8 @@ function renderMesGains() {
 function renderAll() {
   const azY = window.azYear || 2026;
   const baY = window.baYear || 2026;
-  document.getElementById('augustin').innerHTML = (azY === 2025) ? renderAugustin2025() : renderAugustin2026();
-  document.getElementById('benoit').innerHTML = (baY === 2025) ? renderBenoit2025() : renderBenoit2026();
+  document.getElementById('augustin').innerHTML = azY === 0 ? renderAugustinAll() : (azY === 2025) ? renderAugustin2025() : renderAugustin2026();
+  document.getElementById('benoit').innerHTML = baY === 0 ? renderBenoitAll() : (baY === 2025) ? renderBenoit2025() : renderBenoit2026();
   document.getElementById('fxp2p').innerHTML = renderFXP2P();
   document.getElementById('gains').innerHTML = renderMesGains();
 }

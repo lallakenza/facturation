@@ -142,9 +142,9 @@
   </div>
 </div>
 </div><!-- /site-wrap -->
-<script src="data.js?v=20"></script>
-<script src="data-priv.enc.js?v=20"></script>
-<script src="render.js?v=20"></script>
+<script src="data.js?v=21"></script>
+<script src="data-priv.enc.js?v=21"></script>
+<script src="render.js?v=21"></script>
 <script>
 // ---- ACCESS MODE ----
 window.ACCESS_MODE = null; // 'full' or 'benoit'
@@ -255,17 +255,11 @@ window.azYear = 2026;
 window.baYear = 2026;
 function switchAzYear(y){
   window.azYear = y;
-  document.getElementById('augustin').innerHTML = (y === 2025) ? renderAugustin2025() : renderAugustin2026();
-  document.querySelectorAll('#augustin .year-btn').forEach(b => {
-    b.classList.toggle('active', parseInt(b.dataset.year) === y);
-  });
+  document.getElementById('augustin').innerHTML = y === 0 ? renderAugustinAll() : (y === 2025) ? renderAugustin2025() : renderAugustin2026();
 }
 function switchBaYear(y){
   window.baYear = y;
-  document.getElementById('benoit').innerHTML = (y === 2025) ? renderBenoit2025() : renderBenoit2026();
-  document.querySelectorAll('#benoit .year-btn').forEach(b => {
-    b.classList.toggle('active', parseInt(b.dataset.year) === y);
-  });
+  document.getElementById('benoit').innerHTML = y === 0 ? renderBenoitAll() : (y === 2025) ? renderBenoit2025() : renderBenoit2026();
 }
 window.fxYear = 0;
 window.gainsYear = 0;
