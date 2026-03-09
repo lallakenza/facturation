@@ -54,6 +54,13 @@ function yearToggle(section, activeYear) {
     <div class="year-btn ${activeYear===2026?'active':''}" data-year="2026" onclick="switch${section}Year(2026)">2026</div>
   </div>`;
 }
+function yearToggle3(section, activeYear) {
+  return `<div class="year-toggle">
+    <div class="year-btn ${!activeYear?'active':''}" data-year="0" onclick="switch${section}Year(0)">Tout</div>
+    <div class="year-btn ${activeYear===2025?'active':''}" data-year="2025" onclick="switch${section}Year(2025)">2025</div>
+    <div class="year-btn ${activeYear===2026?'active':''}" data-year="2026" onclick="switch${section}Year(2026)">2026</div>
+  </div>`;
+}
 
 // ---- AUGUSTIN 2025 ----
 function renderAugustin2025() {
@@ -506,9 +513,12 @@ function renderBenoit2026() {
 function renderFXP2P() {
   if (!window.PRIV) return '<div style="padding:40px;text-align:center;color:var(--muted)"><p style="font-size:1.1rem">🔒 Section réservée</p></div>';
   const d = DATA.fxP2P;
+  const fy = window.fxYear || 0;
+  const yearFilter = fy ? (t => t.date.startsWith(String(fy))) : null;
 
   // ===== LEG 1: EUR → AED (IFX spread = perte) =====
-  const leg1 = d.leg1.transactions.map(t => {
+  const leg1raw = d.leg1.transactions;
+  const leg1 = (yearFilter ? leg1raw.filter(yearFilter) : leg1raw).map(t => {
     const aedMarche = t.eur * t.tauxMarche;
     const spreadAED = aedMarche - t.aed; // AED perdus (positif = perte)
     const spreadPct = ((t.tauxMarche - t.tauxIFX) / t.tauxMarche) * 100;
@@ -524,7 +534,8 @@ function renderFXP2P() {
 
   // ===== LEG 2: AED → USDT (P2P premium = perte) =====
   const peg = d.leg2.tauxMarche; // 3.6725
-  const leg2 = d.leg2.transactions.map(t => {
+  const leg2raw = d.leg2.transactions;
+  const leg2 = (yearFilter ? leg2raw.filter(yearFilter) : leg2raw).map(t => {
     const usdtMarche = t.aed / peg;
     const spreadUSDT = usdtMarche - t.usdt; // USDT perdus (positif = perte car on paie plus cher)
     const spreadAED = t.aed - (t.usdt * peg); // premium AED payé
@@ -539,7 +550,8 @@ function renderFXP2P() {
   const avgSpreadPctLeg2 = ((wavgPrixLeg2 - peg) / peg) * 100;
 
   // ===== LEG 3: USDT → MAD (P2P premium = gain) =====
-  const leg3 = d.leg3.transactions.map(t => {
+  const leg3raw = d.leg3.transactions;
+  const leg3 = (yearFilter ? leg3raw.filter(yearFilter) : leg3raw).map(t => {
     const mktRate = d.leg3.tauxMarche[t.date] || 0;
     const madMarche = t.usdt * mktRate;
     const spreadMAD = t.mad - madMarche; // MAD gagnés (positif = gain)
@@ -578,7 +590,9 @@ function renderFXP2P() {
 
   // Taux effectif EUR→MAD pour la portion P2P
   // EUR utilisé pour P2P = AED P2P / taux IFX moyen pondéré
-  let html = `<h2 style="font-size:1.05rem;margin-bottom:6px">${d.title}</h2>`;
+  const yearLabel = fy ? ` — ${fy}` : '';
+  let html = yearToggle3('Fx', fy);
+  html += `<h2 style="font-size:1.05rem;margin-bottom:6px">${d.title}${yearLabel}</h2>`;
   html += `<p style="color:var(--muted);font-size:.8rem;margin-bottom:18px">${d.subtitle}</p>`;
 
   // ===== HELPER: compute stats for a subset of transactions =====
@@ -625,22 +639,24 @@ function renderFXP2P() {
     };
   }
 
-  // ===== COMPUTE BOTH PERIODS =====
-  const cutoff3m = '2025-12-01'; // 3 derniers mois = Déc 2025+
+  // ===== COMPUTE PERIODS =====
   const all = computePeriodStats(leg1, leg2, leg3);
-  const leg1_3m = leg1.filter(t => t.date >= cutoff3m);
-  const leg2_3m = leg2.filter(t => t.date >= cutoff3m);
-  const leg3_3m = leg3.filter(t => t.date >= cutoff3m);
-  const r3m = computePeriodStats(leg1_3m, leg2_3m, leg3_3m);
+  let r3m = null;
+  if (!fy) {
+    const cutoff3m = '2025-12-01';
+    r3m = computePeriodStats(leg1.filter(t => t.date >= cutoff3m), leg2.filter(t => t.date >= cutoff3m), leg3.filter(t => t.date >= cutoff3m));
+  }
 
   // ===== CARDS =====
+  const periodLabel = fy ? String(fy) : 'total';
   html += `<div class="cards">
-    <div class="card"><div class="l">Spread EUR→MAD (total)</div><div class="v ${all.spreadEURMAD >= 0 ? 'green' : 'red'}">${all.spreadEURMAD >= 0 ? '+' : ''}${all.spreadEURMADpct.toFixed(2)}%</div></div>
-    <div class="card"><div class="l">Spread EUR→MAD (3 mois)</div><div class="v ${r3m.spreadEURMAD >= 0 ? 'green' : 'red'}">${r3m.spreadEURMAD >= 0 ? '+' : ''}${r3m.spreadEURMADpct.toFixed(2)}%</div></div>
-    <div class="card"><div class="l">Taux effectif (total)</div><div class="v blue">${all.effEURMAD.toFixed(2)}</div></div>
-    <div class="card"><div class="l">Taux effectif (3 mois)</div><div class="v blue">${r3m.effEURMAD.toFixed(2)}</div></div>
-    <div class="card"><div class="l">Impact sur 10k€ (total)</div><div class="v ${all.impEURMAD >= 0 ? 'green' : 'red'}">${all.impEURMAD >= 0 ? '+' : ''}${Math.round(all.impEURMAD)}€</div></div>
-    <div class="card"><div class="l">Impact sur 10k€ (3 mois)</div><div class="v ${r3m.impEURMAD >= 0 ? 'green' : 'red'}">${r3m.impEURMAD >= 0 ? '+' : ''}${Math.round(r3m.impEURMAD)}€</div></div>
+    <div class="card"><div class="l">Spread EUR→MAD (${periodLabel})</div><div class="v ${all.spreadEURMAD >= 0 ? 'green' : 'red'}">${all.spreadEURMAD >= 0 ? '+' : ''}${all.spreadEURMADpct.toFixed(2)}%</div></div>
+    ${r3m ? `<div class="card"><div class="l">Spread EUR→MAD (3 mois)</div><div class="v ${r3m.spreadEURMAD >= 0 ? 'green' : 'red'}">${r3m.spreadEURMAD >= 0 ? '+' : ''}${r3m.spreadEURMADpct.toFixed(2)}%</div></div>` : ''}
+    <div class="card"><div class="l">Taux effectif (${periodLabel})</div><div class="v blue">${all.effEURMAD.toFixed(2)}</div></div>
+    ${r3m ? `<div class="card"><div class="l">Taux effectif (3 mois)</div><div class="v blue">${r3m.effEURMAD.toFixed(2)}</div></div>` : ''}
+    <div class="card"><div class="l">Impact sur 10k€ (${periodLabel})</div><div class="v ${all.impEURMAD >= 0 ? 'green' : 'red'}">${all.impEURMAD >= 0 ? '+' : ''}${Math.round(all.impEURMAD)}€</div></div>
+    ${r3m ? `<div class="card"><div class="l">Impact sur 10k€ (3 mois)</div><div class="v ${r3m.impEURMAD >= 0 ? 'green' : 'red'}">${r3m.impEURMAD >= 0 ? '+' : ''}${Math.round(r3m.impEURMAD)}€</div></div>` : ''}
+    <div class="card"><div class="l">Transactions</div><div class="v">${leg1.length} / ${leg2.length} / ${leg3.length}</div></div>
   </div>`;
 
   // ===== Helper: format EUR impact =====
@@ -699,9 +715,15 @@ function renderFXP2P() {
     return h;
   }
 
-  // ===== RENDER BOTH TABLES =====
-  html += renderSynthTable('Synthèse — Période totale (depuis mars 2025)', all, 'total');
-  html += renderSynthTable(`Synthèse — 3 derniers mois (depuis déc. 2025) — ${leg1_3m.length} / ${leg2_3m.length} / ${leg3_3m.length} tx`, r3m, '3m');
+  // ===== RENDER TABLES =====
+  const synthLabel = fy ? `Synthèse — ${fy}` : 'Synthèse — Période totale (depuis mars 2025)';
+  html += renderSynthTable(synthLabel, all, 'total');
+  if (r3m) {
+    const l1_3m = leg1.filter(t => t.date >= '2025-12-01');
+    const l2_3m = leg2.filter(t => t.date >= '2025-12-01');
+    const l3_3m = leg3.filter(t => t.date >= '2025-12-01');
+    html += renderSynthTable(`Synthèse — 3 derniers mois (depuis déc. 2025) — ${l1_3m.length} / ${l2_3m.length} / ${l3_3m.length} tx`, r3m, '3m');
+  }
 
   html += `<div class="n"><strong>Impact (10k€)</strong> = pour chaque leg, combien tu gagnes ou perds en EUR sur une transaction de 10 000€. Les spreads s'additionnent : −89€ (IFX) − 21€ (buy) + 484€ (sell) = net. Le <strong>taux effectif EUR→MAD</strong> = chaîne de taux pondérés : taux IFX × prix vente P2P ÷ prix achat P2P.</div>`;
 
@@ -772,14 +794,15 @@ function renderFXP2P() {
   html += `<div class="s"><div class="st">Insights — Analyse du circuit P2P</div>`;
 
   // Insight 1: Effective EUR→MAD spread comparison
-  html += `<div class="insight ${all.spreadEURMAD >= 0 ? 'pass' : 'fail'}"><div class="t">${all.spreadEURMAD >= 0 ? '✅' : '❌'} Spread effectif EUR→MAD : ${all.spreadEURMAD >= 0 ? '+' : ''}${all.spreadEURMADpct.toFixed(2)}% (total) / ${r3m.spreadEURMAD >= 0 ? '+' : ''}${r3m.spreadEURMADpct.toFixed(2)}% (3 mois)</div><div class="d">
-    <strong>Période totale :</strong> taux effectif <strong>${all.effEURMAD.toFixed(2)} MAD/EUR</strong> vs marché ${all.mktEURMAD.toFixed(2)} → sur 10k€ : <strong>${fmtImpact(all.impEURMAD)}</strong>.<br>
-    <strong>3 derniers mois :</strong> taux effectif <strong>${r3m.effEURMAD.toFixed(2)} MAD/EUR</strong> vs marché ${r3m.mktEURMAD.toFixed(2)} → sur 10k€ : <strong>${fmtImpact(r3m.impEURMAD)}</strong>. ${r3m.spreadEURMADpct > all.spreadEURMADpct ? 'Le spread s\'améliore sur les 3 derniers mois.' : 'Le spread se dégrade légèrement sur les 3 derniers mois.'}
+  const r3mStr1 = r3m ? ` / ${r3m.spreadEURMAD >= 0 ? '+' : ''}${r3m.spreadEURMADpct.toFixed(2)}% (3 mois)` : '';
+  html += `<div class="insight ${all.spreadEURMAD >= 0 ? 'pass' : 'fail'}"><div class="t">${all.spreadEURMAD >= 0 ? '✅' : '❌'} Spread effectif EUR→MAD : ${all.spreadEURMAD >= 0 ? '+' : ''}${all.spreadEURMADpct.toFixed(2)}% (${periodLabel})${r3mStr1}</div><div class="d">
+    <strong>${fy ? fy : 'Période totale'} :</strong> taux effectif <strong>${all.effEURMAD.toFixed(2)} MAD/EUR</strong> vs marché ${all.mktEURMAD.toFixed(2)} → sur 10k€ : <strong>${fmtImpact(all.impEURMAD)}</strong>.${r3m ? `<br><strong>3 derniers mois :</strong> taux effectif <strong>${r3m.effEURMAD.toFixed(2)} MAD/EUR</strong> vs marché ${r3m.mktEURMAD.toFixed(2)} → sur 10k€ : <strong>${fmtImpact(r3m.impEURMAD)}</strong>. ${r3m.spreadEURMADpct > all.spreadEURMADpct ? 'Le spread s\'améliore sur les 3 derniers mois.' : 'Le spread se dégrade légèrement sur les 3 derniers mois.'}` : ''}
   </div></div>`;
 
   // Insight 2: Net gain per period
-  html += `<div class="insight ${all.impNet >= 0 ? 'pass' : 'warn'}"><div class="t">${all.impNet >= 0 ? '✅' : '⚠️'} Bilan net P2P par 10k€ : ${fmtImpact(all.impNet)} (total) / ${fmtImpact(r3m.impNet)} (3 mois)</div><div class="d">
-    Le gain du Leg 3 (vente USDT→MAD à +${all.l3.pct.toFixed(1)}%) ${all.impNet >= 0 ? 'compense' : 'ne compense pas totalement'} les pertes des Legs 1 et 2. Sur les 3 derniers mois, le premium MAD est de <strong>+${r3m.l3.pct.toFixed(1)}%</strong> (vs ${all.l3.pct.toFixed(1)}% sur la période totale).
+  const r3mStr2 = r3m ? ` / ${fmtImpact(r3m.impNet)} (3 mois)` : '';
+  html += `<div class="insight ${all.impNet >= 0 ? 'pass' : 'warn'}"><div class="t">${all.impNet >= 0 ? '✅' : '⚠️'} Bilan net P2P par 10k€ : ${fmtImpact(all.impNet)} (${periodLabel})${r3mStr2}</div><div class="d">
+    Le gain du Leg 3 (vente USDT→MAD à +${all.l3.pct.toFixed(1)}%) ${all.impNet >= 0 ? 'compense' : 'ne compense pas totalement'} les pertes des Legs 1 et 2.${r3m ? ` Sur les 3 derniers mois, le premium MAD est de <strong>+${r3m.l3.pct.toFixed(1)}%</strong> (vs ${all.l3.pct.toFixed(1)}% sur la période totale).` : ''}
   </div></div>`;
 
   // Insight 3: Leg 3 dominance
@@ -789,8 +812,10 @@ function renderFXP2P() {
   </div></div>`;
 
   // Insight 4: Leg 1 IFX spread
-  html += `<div class="insight warn"><div class="t">🏦 Spread IFX (Leg 1) : −${all.l1.pct.toFixed(2)}% (total) / −${r3m.l1.pct.toFixed(2)}% (3 mois) → ${fmtImpact(all.l1.impact)} sur 10k€</div><div class="d">
-    IFX prend en moyenne <strong>${all.l1.pct.toFixed(2)}%</strong> de spread sur la conversion EUR→AED, soit <strong>${fmtImpact(all.l1.impact)}</strong> par tranche de 10 000€. ${r3m.l1.pct < all.l1.pct ? 'Le spread IFX s\'améliore sur les 3 derniers mois (' + r3m.l1.pct.toFixed(2) + '%).' : 'Le spread IFX est stable sur les 3 derniers mois.'}
+  const r3mStr4 = r3m ? ` / −${r3m.l1.pct.toFixed(2)}% (3 mois)` : '';
+  const r3mDetail4 = r3m ? ` ${r3m.l1.pct < all.l1.pct ? 'Le spread IFX s\'améliore sur les 3 derniers mois (' + r3m.l1.pct.toFixed(2) + '%).' : 'Le spread IFX est stable sur les 3 derniers mois.'}` : '';
+  html += `<div class="insight warn"><div class="t">🏦 Spread IFX (Leg 1) : −${all.l1.pct.toFixed(2)}% (${periodLabel})${r3mStr4} → ${fmtImpact(all.l1.impact)} sur 10k€</div><div class="d">
+    IFX prend en moyenne <strong>${all.l1.pct.toFixed(2)}%</strong> de spread sur la conversion EUR→AED, soit <strong>${fmtImpact(all.l1.impact)}</strong> par tranche de 10 000€.${r3mDetail4}
   </div></div>`;
 
   // Insight 5: Leg 2 minimal
@@ -806,8 +831,9 @@ function renderFXP2P() {
   </div></div>`;
 
   // Insight 7: EUR→MAD comparison with bank
+  const r3mStr7 = r3m ? ` et <strong>${r3m.effEURMAD.toFixed(2)}</strong> (3 mois)` : '';
   html += `<div class="insight pass"><div class="t">🌍 P2P vs banque : taux effectif ${all.effEURMAD.toFixed(2)} vs ~10,5–10,8 (banque classique)</div><div class="d">
-    Le taux effectif EUR→MAD via P2P est de <strong>${all.effEURMAD.toFixed(2)}</strong> (total) et <strong>${r3m.effEURMAD.toFixed(2)}</strong> (3 mois). Un virement classique EUR→MAD via banque donne environ 10,5–10,8. Le circuit P2P est donc <strong>${all.effEURMAD > 10.8 ? 'nettement plus avantageux' : all.effEURMAD > 10.5 ? 'comparable ou légèrement avantageux' : 'comparable'}</strong>.
+    Le taux effectif EUR→MAD via P2P est de <strong>${all.effEURMAD.toFixed(2)}</strong> (${periodLabel})${r3mStr7}. Un virement classique EUR→MAD via banque donne environ 10,5–10,8. Le circuit P2P est donc <strong>${all.effEURMAD > 10.8 ? 'nettement plus avantageux' : all.effEURMAD > 10.5 ? 'comparable ou légèrement avantageux' : 'comparable'}</strong>.
   </div></div>`;
 
   // Insight 8: USDT remaining
@@ -819,7 +845,7 @@ function renderFXP2P() {
 
   // Method note
   html += `<div class="n ok">
-    <strong>Méthode :</strong> <strong>Leg 1</strong> — données IFX vs taux marché EUR/AED du jour (fawazahmed0/currency-api). <strong>Leg 2</strong> — prix P2P Binance vs peg AED/USD (3,6725). <strong>Leg 3</strong> — prix P2P Binance vs USD/MAD marché. <strong>Taux effectif EUR→MAD</strong> = chaîne de taux pondérés (IFX × sell ÷ buy). <strong>Impact (10k€)</strong> = spread% × 10 000 EUR (approximation linéaire). <strong>3 derniers mois</strong> = transactions depuis déc. 2025.
+    <strong>Méthode :</strong> <strong>Leg 1</strong> — données IFX vs taux marché EUR/AED du jour (fawazahmed0/currency-api). <strong>Leg 2</strong> — prix P2P Binance vs peg AED/USD (3,6725). <strong>Leg 3</strong> — prix P2P Binance vs USD/MAD marché. <strong>Taux effectif EUR→MAD</strong> = chaîne de taux pondérés (IFX × sell ÷ buy). <strong>Impact (10k€)</strong> = spread% × 10 000 EUR (approximation linéaire).${r3m ? ' <strong>3 derniers mois</strong> = transactions depuis déc. 2025.' : ''}
   </div>`;
 
   return html;
@@ -953,69 +979,78 @@ function renderMesGains() {
   const gains2026 = gainMAD_az26 + commBenoit26 + fxBenoit26 + Math.round(p2pSavingBenoit26);
   const grandTotal = gains2025 + gains2026;
 
+  // ===== YEAR FILTER =====
+  const gy = window.gainsYear || 0;
+  const show25 = !gy || gy === 2025;
+  const show26 = !gy || gy === 2026;
+  const filteredTotal = gy === 2025 ? gains2025 : gy === 2026 ? gains2026 : grandTotal;
+  const periodLabel = gy ? String(gy) : '2025 / 2026';
+
   // ===== BUILD HTML =====
-  let html = `<h2 style="font-size:1.05rem;margin-bottom:6px">Mes Gains — Synthèse 2025 / 2026</h2>`;
-  html += `<p style="color:var(--muted);font-size:.8rem;margin-bottom:18px">Gains générés par l'activité de facturation et le pipeline FX P2P, ventilés par année. Tous les montants en MAD.</p>`;
+  let html = yearToggle3('Gains', gy);
+  html += `<h2 style="font-size:1.05rem;margin-bottom:6px">Mes Gains — Synthèse ${periodLabel}</h2>`;
+  html += `<p style="color:var(--muted);font-size:.8rem;margin-bottom:18px">Gains générés par l'activité de facturation et le pipeline FX P2P${gy ? ` (${gy})` : ', ventilés par année'}. Tous les montants en MAD.</p>`;
 
   // Grand total + year cards
   html += `<div class="cards">
-    <div class="card"><div class="l">Total gains (MAD)</div><div class="v green">${fmtPlain(Math.round(grandTotal))} DH</div></div>
-    <div class="card"><div class="l">Gains 2025</div><div class="v green">${fmtPlain(Math.round(gains2025))} DH</div></div>
-    <div class="card"><div class="l">Gains 2026</div><div class="v green">${fmtPlain(Math.round(gains2026))} DH</div></div>
-    <div class="card"><div class="l">≈ Total en EUR</div><div class="v green">${fmtPlain(Math.round(grandTotal / effEURMAD))} €</div></div>
+    <div class="card"><div class="l">Total gains ${gy || ''} (MAD)</div><div class="v green">${fmtPlain(Math.round(filteredTotal))} DH</div></div>
+    ${show25 ? `<div class="card"><div class="l">Gains 2025</div><div class="v green">${fmtPlain(Math.round(gains2025))} DH</div></div>` : ''}
+    ${show26 ? `<div class="card"><div class="l">Gains 2026</div><div class="v green">${fmtPlain(Math.round(gains2026))} DH</div></div>` : ''}
+    <div class="card"><div class="l">≈ Total en EUR</div><div class="v green">${fmtPlain(Math.round(filteredTotal / effEURMAD))} €</div></div>
   </div>`;
 
   // Spread cards
   html += `<div class="cards">
-    <div class="card"><div class="l">Spread global</div><div class="v blue">${rAll.spread.toFixed(2).replace('.',',')}%</div></div>
-    <div class="card"><div class="l">Spread 2025</div><div class="v blue">${r2025 ? r2025.spread.toFixed(2).replace('.',',') + '%' : '—'}</div></div>
-    <div class="card"><div class="l">Spread 2026</div><div class="v blue">${r2026 ? r2026.spread.toFixed(2).replace('.',',') + '%' : '—'}</div></div>
-    <div class="card"><div class="l">Taux effectif global</div><div class="v yellow">${effEURMAD.toFixed(3).replace('.',',')} MAD/€</div></div>
+    ${!gy ? `<div class="card"><div class="l">Spread global</div><div class="v blue">${rAll.spread.toFixed(2).replace('.',',')}%</div></div>` : ''}
+    ${show25 ? `<div class="card"><div class="l">Spread 2025</div><div class="v blue">${r2025 ? r2025.spread.toFixed(2).replace('.',',') + '%' : '—'}</div></div>` : ''}
+    ${show26 ? `<div class="card"><div class="l">Spread 2026</div><div class="v blue">${r2026 ? r2026.spread.toFixed(2).replace('.',',') + '%' : '—'}</div></div>` : ''}
+    <div class="card"><div class="l">Taux effectif ${gy || 'global'}</div><div class="v yellow">${(gy === 2025 ? eff25 : gy === 2026 ? eff26 : effEURMAD).toFixed(3).replace('.',',')} MAD/€</div></div>
   </div>`;
 
   // Taux effectif per year
   html += `<div class="cards">
-    <div class="card"><div class="l">Taux eff. 2025</div><div class="v yellow">${r2025 ? eff25.toFixed(3).replace('.',',') : '—'} MAD/€</div></div>
-    <div class="card"><div class="l">Taux marché 2025</div><div class="v">${r2025 ? mkt25.toFixed(3).replace('.',',') : '—'} MAD/€</div></div>
-    <div class="card"><div class="l">Taux eff. 2026</div><div class="v yellow">${r2026 ? eff26.toFixed(3).replace('.',',') : '—'} MAD/€</div></div>
-    <div class="card"><div class="l">Taux marché 2026</div><div class="v">${r2026 ? mkt26.toFixed(3).replace('.',',') : '—'} MAD/€</div></div>
+    ${show25 ? `<div class="card"><div class="l">Taux eff. 2025</div><div class="v yellow">${r2025 ? eff25.toFixed(3).replace('.',',') : '—'} MAD/€</div></div>
+    <div class="card"><div class="l">Taux marché 2025</div><div class="v">${r2025 ? mkt25.toFixed(3).replace('.',',') : '—'} MAD/€</div></div>` : ''}
+    ${show26 ? `<div class="card"><div class="l">Taux eff. 2026</div><div class="v yellow">${r2026 ? eff26.toFixed(3).replace('.',',') : '—'} MAD/€</div></div>
+    <div class="card"><div class="l">Taux marché 2026</div><div class="v">${r2026 ? mkt26.toFixed(3).replace('.',',') : '—'} MAD/€</div></div>` : ''}
   </div>`;
 
   // ===== TABLE RÉCAPITULATIVE =====
-  html += `<div class="s"><div class="st">Récapitulatif des gains par source et année</div><table>
-    <thead><tr><th>Source</th><th>Détail</th><th style="text-align:right">2025 (DH)</th><th style="text-align:right">2026 (DH)</th><th style="text-align:right">Total (DH)</th></tr></thead><tbody>`;
-
-  // Augustin
-  html += `<tr><td><strong>Virements Augustin</strong></td><td>${fmtPlain(totalDH25 + totalDH26)} DH envoyés</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(gainMAD_az25), '')}</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(gainMAD_az26), '')}</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(totalGainAz), '')}</td></tr>`;
-
-  // Commission Ycarré (2025 only)
-  html += `<tr><td><strong>Commission Ycarré 8%</strong></td><td>${fmtPlain(ycarreTotal)} € × 8%</td><td class="a" style="color:var(--green)">${fmtSigned(commYcarréMAD, '')}</td><td class="a">—</td><td class="a" style="color:var(--green)">${fmtSigned(commYcarréMAD, '')}</td></tr>`;
-
-  // Commission Benoit
-  html += `<tr><td><strong>Commission Benoit 10%</strong></td><td>Sur factures councils</td><td class="a" style="color:var(--green)">${fmtSigned(commBenoit25, '')}</td><td class="a" style="color:var(--green)">${fmtSigned(commBenoit26, '')}</td><td class="a" style="color:var(--green)">${fmtSigned(totalComm, '')}</td></tr>`;
-
-  // FX Benoit
-  html += `<tr><td><strong>Écart taux Benoit</strong></td><td>Appliqué &lt; marché</td><td class="a" style="color:var(--green)">${fmtSigned(fxBenoit25, '')}</td><td class="a" style="color:var(--green)">${fmtSigned(fxBenoit26, '')}</td><td class="a" style="color:var(--green)">${fmtSigned(totalFxBenoit, '')}</td></tr>`;
-
-  // P2P spread on Benoit
-  html += `<tr><td><strong>Spread P2P Benoit</strong></td><td>Binance vs banque</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(p2pSavingBenoit25), '')}</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(p2pSavingBenoit26), '')}</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(p2pSavingBenoit), '')}</td></tr>`;
-
-  // Year subtotals
-  html += `<tr class="tr"><td><strong>SOUS-TOTAL 2025</strong></td><td></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(Math.round(gains2025), ' DH')}</strong></td><td></td><td></td></tr>`;
-  html += `<tr class="tr"><td><strong>SOUS-TOTAL 2026</strong></td><td></td><td></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(Math.round(gains2026), ' DH')}</strong></td><td></td></tr>`;
-
-  // Grand total
-  html += `<tr class="tr" style="background:rgba(76,175,80,.08)"><td><strong>TOTAL GAINS</strong></td><td></td><td></td><td></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(Math.round(grandTotal), ' DH')}</strong></td></tr>`;
-  html += `</tbody></table></div>`;
+  if (!gy) {
+    // Full 2-year table
+    html += `<div class="s"><div class="st">Récapitulatif des gains par source et année</div><table>
+      <thead><tr><th>Source</th><th>Détail</th><th style="text-align:right">2025 (DH)</th><th style="text-align:right">2026 (DH)</th><th style="text-align:right">Total (DH)</th></tr></thead><tbody>`;
+    html += `<tr><td><strong>Virements Augustin</strong></td><td>${fmtPlain(totalDH25 + totalDH26)} DH envoyés</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(gainMAD_az25), '')}</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(gainMAD_az26), '')}</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(totalGainAz), '')}</td></tr>`;
+    html += `<tr><td><strong>Commission Ycarré 8%</strong></td><td>${fmtPlain(ycarreTotal)} € × 8%</td><td class="a" style="color:var(--green)">${fmtSigned(commYcarréMAD, '')}</td><td class="a">—</td><td class="a" style="color:var(--green)">${fmtSigned(commYcarréMAD, '')}</td></tr>`;
+    html += `<tr><td><strong>Commission Benoit 10%</strong></td><td>Sur factures councils</td><td class="a" style="color:var(--green)">${fmtSigned(commBenoit25, '')}</td><td class="a" style="color:var(--green)">${fmtSigned(commBenoit26, '')}</td><td class="a" style="color:var(--green)">${fmtSigned(totalComm, '')}</td></tr>`;
+    html += `<tr><td><strong>Écart taux Benoit</strong></td><td>Appliqué &lt; marché</td><td class="a" style="color:var(--green)">${fmtSigned(fxBenoit25, '')}</td><td class="a" style="color:var(--green)">${fmtSigned(fxBenoit26, '')}</td><td class="a" style="color:var(--green)">${fmtSigned(totalFxBenoit, '')}</td></tr>`;
+    html += `<tr><td><strong>Spread P2P Benoit</strong></td><td>Binance vs banque</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(p2pSavingBenoit25), '')}</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(p2pSavingBenoit26), '')}</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(p2pSavingBenoit), '')}</td></tr>`;
+    html += `<tr class="tr"><td><strong>SOUS-TOTAL 2025</strong></td><td></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(Math.round(gains2025), ' DH')}</strong></td><td></td><td></td></tr>`;
+    html += `<tr class="tr"><td><strong>SOUS-TOTAL 2026</strong></td><td></td><td></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(Math.round(gains2026), ' DH')}</strong></td><td></td></tr>`;
+    html += `<tr class="tr" style="background:rgba(76,175,80,.08)"><td><strong>TOTAL GAINS</strong></td><td></td><td></td><td></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(Math.round(grandTotal), ' DH')}</strong></td></tr>`;
+    html += `</tbody></table></div>`;
+  } else {
+    // Single year table
+    html += `<div class="s"><div class="st">Récapitulatif des gains — ${gy}</div><table>
+      <thead><tr><th>Source</th><th>Détail</th><th style="text-align:right">Montant (DH)</th></tr></thead><tbody>`;
+    html += `<tr><td><strong>Virements Augustin</strong></td><td>${fmtPlain(gy===2025 ? totalDH25 : totalDH26)} DH envoyés</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(gy===2025 ? gainMAD_az25 : gainMAD_az26), '')}</td></tr>`;
+    if (gy === 2025) html += `<tr><td><strong>Commission Ycarré 8%</strong></td><td>${fmtPlain(ycarreTotal)} € × 8%</td><td class="a" style="color:var(--green)">${fmtSigned(commYcarréMAD, '')}</td></tr>`;
+    html += `<tr><td><strong>Commission Benoit 10%</strong></td><td>Sur factures councils</td><td class="a" style="color:var(--green)">${fmtSigned(gy===2025 ? commBenoit25 : commBenoit26, '')}</td></tr>`;
+    html += `<tr><td><strong>Écart taux Benoit</strong></td><td>Appliqué &lt; marché</td><td class="a" style="color:var(--green)">${fmtSigned(gy===2025 ? fxBenoit25 : fxBenoit26, '')}</td></tr>`;
+    html += `<tr><td><strong>Spread P2P Benoit</strong></td><td>Binance vs banque</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(gy===2025 ? p2pSavingBenoit25 : p2pSavingBenoit26), '')}</td></tr>`;
+    html += `<tr class="tr" style="background:rgba(76,175,80,.08)"><td><strong>TOTAL ${gy}</strong></td><td></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(Math.round(filteredTotal), ' DH')}</strong></td></tr>`;
+    html += `</tbody></table></div>`;
+  }
 
   // ===== BREAKDOWN AUGUSTIN =====
   html += `<div class="s"><div class="st">Détail — Virements Augustin (Maroc)</div>`;
-  html += `<div class="n ok"><strong>2025 :</strong> taux Augustin = <strong>${tauxAz25}</strong>, taux effectif P2P = <strong>${eff25.toFixed(3).replace('.',',')}</strong> → gain de <strong>${(eff25 - tauxAz25).toFixed(3).replace('.',',')}</strong> MAD/EUR.<br><strong>2026 :</strong> taux Augustin = <strong>${tauxAz26}</strong>, taux effectif P2P = <strong>${eff26.toFixed(3).replace('.',',')}</strong> → gain de <strong>${(eff26 - tauxAz26).toFixed(3).replace('.',',')}</strong> MAD/EUR.</div>`;
+  if (show25) html += `<div class="n ok"><strong>2025 :</strong> taux Augustin = <strong>${tauxAz25}</strong>, taux effectif P2P = <strong>${eff25.toFixed(3).replace('.',',')}</strong> → gain de <strong>${(eff25 - tauxAz25).toFixed(3).replace('.',',')}</strong> MAD/EUR.</div>`;
+  if (show26) html += `<div class="n ok"><strong>2026 :</strong> taux Augustin = <strong>${tauxAz26}</strong>, taux effectif P2P = <strong>${eff26.toFixed(3).replace('.',',')}</strong> → gain de <strong>${(eff26 - tauxAz26).toFixed(3).replace('.',',')}</strong> MAD/EUR.</div>`;
 
   html += `<table><thead><tr><th>Période</th><th style="text-align:right">Taux eff. P2P</th><th style="text-align:right">DH envoyés</th><th style="text-align:right">EUR crédités</th><th style="text-align:right">Coût réel EUR</th><th style="text-align:right">Gain EUR</th><th style="text-align:right">Gain MAD</th></tr></thead><tbody>`;
-  html += `<tr><td>2025 (Fév-Déc)</td><td class="a">${eff25.toFixed(3).replace('.',',')}</td><td class="a">${fmtPlain(totalDH25)}</td><td class="a">${fmtPlain(eurCredite25)}</td><td class="a">${fmtPlain(Math.round(eurCoutP2P25))}</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(gainEUR_az25), '')}</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(gainMAD_az25), '')}</td></tr>`;
-  html += `<tr><td>2026 (Jan-Fév)</td><td class="a">${eff26.toFixed(3).replace('.',',')}</td><td class="a">${fmtPlain(totalDH26)}</td><td class="a">${fmtPlain(eurCredite26)}</td><td class="a">${fmtPlain(Math.round(eurCoutP2P26))}</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(gainEUR_az26), '')}</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(gainMAD_az26), '')}</td></tr>`;
-  html += `<tr class="tr"><td><strong>Total</strong></td><td></td><td class="a"><strong>${fmtPlain(totalDH25 + totalDH26)}</strong></td><td class="a"><strong>${fmtPlain(eurCredite25 + eurCredite26)}</strong></td><td class="a"><strong>${fmtPlain(Math.round(eurCoutP2P25 + eurCoutP2P26))}</strong></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(Math.round(gainEUR_az25 + gainEUR_az26), '')}</strong></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(Math.round(gainMAD_az25 + gainMAD_az26), '')}</strong></td></tr>`;
+  if (show25) html += `<tr><td>2025 (Fév-Déc)</td><td class="a">${eff25.toFixed(3).replace('.',',')}</td><td class="a">${fmtPlain(totalDH25)}</td><td class="a">${fmtPlain(eurCredite25)}</td><td class="a">${fmtPlain(Math.round(eurCoutP2P25))}</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(gainEUR_az25), '')}</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(gainMAD_az25), '')}</td></tr>`;
+  if (show26) html += `<tr><td>2026 (Jan-Fév)</td><td class="a">${eff26.toFixed(3).replace('.',',')}</td><td class="a">${fmtPlain(totalDH26)}</td><td class="a">${fmtPlain(eurCredite26)}</td><td class="a">${fmtPlain(Math.round(eurCoutP2P26))}</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(gainEUR_az26), '')}</td><td class="a" style="color:var(--green)">${fmtSigned(Math.round(gainMAD_az26), '')}</td></tr>`;
+  if (!gy) html += `<tr class="tr"><td><strong>Total</strong></td><td></td><td class="a"><strong>${fmtPlain(totalDH25 + totalDH26)}</strong></td><td class="a"><strong>${fmtPlain(eurCredite25 + eurCredite26)}</strong></td><td class="a"><strong>${fmtPlain(Math.round(eurCoutP2P25 + eurCoutP2P26))}</strong></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(Math.round(gainEUR_az25 + gainEUR_az26), '')}</strong></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(Math.round(gainMAD_az25 + gainMAD_az26), '')}</strong></td></tr>`;
   html += `</tbody></table></div>`;
 
   // ===== BREAKDOWN BENOIT =====
@@ -1023,61 +1058,75 @@ function renderMesGains() {
 
   html += `<table><thead><tr><th>Date</th><th style="text-align:right">HT (€)</th><th style="text-align:right">Taux appliqué</th><th style="text-align:right">Taux marché</th><th style="text-align:right">Commission 10% (DH)</th><th style="text-align:right">Gain taux (DH)</th></tr></thead><tbody>`;
   let sumComm = 0, sumFxB = 0;
-  // Benoit 2025 header
-  html += `<tr style="background:rgba(33,150,243,.06)"><td colspan="6"><strong>— 2025 —</strong></td></tr>`;
-  b25.councils.forEach(m => {
-    const dh = Math.round(m.htEUR * m.tauxApplique);
-    const comm = Math.round(dh * b25.commissionRate);
-    const fx = Math.round(m.htEUR * (m.tauxMarche - m.tauxApplique));
-    sumComm += comm; sumFxB += fx;
-    html += `<tr><td>${m.date}</td><td class="a">${fmtPlain(m.htEUR)}</td><td class="a">${fmtRate(m.tauxApplique)}</td><td class="a">${fmtRate(m.tauxMarche)}</td><td class="a" style="color:var(--green)">${fmtPlain(comm)}</td><td class="a" style="color:var(--green)">${fmtSigned(fx, '')}</td></tr>`;
-  });
-  html += `<tr class="tr"><td><strong>S/T 2025</strong></td><td></td><td></td><td></td><td class="a" style="color:var(--green)"><strong>${fmtPlain(commBenoit25)}</strong></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(fxBenoit25, '')}</strong></td></tr>`;
-  // Benoit 2026 header
-  html += `<tr style="background:rgba(33,150,243,.06)"><td colspan="6"><strong>— 2026 —</strong></td></tr>`;
-  b26.councils.filter(m => m.statut === 'ok').forEach(m => {
-    const dh = Math.round(m.htEUR * b26.tauxApplique);
-    const comm = Math.round(dh * b26.commissionRate);
-    const fx = m.tauxMarche ? Math.round(m.htEUR * (m.tauxMarche - b26.tauxApplique)) : 0;
-    sumComm += comm; sumFxB += fx;
-    html += `<tr><td>${m.mois} 2026</td><td class="a">${fmtPlain(m.htEUR)}</td><td class="a">${fmtRate(b26.tauxApplique)}</td><td class="a">${m.tauxMarche ? fmtRate(m.tauxMarche) : '—'}</td><td class="a" style="color:var(--green)">${fmtPlain(comm)}</td><td class="a" style="color:var(--green)">${m.tauxMarche ? fmtSigned(fx, '') : '—'}</td></tr>`;
-  });
-  html += `<tr class="tr"><td><strong>S/T 2026</strong></td><td></td><td></td><td></td><td class="a" style="color:var(--green)"><strong>${fmtPlain(commBenoit26)}</strong></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(fxBenoit26, '')}</strong></td></tr>`;
-  html += `<tr class="tr"><td><strong>Total</strong></td><td></td><td></td><td></td><td class="a" style="color:var(--green)"><strong>${fmtPlain(sumComm)}</strong></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(sumFxB, '')}</strong></td></tr>`;
+  if (show25) {
+    html += `<tr style="background:rgba(33,150,243,.06)"><td colspan="6"><strong>— 2025 —</strong></td></tr>`;
+    b25.councils.forEach(m => {
+      const dh = Math.round(m.htEUR * m.tauxApplique);
+      const comm = Math.round(dh * b25.commissionRate);
+      const fx = Math.round(m.htEUR * (m.tauxMarche - m.tauxApplique));
+      sumComm += comm; sumFxB += fx;
+      html += `<tr><td>${m.date}</td><td class="a">${fmtPlain(m.htEUR)}</td><td class="a">${fmtRate(m.tauxApplique)}</td><td class="a">${fmtRate(m.tauxMarche)}</td><td class="a" style="color:var(--green)">${fmtPlain(comm)}</td><td class="a" style="color:var(--green)">${fmtSigned(fx, '')}</td></tr>`;
+    });
+    html += `<tr class="tr"><td><strong>S/T 2025</strong></td><td></td><td></td><td></td><td class="a" style="color:var(--green)"><strong>${fmtPlain(commBenoit25)}</strong></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(fxBenoit25, '')}</strong></td></tr>`;
+  }
+  if (show26) {
+    html += `<tr style="background:rgba(33,150,243,.06)"><td colspan="6"><strong>— 2026 —</strong></td></tr>`;
+    b26.councils.filter(m => m.statut === 'ok').forEach(m => {
+      const dh = Math.round(m.htEUR * b26.tauxApplique);
+      const comm = Math.round(dh * b26.commissionRate);
+      const fx = m.tauxMarche ? Math.round(m.htEUR * (m.tauxMarche - b26.tauxApplique)) : 0;
+      sumComm += comm; sumFxB += fx;
+      html += `<tr><td>${m.mois} 2026</td><td class="a">${fmtPlain(m.htEUR)}</td><td class="a">${fmtRate(b26.tauxApplique)}</td><td class="a">${m.tauxMarche ? fmtRate(m.tauxMarche) : '—'}</td><td class="a" style="color:var(--green)">${fmtPlain(comm)}</td><td class="a" style="color:var(--green)">${m.tauxMarche ? fmtSigned(fx, '') : '—'}</td></tr>`;
+    });
+    html += `<tr class="tr"><td><strong>S/T 2026</strong></td><td></td><td></td><td></td><td class="a" style="color:var(--green)"><strong>${fmtPlain(commBenoit26)}</strong></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(fxBenoit26, '')}</strong></td></tr>`;
+  }
+  if (!gy) html += `<tr class="tr"><td><strong>Total</strong></td><td></td><td></td><td></td><td class="a" style="color:var(--green)"><strong>${fmtPlain(sumComm)}</strong></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(sumFxB, '')}</strong></td></tr>`;
   html += `</tbody></table></div>`;
 
   // ===== INSIGHTS =====
-  html += `<div class="s"><div class="st">Insights</div>`;
+  html += `<div class="s"><div class="st">Insights${gy ? ' — ' + gy : ''}</div>`;
 
-  // Insight 1: Year comparison
-  html += `<div class="insight pass"><div class="t">📊 2025 vs 2026 : ${fmtPlain(Math.round(gains2025))} DH vs ${fmtPlain(Math.round(gains2026))} DH</div><div class="d">2025 représente <strong>${(gains2025/grandTotal*100).toFixed(1)}%</strong> des gains (${Math.round(gains2025/11)} DH/mois sur 11 mois). 2026 a généré <strong>${fmtPlain(Math.round(gains2026))} DH</strong> en seulement 2 mois (${Math.round(gains2026/2)} DH/mois).</div></div>`;
+  if (!gy) {
+    // Insight 1: Year comparison (Tout only)
+    html += `<div class="insight pass"><div class="t">📊 2025 vs 2026 : ${fmtPlain(Math.round(gains2025))} DH vs ${fmtPlain(Math.round(gains2026))} DH</div><div class="d">2025 représente <strong>${(gains2025/grandTotal*100).toFixed(1)}%</strong> des gains (${Math.round(gains2025/11)} DH/mois sur 11 mois). 2026 a généré <strong>${fmtPlain(Math.round(gains2026))} DH</strong> en seulement 2 mois (${Math.round(gains2026/2)} DH/mois).</div></div>`;
+    // Insight 2: Spread comparison
+    html += `<div class="insight pass"><div class="t">📈 Spread P2P : ${r2025 ? r2025.spread.toFixed(2).replace('.',',') + '% (2025)' : '—'} vs ${r2026 ? r2026.spread.toFixed(2).replace('.',',') + '% (2026)' : '—'}</div><div class="d">Taux effectif 2025 : <strong>${eff25.toFixed(3).replace('.',',')}</strong> MAD/€ (marché ${mkt25.toFixed(3).replace('.',',')}). Taux effectif 2026 : <strong>${eff26.toFixed(3).replace('.',',')}</strong> MAD/€ (marché ${mkt26.toFixed(3).replace('.',',')}).</div></div>`;
+  }
 
-  // Insight 2: Spread comparison
-  html += `<div class="insight pass"><div class="t">📈 Spread P2P : ${r2025 ? r2025.spread.toFixed(2).replace('.',',') + '% (2025)' : '—'} vs ${r2026 ? r2026.spread.toFixed(2).replace('.',',') + '% (2026)' : '—'}</div><div class="d">Taux effectif 2025 : <strong>${eff25.toFixed(3).replace('.',',')}</strong> MAD/€ (marché ${mkt25.toFixed(3).replace('.',',')}). Taux effectif 2026 : <strong>${eff26.toFixed(3).replace('.',',')}</strong> MAD/€ (marché ${mkt26.toFixed(3).replace('.',',')}).</div></div>`;
-
-  // Insight 3: gain per EUR
+  // Gain per EUR (adapted for year filter)
   const gainPerEUR25 = eff25 - tauxAz25;
   const gainPerEUR26 = eff26 - tauxAz26;
-  html += `<div class="insight pass"><div class="t">💰 Gain par EUR crédité : ${gainPerEUR25.toFixed(2).replace('.',',')} (2025) vs ${gainPerEUR26.toFixed(2).replace('.',',')} (2026)</div><div class="d">En 2025, chaque EUR crédité chez Augustin rapporte <strong>${fmtPlain(Math.round(gainPerEUR25 * 1000))} DH/1000€</strong>. En 2026 : <strong>${fmtPlain(Math.round(gainPerEUR26 * 1000))} DH/1000€</strong>.</div></div>`;
+  if (gy === 2025) {
+    html += `<div class="insight pass"><div class="t">💰 Gain par EUR crédité 2025 : ${gainPerEUR25.toFixed(2).replace('.',',')} MAD/€</div><div class="d">Chaque EUR crédité chez Augustin rapporte <strong>${fmtPlain(Math.round(gainPerEUR25 * 1000))} DH/1000€</strong>. Taux effectif P2P : ${eff25.toFixed(3).replace('.',',')} vs taux Augustin : ${tauxAz25}.</div></div>`;
+  } else if (gy === 2026) {
+    html += `<div class="insight pass"><div class="t">💰 Gain par EUR crédité 2026 : ${gainPerEUR26.toFixed(2).replace('.',',')} MAD/€</div><div class="d">Chaque EUR crédité chez Augustin rapporte <strong>${fmtPlain(Math.round(gainPerEUR26 * 1000))} DH/1000€</strong>. Taux effectif P2P : ${eff26.toFixed(3).replace('.',',')} vs taux Augustin : ${tauxAz26}.</div></div>`;
+  } else {
+    html += `<div class="insight pass"><div class="t">💰 Gain par EUR crédité : ${gainPerEUR25.toFixed(2).replace('.',',')} (2025) vs ${gainPerEUR26.toFixed(2).replace('.',',')} (2026)</div><div class="d">En 2025, chaque EUR crédité chez Augustin rapporte <strong>${fmtPlain(Math.round(gainPerEUR25 * 1000))} DH/1000€</strong>. En 2026 : <strong>${fmtPlain(Math.round(gainPerEUR26 * 1000))} DH/1000€</strong>.</div></div>`;
+  }
 
-  // Insight 4: Ycarré
-  html += `<div class="insight pass"><div class="t">👩 Ycarré (Oum Yakout) : ${fmtPlain(commYcarréEUR)} € de commission (2025)</div><div class="d">${fmtPlain(ycarreTotal)} € payés en 2025 (6 paiements EBS). Commission 8% = <strong>${fmtPlain(commYcarréEUR)} €</strong> (≈ ${fmtPlain(commYcarréMAD)} DH).</div></div>`;
+  // Ycarré (2025 only)
+  if (show25) html += `<div class="insight pass"><div class="t">👩 Ycarré (Oum Yakout) : ${fmtPlain(commYcarréEUR)} € de commission (2025)</div><div class="d">${fmtPlain(ycarreTotal)} € payés en 2025 (6 paiements EBS). Commission 8% = <strong>${fmtPlain(commYcarréEUR)} €</strong> (≈ ${fmtPlain(commYcarréMAD)} DH).</div></div>`;
 
-  // Insight 5: Benoit
+  // Benoit
+  const fBenoit25 = commBenoit25 + fxBenoit25 + Math.round(p2pSavingBenoit25);
+  const fBenoit26 = commBenoit26 + fxBenoit26 + Math.round(p2pSavingBenoit26);
   const totalGainsBenoit = totalComm + totalFxBenoit + Math.round(p2pSavingBenoit);
-  html += `<div class="insight pass"><div class="t">🤝 Benoit : ${fmtPlain(totalGainsBenoit)} DH cumulés</div><div class="d">Commission 10% : <strong>${fmtPlain(totalComm)} DH</strong> (${fmtPlain(commBenoit25)} + ${fmtPlain(commBenoit26)}) · Écart taux : <strong>${fmtPlain(totalFxBenoit)} DH</strong> · P2P spread : <strong>${fmtPlain(Math.round(p2pSavingBenoit))} DH</strong>.</div></div>`;
+  const benoitDisplay = gy === 2025 ? fBenoit25 : gy === 2026 ? fBenoit26 : totalGainsBenoit;
+  html += `<div class="insight pass"><div class="t">🤝 Benoit : ${fmtPlain(benoitDisplay)} DH ${gy ? '(' + gy + ')' : 'cumulés'}</div><div class="d">${gy === 2025 ? `Commission 10% : <strong>${fmtPlain(commBenoit25)} DH</strong> · Écart taux : <strong>${fmtPlain(fxBenoit25)} DH</strong> · P2P : <strong>${fmtPlain(Math.round(p2pSavingBenoit25))} DH</strong>.` : gy === 2026 ? `Commission 10% : <strong>${fmtPlain(commBenoit26)} DH</strong> · Écart taux : <strong>${fmtPlain(fxBenoit26)} DH</strong> · P2P : <strong>${fmtPlain(Math.round(p2pSavingBenoit26))} DH</strong>.` : `Commission 10% : <strong>${fmtPlain(totalComm)} DH</strong> (${fmtPlain(commBenoit25)} + ${fmtPlain(commBenoit26)}) · Écart taux : <strong>${fmtPlain(totalFxBenoit)} DH</strong> · P2P spread : <strong>${fmtPlain(Math.round(p2pSavingBenoit))} DH</strong>.`}</div></div>`;
 
-  // Insight 6: breakdown
-  const pctAz = (totalGainAz / grandTotal * 100).toFixed(1);
-  const pctYsq = (commYcarréMAD / grandTotal * 100).toFixed(1);
-  const pctComm = (totalComm / grandTotal * 100).toFixed(1);
-  const pctFx = (totalFxBenoit / grandTotal * 100).toFixed(1);
-  const pctP2P = (p2pSavingBenoit / grandTotal * 100).toFixed(1);
-  html += `<div class="insight"><div class="t">📊 Répartition globale</div><div class="d">Augustin : <strong>${pctAz}%</strong> · Ycarré 8% : <strong>${pctYsq}%</strong> · Commission Benoit : <strong>${pctComm}%</strong> · Écart taux : <strong>${pctFx}%</strong> · P2P Benoit : <strong>${pctP2P}%</strong></div></div>`;
+  // Répartition
+  const refTotal = filteredTotal || 1;
+  const fAz = gy === 2025 ? gainMAD_az25 : gy === 2026 ? gainMAD_az26 : totalGainAz;
+  const fYsq = show25 ? commYcarréMAD : 0;
+  const fComm = gy === 2025 ? commBenoit25 : gy === 2026 ? commBenoit26 : totalComm;
+  const fFx = gy === 2025 ? fxBenoit25 : gy === 2026 ? fxBenoit26 : totalFxBenoit;
+  const fP2P = gy === 2025 ? p2pSavingBenoit25 : gy === 2026 ? p2pSavingBenoit26 : p2pSavingBenoit;
+  html += `<div class="insight"><div class="t">📊 Répartition ${gy || 'globale'}</div><div class="d">Augustin : <strong>${(fAz/refTotal*100).toFixed(1)}%</strong>${fYsq ? ` · Ycarré 8% : <strong>${(fYsq/refTotal*100).toFixed(1)}%</strong>` : ''} · Commission Benoit : <strong>${(fComm/refTotal*100).toFixed(1)}%</strong> · Écart taux : <strong>${(fFx/refTotal*100).toFixed(1)}%</strong> · P2P Benoit : <strong>${(fP2P/refTotal*100).toFixed(1)}%</strong></div></div>`;
 
-  // Insight 7: monthly average
-  const monthlyAvg = grandTotal / 13; // Feb 2025 – Feb 2026
-  html += `<div class="insight"><div class="t">📅 Moyenne : ${fmtPlain(Math.round(monthlyAvg))} DH/mois</div><div class="d">Sur 13 mois d'activité (Fév 2025 – Fév 2026), soit ~${fmtPlain(Math.round(monthlyAvg / effEURMAD))} €/mois.</div></div>`;
+  // Monthly average
+  const months = gy === 2025 ? 11 : gy === 2026 ? 2 : 13;
+  const monthlyAvg = filteredTotal / months;
+  html += `<div class="insight"><div class="t">📅 Moyenne : ${fmtPlain(Math.round(monthlyAvg))} DH/mois</div><div class="d">Sur ${months} mois d'activité${gy ? ' (' + gy + ')' : ' (Fév 2025 – Fév 2026)'}, soit ~${fmtPlain(Math.round(monthlyAvg / effEURMAD))} €/mois.</div></div>`;
 
   html += `</div>`;
 

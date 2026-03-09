@@ -78,9 +78,22 @@
   .gate-input{width:100%;background:rgba(30,41,59,.8);border:1px solid #334155;border-radius:10px;padding:14px 18px;color:#e2e8f0;font-size:.92rem;font-weight:500;letter-spacing:.12em;text-align:center;outline:none;transition:border-color .3s,box-shadow .3s}
   .gate-input:focus{border-color:#3b82f6;box-shadow:0 0 20px rgba(59,130,246,.15)}
   .gate-input::placeholder{color:#475569;letter-spacing:.06em;font-weight:400}
-  .gate-error{color:#ef4444;font-size:.72rem;margin-top:10px;opacity:0;transition:opacity .3s}
+  .gate-error{color:#ef4444;font-size:.78rem;margin-top:12px;opacity:0;transition:opacity .4s;min-height:20px}
   .gate-error.show{opacity:1}
   .gate-hint{color:#334155;font-size:.62rem;margin-top:28px;letter-spacing:.03em}
+  .gate-input.shake{animation:gateShake .6s ease}
+  .gate-input.nope{animation:gateNope .8s ease}
+  .gate-input.dizzy{animation:gateDizzy 1s ease}
+  .gate-input.bounce{animation:gateBounce .7s ease}
+  .gate-input.melt{animation:gateMelt .9s ease}
+  @keyframes gateShake{0%,100%{transform:translateX(0)}10%,30%,50%,70%,90%{transform:translateX(-8px)}20%,40%,60%,80%{transform:translateX(8px)}}
+  @keyframes gateNope{0%{transform:translateX(0) rotate(0)}15%{transform:translateX(-15px) rotate(-3deg)}30%{transform:translateX(12px) rotate(2deg)}45%{transform:translateX(-9px) rotate(-1.5deg)}60%{transform:translateX(6px) rotate(1deg)}75%{transform:translateX(-3px)}100%{transform:translateX(0) rotate(0)}}
+  @keyframes gateDizzy{0%{transform:rotate(0) scale(1)}20%{transform:rotate(5deg) scale(1.02)}40%{transform:rotate(-4deg) scale(.98)}60%{transform:rotate(3deg) scale(1.01)}80%{transform:rotate(-1deg)}100%{transform:rotate(0) scale(1)}}
+  @keyframes gateBounce{0%{transform:translateY(0)}20%{transform:translateY(-18px)}40%{transform:translateY(0)}55%{transform:translateY(-10px)}70%{transform:translateY(0)}85%{transform:translateY(-4px)}100%{transform:translateY(0)}}
+  @keyframes gateMelt{0%{transform:scaleY(1) scaleX(1);filter:blur(0)}30%{transform:scaleY(.85) scaleX(1.08);filter:blur(1px)}50%{transform:scaleY(1.1) scaleX(.95);filter:blur(0)}70%{transform:scaleY(.97) scaleX(1.02)}100%{transform:scaleY(1) scaleX(1);filter:blur(0)}}
+  @keyframes emojiPop{0%{transform:scale(0) rotate(-30deg)}50%{transform:scale(1.3) rotate(10deg)}100%{transform:scale(1) rotate(0)}}
+  .gate-emoji{font-size:2rem;margin-bottom:8px;opacity:0;transition:opacity .3s;min-height:44px;display:flex;align-items:center;justify-content:center}
+  .gate-emoji.show{opacity:1;animation:emojiPop .5s ease}
   /* Hide site content until gate is passed */
   .site-wrap{display:none}
   .site-wrap.visible{display:block}
@@ -90,10 +103,11 @@
 <!-- GATE: Access code required -->
 <div class="gate-overlay" id="gate">
   <div class="gate-box">
+    <div class="gate-emoji" id="gateEmoji"></div>
     <div class="gate-logo">Réconciliation</div>
     <div class="gate-sub">Facturation 2025–2026</div>
     <input class="gate-input" id="gateInput" type="password" placeholder="Code d'accès" autocomplete="off" spellcheck="false">
-    <div class="gate-error" id="gateErr">Code incorrect</div>
+    <div class="gate-error" id="gateErr"></div>
     <div class="gate-hint">Accès restreint</div>
   </div>
 </div>
@@ -128,9 +142,9 @@
   </div>
 </div>
 </div><!-- /site-wrap -->
-<script src="data.js?v=19"></script>
-<script src="data-priv.enc.js?v=19"></script>
-<script src="render.js?v=19"></script>
+<script src="data.js?v=20"></script>
+<script src="data-priv.enc.js?v=20"></script>
+<script src="render.js?v=20"></script>
 <script>
 // ---- ACCESS MODE ----
 window.ACCESS_MODE = null; // 'full' or 'benoit'
@@ -140,8 +154,50 @@ window.ACCESS_MODE = null; // 'full' or 'benoit'
   const gate = document.getElementById('gate');
   const gateInput = document.getElementById('gateInput');
   const gateErr = document.getElementById('gateErr');
+  const gateEmoji = document.getElementById('gateEmoji');
   const siteWrap = document.getElementById('siteWrap');
   let attempts = 0;
+
+  const funnyMessages = [
+    { msg: "Nope. T'es pas sur la liste VIP.", emoji: "🙅", anim: "shake" },
+    { msg: "Mot de passe incorrect... comme ta stratégie.", emoji: "🤔", anim: "nope" },
+    { msg: "Raté ! Essaie 1234... non je rigole.", emoji: "😂", anim: "bounce" },
+    { msg: "Même mon chat aurait trouvé mieux.", emoji: "🐱", anim: "dizzy" },
+    { msg: "Alerte intrusion ! (non je plaisante... ou pas)", emoji: "🚨", anim: "melt" },
+    { msg: "C'est pas open bar ici, cousin.", emoji: "🍸", anim: "shake" },
+    { msg: "Le serveur a ri. Littéralement.", emoji: "🤣", anim: "bounce" },
+    { msg: "Ctrl+Z ta tentative stp.", emoji: "⌨️", anim: "nope" },
+    { msg: "T'as demandé à ChatGPT ? Lui non plus sait pas.", emoji: "🤖", anim: "dizzy" },
+    { msg: "Indice : c'est pas 'password'.", emoji: "💡", anim: "melt" },
+    { msg: "Tu chauffes... non en fait t'es glacé.", emoji: "🥶", anim: "shake" },
+    { msg: "La porte est fermée. Frappe plus fort.", emoji: "🚪", anim: "bounce" },
+  ];
+
+  const lockdownMessages = [
+    { msg: "OK c'est fini. Reviens avec le bon code.", emoji: "🔒" },
+    { msg: "5 tentatives... t'es banni du quartier.", emoji: "⛔" },
+  ];
+
+  function showGateError(msgObj) {
+    gateEmoji.textContent = msgObj.emoji;
+    gateEmoji.classList.remove('show');
+    void gateEmoji.offsetWidth;
+    gateEmoji.classList.add('show');
+    gateErr.textContent = msgObj.msg;
+    gateErr.classList.add('show');
+    if (msgObj.anim) {
+      gateInput.classList.remove('shake','nope','dizzy','bounce','melt');
+      void gateInput.offsetWidth;
+      gateInput.classList.add(msgObj.anim);
+    }
+    gateInput.style.borderColor = '#ef4444';
+    setTimeout(() => {
+      gateErr.classList.remove('show');
+      gateEmoji.classList.remove('show');
+      gateInput.style.borderColor = '';
+      gateInput.classList.remove('shake','nope','dizzy','bounce','melt');
+    }, 3000);
+  }
 
   gateInput.addEventListener('keydown', function(e){
     if(e.key === 'Enter'){
@@ -153,32 +209,30 @@ window.ACCESS_MODE = null; // 'full' or 'benoit'
         siteWrap.classList.add('visible');
 
         if(window.ACCESS_MODE === 'benoit'){
-          // COUPA: hide Augustin tab, show only Benoit
           document.querySelectorAll('.tab').forEach(t => {
             if(t.textContent.trim() === 'Augustin') t.style.display = 'none';
           });
-          // Activate Benoit tab
           document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
           document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
           document.querySelector('.tab[onclick*="benoit"]').classList.add('active');
           document.getElementById('benoit').classList.add('active');
-          // Hide Réf. dossier footer (BINGA not available in COUPA mode)
           document.getElementById('dref').parentElement.style.display = 'none';
         }
         renderAll();
       } else {
         attempts++;
-        gateErr.classList.add('show');
         this.value = '';
-        this.style.borderColor = '#ef4444';
-        setTimeout(()=>{
-          gateErr.classList.remove('show');
-          this.style.borderColor = '';
-        }, 2000);
         if(attempts >= 5){
           this.disabled = true;
-          gateErr.textContent = 'Trop de tentatives';
+          const ld = lockdownMessages[Math.floor(Math.random() * lockdownMessages.length)];
+          gateEmoji.textContent = ld.emoji;
+          gateEmoji.classList.add('show');
+          gateErr.textContent = ld.msg;
           gateErr.classList.add('show');
+          gateInput.style.borderColor = '#ef4444';
+        } else {
+          const pick = funnyMessages[Math.floor(Math.random() * funnyMessages.length)];
+          showGateError(pick);
         }
       }
     }
@@ -212,6 +266,16 @@ function switchBaYear(y){
   document.querySelectorAll('#benoit .year-btn').forEach(b => {
     b.classList.toggle('active', parseInt(b.dataset.year) === y);
   });
+}
+window.fxYear = 0;
+window.gainsYear = 0;
+function switchFxYear(y){
+  window.fxYear = y;
+  document.getElementById('fxp2p').innerHTML = renderFXP2P();
+}
+function switchGainsYear(y){
+  window.gainsYear = y;
+  document.getElementById('gains').innerHTML = renderMesGains();
 }
 
 // ---- Crypto: Decrypt private data with Web Crypto API ----
