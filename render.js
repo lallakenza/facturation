@@ -318,6 +318,33 @@ function renderAugustin2026(embedded) {
     : `Le solde est positif : Augustin doit ${fmtPlain(delta)}€ à Amine.`
   } Report 2025 : <strong>${fmtSigned(d.report2025)}</strong>.</div>`;
 
+  // Divers 2026 (cash direct)
+  if (d.divers && d.divers.length) {
+    const diversIn = d.divers.filter(x => x.montant > 0);
+    const diversOut = d.divers.filter(x => x.montant < 0);
+    const totalIn = diversIn.reduce((s, x) => s + x.montant, 0);
+    const totalOut = Math.abs(diversOut.reduce((s, x) => s + x.montant, 0));
+    html += `<div class="s"><div class="st">Divers — Cash direct 2026</div><table>
+      <thead><tr><th>Opération</th><th style="text-align:right">Montant (€)</th></tr></thead><tbody>`;
+    d.divers.forEach(x => {
+      const color = x.montant > 0 ? 'var(--green)' : 'var(--red)';
+      html += `<tr><td>${x.label}</td><td class="a" style="color:${color}">${fmtSigned(x.montant, '€')}</td></tr>`;
+    });
+    const soldeDiv = totalIn - totalOut;
+    html += `<tr class="tr"><td><strong>Solde cash</strong></td><td class="a" style="color:${soldeDiv >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(soldeDiv, '€')}</strong></td></tr>`;
+    html += `</tbody></table></div>`;
+  }
+
+  // Insights 2026
+  if (d.insights) {
+    html += `<div class="s"><div class="st">Insights</div>`;
+    d.insights.forEach(ins => {
+      const cls = ins.type === 'pass' ? 'pass' : ins.type === 'warn' ? 'warn' : ins.type === 'fail' ? 'fail' : '';
+      html += `<div class="insight ${cls}"><div class="t">${ins.titre}</div><div class="d">${ins.desc}</div></div>`;
+    });
+    html += `</div>`;
+  }
+
   return html;
 }
 

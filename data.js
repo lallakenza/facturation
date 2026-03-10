@@ -100,6 +100,7 @@ const DATA = {
       { type: "pass", titre: "✅ Councils HT : écart de 500€ corrigé (v1 → v2)", desc: "Augustin a corrigé le B+Y+M de Décembre de 12 725€ → 13 225€, intégrant les 500€ Councils HT manquants du 31/12. Les 6 paiements Councils matchent désormais 100% l'EBS." },
       { type: "pass", titre: "✅ Virements Maroc : 23 000€ — match parfait Excel = Réel", desc: "Tous les virements Maroc Fév-Déc matchent parfaitement l'Excel (23 000€). Pas de virement en Janvier. 11 mois sur 11 vérifiés, 0€ d'écart." },
       { type: "pass", titre: "✅ Divers : 100% vérifiés EBS — 9 170€ de transactions (9 opérations)", desc: "<strong>Fév 400€</strong> = vol ✓. <strong>Juin 1 240€</strong> = vol ✓. <strong>Sep 1 130€</strong> = iPhone ✓. <strong>Nov 1 800€</strong> = 3 virements EBS ✓. <strong>Nov −1 500€</strong> = Prêt EBS ✓. <strong>Déc 600€</strong> = virement EBS ✓. <strong>Déc −2 500€</strong> = Prêt EBS ✓. Net total : 1 170€. Zéro reste sans preuve." },
+      { type: "neutral", titre: "💸 Flux cash direct 2025 : Amine 2 400€ → Augustin / Augustin 4 000€ → Amine", desc: "<strong>Amine → Augustin :</strong> 600€ (09/11) + 700€ (12/11) + 500€ (18/11) + 600€ (08/12) = <strong>2 400€</strong>.<br><strong>Augustin → Amine (prêts) :</strong> 2 500€ (04/12) + 1 500€ (15/12) = <strong>4 000€</strong>.<br>Solde cash : <strong>−1 600€</strong> (Augustin a envoyé 1 600€ de plus).<br><em>À part — achats pour Augustin :</em> vols 400€ (Fév) + 1 240€ (Jun) + iPhone 1 130€ (Sep) = <strong>2 770€</strong>." },
       { type: "neutral", titre: "📊 Ycarré + Baraka + Councils : 157 288€ — 100% vérifié EBS", desc: "Les 3 catégories avec preuves EBS (18 paiements au total) matchent parfaitement. Ycarré 54 300€ (6/6), Baraka 72 800€ (6/6), Councils HT 30 188€ (6/6 après correction v2)." },
       { type: "pass", titre: "✅ Factures RTL 2025 : 198 475€ — 12/12 rapprochées, 0€ d'écart", desc: "Les 12 factures RTL (INVRTL001 à INVRTL012) sont toutes confirmées dans le CSV IFX. Les paiements combinés (INVRTL004+005 en Juillet, INVRTL010+011 en Janvier 2026) sont correctement identifiés. Aucun revenu manquant." },
     ],
@@ -121,6 +122,15 @@ const DATA = {
       { ref: "INVRTL013", periode: "Janvier", jours: 11, montant: 9350, statut: "w", statutText: "Pas encore reçu" },
       { ref: "INVRTL014", periode: "Février", jours: 20, montant: 17000, statut: "w", statutText: "Pas encore reçu" },
       { ref: "—", periode: "Mars", jours: 20, montant: 17000, statut: "i", statutText: "À facturer" },
+    ],
+
+    divers: [
+      { label: "Augustin → Amine (via Zakaria Belghiti)", montant: -1200 },
+      { label: "Amine → Augustin (via Oumaima)", montant: 800 },
+    ],
+
+    insights: [
+      { type: "neutral", titre: "💸 Flux cash direct 2026 : Amine 800€ → Augustin / Augustin 1 200€ → Amine", desc: "<strong>Amine → Augustin :</strong> 800€ (via Oumaima, on behalf of Amine).<br><strong>Augustin → Amine :</strong> 1 200€ (via Zakaria Belghiti).<br>Solde cash : <strong>−400€</strong> (Augustin a envoyé 400€ de plus)." },
     ],
   },
 
