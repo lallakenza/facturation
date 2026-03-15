@@ -96,7 +96,7 @@ function renderAugustin2025(embedded) {
 
   // Mois par mois
   html += `<div class="s"><div class="st">Réconciliation mois par mois (Janvier → Décembre 2025)</div><table>
-    <thead><tr><th>Mois</th><th style="text-align:right">Actuals (€)</th><th style="text-align:right">B+Y+M (€)</th><th style="text-align:right">Maroc (€)</th><th style="text-align:right">Divers (€)</th><th style="text-align:right">Total dép. (€)</th><th style="text-align:right">Solde mois (€)</th><th>Commentaire</th></tr></thead><tbody>`;
+    <thead><tr><th>Mois</th><th data-sort="num" style="text-align:right">Actuals (€)</th><th data-sort="num" style="text-align:right">B+Y+M (€)</th><th data-sort="num" style="text-align:right">Maroc (€)</th><th data-sort="num" style="text-align:right">Divers (€)</th><th data-sort="num" style="text-align:right">Total dép. (€)</th><th data-sort="num" style="text-align:right">Solde mois (€)</th><th>Commentaire</th></tr></thead><tbody>`;
 
   let totalSoldeMois = 0;
   mois.forEach(m => {
@@ -139,7 +139,7 @@ function renderAugustin2025(embedded) {
 
   // Cat 1: Ycarré
   html += `<div class="s"><div class="st">1. Ycarré (Oum Yakout) — ${fmtPlain(totalYcarré)}€ ✓</div><table>
-    <thead><tr><th>#</th><th>Date EBS</th><th style="text-align:right">EBS (€)</th><th></th></tr></thead><tbody>`;
+    <thead><tr><th>#</th><th data-sort="date">Date EBS</th><th data-sort="num" style="text-align:right">EBS (€)</th><th></th></tr></thead><tbody>`;
   d.ycarre.forEach((y, i) => {
     html += `<tr><td>${i+1}</td><td>${y.date}</td><td class="a">${fmtPlain(y.montant)}</td><td>${badge('ok','✓ EBS')}</td></tr>`;
   });
@@ -147,7 +147,7 @@ function renderAugustin2025(embedded) {
 
   // Cat 2: Councils
   html += `<div class="s"><div class="st">2. Councils HT (Benoit) — ${fmtPlain(totalCouncils)}€ ✓ (corrigé v2)</div><table>
-    <thead><tr><th>#</th><th>Date EBS</th><th style="text-align:right">Excel HT (€)</th><th style="text-align:right">EBS HT (€)</th><th style="text-align:right">Écart</th><th></th></tr></thead><tbody>`;
+    <thead><tr><th>#</th><th data-sort="date">Date EBS</th><th data-sort="num" style="text-align:right">Excel HT (€)</th><th data-sort="num" style="text-align:right">EBS HT (€)</th><th data-sort="num" style="text-align:right">Écart</th><th></th></tr></thead><tbody>`;
   d.councils.forEach((m, i) => {
     const ecart = m.excelHT - m.ebsHT;
     html += `<tr><td>${i+1}</td><td>${m.date}</td><td class="a">${fmtPlain(m.excelHT)}</td><td class="a">${fmtPlain(m.ebsHT)}</td><td class="a">${ecart}</td><td>${badge('ok', m.note ? '✓ ' + m.note : '✓')}</td></tr>`;
@@ -157,7 +157,7 @@ function renderAugustin2025(embedded) {
 
   // Cat 3: Baraka
   html += `<div class="s"><div class="st">3. Baraka EUR (→ Augustin) — ${fmtPlain(totalBaraka)}€ ✓</div><table>
-    <thead><tr><th>#</th><th>Date EBS</th><th style="text-align:right">Montant (€)</th><th></th></tr></thead><tbody>`;
+    <thead><tr><th>#</th><th data-sort="date">Date EBS</th><th data-sort="num" style="text-align:right">Montant (€)</th><th></th></tr></thead><tbody>`;
   d.baraka.forEach((b, i) => {
     html += `<tr><td>${i+1}</td><td>${b.date}</td><td class="a">${fmtPlain(b.montant)}</td><td>${badge('ok','✓ EBS')}</td></tr>`;
   });
@@ -166,7 +166,7 @@ function renderAugustin2025(embedded) {
 
   // Cat 4: Virements Maroc
   html += `<div class="s"><div class="st">4. Virements Maroc → Augustin (DH) — ${fmtPlain(totalMarocExcel)}€ ✓ match parfait</div><table>
-    <thead><tr><th>Mois</th><th style="text-align:right">Excel v2 (€)</th><th>Virements réels</th><th style="text-align:right">Total DH</th><th style="text-align:right">= EUR (÷10)</th><th style="text-align:right">Écart (€)</th><th></th></tr></thead><tbody>`;
+    <thead><tr><th data-sort="date">Mois</th><th data-sort="num" style="text-align:right">Excel v2 (€)</th><th>Virements réels</th><th data-sort="num" style="text-align:right">Total DH</th><th data-sort="num" style="text-align:right">= EUR (÷10)</th><th data-sort="num" style="text-align:right">Écart (€)</th><th></th></tr></thead><tbody>`;
   d.virementsMaroc.forEach(v => {
     const eurEquiv = v.totalDH / d.tauxMaroc;
     const ecart = v.excelEUR - eurEquiv;
@@ -178,7 +178,7 @@ function renderAugustin2025(embedded) {
 
   // Cat 5: Divers
   html += `<div class="s"><div class="st">5. Autre (Divers) — ${fmtPlain(totalDiversCalc)}€ net · 100% vérifié EBS (${d.divers.length} opérations)</div><table>
-    <thead><tr><th>Mois</th><th>Date EBS</th><th>Libellé</th><th style="text-align:right">Montant (€)</th><th>Preuve</th></tr></thead><tbody>`;
+    <thead><tr><th data-sort="date">Mois</th><th data-sort="date">Date EBS</th><th>Libellé</th><th data-sort="num" style="text-align:right">Montant (€)</th><th>Preuve</th></tr></thead><tbody>`;
   d.divers.forEach(dv => {
     const rowStyle = dv.preuve === 'ok' ? ' style="background:var(--green-bg)"' : '';
     const montantStr = dv.montant < 0 ? '−' + fmtPlain(Math.abs(dv.montant)) : fmtPlain(dv.montant);
@@ -189,7 +189,7 @@ function renderAugustin2025(embedded) {
 
   // RTL Factures
   html += `<div class="s"><div class="st">Factures RTL 2025 — Revenus (${fmtPlain(totalRTL)}€ ✓)</div><table>
-    <thead><tr><th>Facture</th><th>Période</th><th>Jours</th><th style="text-align:right">Facturé (€)</th><th>Date paiement</th><th style="text-align:right">Reçu (€)</th><th></th></tr></thead><tbody>`;
+    <thead><tr><th>Facture</th><th data-sort="date">Période</th><th data-sort="num">Jours</th><th data-sort="num" style="text-align:right">Facturé (€)</th><th data-sort="date">Date paiement</th><th data-sort="num" style="text-align:right">Reçu (€)</th><th></th></tr></thead><tbody>`;
   d.rtl.forEach(r => {
     html += `<tr><td>${r.ref}</td><td>${r.periode}</td><td>${r.jours}</td><td class="a">${fmtPlain(r.montant)}</td><td>${r.datePaiement}</td><td class="a">${fmtPlain(r.recu)}</td><td>${badge('ok','✓ EBS')}</td></tr>`;
   });
@@ -239,7 +239,7 @@ function renderAugustin2026(embedded) {
 
   // Factures RTL 2026
   html += `<div class="s"><div class="st">Factures RTL 2026</div><table>
-    <thead><tr><th>Facture</th><th>Période</th><th>Jours</th><th style="text-align:right">Montant (€)</th><th>Statut</th></tr></thead><tbody>`;
+    <thead><tr><th>Facture</th><th data-sort="date">Période</th><th data-sort="num">Jours</th><th data-sort="num" style="text-align:right">Montant (€)</th><th>Statut</th></tr></thead><tbody>`;
   d.rtl.forEach(r => {
     html += `<tr><td>${r.ref}</td><td>${r.periode}</td><td>${r.jours}</td><td class="a">${fmtPlain(r.montant)}</td><td>${badge(r.statut, r.statutText)}</td></tr>`;
   });
@@ -247,7 +247,7 @@ function renderAugustin2026(embedded) {
 
   // Virements Maroc
   html += `<div class="s"><div class="st">Augustin a reçu — Virements Maroc 2026</div><table>
-    <thead><tr><th>#</th><th>Date</th><th>Bénéficiaire</th><th style="text-align:right">DH</th><th style="text-align:right">= EUR (÷${d.tauxMaroc})</th></tr></thead><tbody>`;
+    <thead><tr><th>#</th><th data-sort="date">Date</th><th>Bénéficiaire</th><th data-sort="num" style="text-align:right">DH</th><th data-sort="num" style="text-align:right">= EUR (÷${d.tauxMaroc})</th></tr></thead><tbody>`;
   d.virementsMaroc.forEach((v, i) => {
     html += `<tr><td>${i+1}</td><td>${v.date}</td><td>${v.beneficiaire}</td><td class="a">${fmtPlain(v.dh)}</td><td class="a">${fmtPlain(v.dh / d.tauxMaroc)}</td></tr>`;
   });
@@ -265,7 +265,7 @@ function renderAugustin2026(embedded) {
     const totalIn = diversIn.reduce((s, x) => s + x.montant, 0);
     const totalOut = Math.abs(diversOut.reduce((s, x) => s + x.montant, 0));
     html += `<div class="s"><div class="st">Divers — Cash direct 2026</div><table>
-      <thead><tr><th>Opération</th><th style="text-align:right">Montant (€)</th></tr></thead><tbody>`;
+      <thead><tr><th>Opération</th><th data-sort="num" style="text-align:right">Montant (€)</th></tr></thead><tbody>`;
     d.divers.forEach(x => {
       const color = x.montant > 0 ? 'var(--green)' : 'var(--red)';
       html += `<tr><td>${x.label}</td><td class="a" style="color:${color}">${fmtSigned(x.montant, '€')}</td></tr>`;

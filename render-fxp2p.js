@@ -221,7 +221,7 @@ function renderFXP2P() {
 
   // ===== LEG 1 DETAIL =====
   html += `<div class="s"><div class="st">Leg 1 — EUR → AED (conversions IFX) — ${leg1.length} transactions</div><table>
-    <thead><tr><th>#</th><th>Date</th><th>Source</th><th style="text-align:right">EUR</th><th style="text-align:right">AED reçu</th><th style="text-align:right">Taux IFX</th><th style="text-align:right">Taux marché</th><th style="text-align:right">Spread</th><th style="text-align:right">Perte AED</th></tr></thead><tbody>`;
+    <thead><tr><th>#</th><th data-sort="date">Date</th><th>Source</th><th data-sort="num" style="text-align:right">EUR</th><th data-sort="num" style="text-align:right">AED reçu</th><th data-sort="num" style="text-align:right">Taux IFX</th><th data-sort="num" style="text-align:right">Taux marché</th><th data-sort="num" style="text-align:right">Spread</th><th data-sort="num" style="text-align:right">Perte AED</th></tr></thead><tbody>`;
   leg1.forEach((t, i) => {
     html += `<tr><td>${i+1}</td><td>${t.date}</td><td style="font-size:.72rem">${t.source}</td>
       <td class="a">${fmtPlain(Math.round(t.eur))}</td>
@@ -242,7 +242,7 @@ function renderFXP2P() {
 
   // ===== LEG 2 DETAIL =====
   html += `<div class="s"><div class="st">Leg 2 — AED → USDT (Binance P2P Buy) — ${leg2.length} transactions</div><table>
-    <thead><tr><th>#</th><th>Date</th><th style="text-align:right">AED</th><th style="text-align:right">USDT</th><th style="text-align:right">Prix P2P</th><th style="text-align:right">Peg (3,6725)</th><th style="text-align:right">Spread</th><th style="text-align:right">Premium AED</th></tr></thead><tbody>`;
+    <thead><tr><th>#</th><th data-sort="date">Date</th><th data-sort="num" style="text-align:right">AED</th><th data-sort="num" style="text-align:right">USDT</th><th data-sort="num" style="text-align:right">Prix P2P</th><th style="text-align:right">Peg (3,6725)</th><th data-sort="num" style="text-align:right">Spread</th><th data-sort="num" style="text-align:right">Premium AED</th></tr></thead><tbody>`;
   leg2.forEach((t, i) => {
     html += `<tr><td>${i+1}</td><td>${t.date}</td>
       <td class="a">${fmtPlain(Math.round(t.aed))}</td>
@@ -263,7 +263,7 @@ function renderFXP2P() {
 
   // ===== LEG 3 DETAIL =====
   html += `<div class="s"><div class="st">Leg 3 — USDT → MAD (Binance P2P Sell) — ${leg3.length} transactions</div><table>
-    <thead><tr><th>#</th><th>Date</th><th style="text-align:right">USDT</th><th style="text-align:right">MAD</th><th style="text-align:right">Prix P2P</th><th style="text-align:right">USD/MAD marché</th><th style="text-align:right">Spread</th><th style="text-align:right">Gain MAD</th></tr></thead><tbody>`;
+    <thead><tr><th>#</th><th data-sort="date">Date</th><th data-sort="num" style="text-align:right">USDT</th><th data-sort="num" style="text-align:right">MAD</th><th data-sort="num" style="text-align:right">Prix P2P</th><th data-sort="num" style="text-align:right">USD/MAD marché</th><th data-sort="num" style="text-align:right">Spread</th><th data-sort="num" style="text-align:right">Gain MAD</th></tr></thead><tbody>`;
   leg3.forEach((t, i) => {
     html += `<tr><td>${i+1}</td><td>${t.date}</td>
       <td class="a">${t.usdt.toFixed(2).replace('.', ',')}</td>

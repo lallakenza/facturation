@@ -137,7 +137,7 @@ function renderBenoitYear(dataKey, opts = {}) {
   if (window.PRIV) {
     const privTitle = tableTitle.replace('convertis en DH', 'convertis en DH (taux appliqué vs marché)');
     html += `<div class="s"><div class="st">${privTitle}</div><table>
-      <thead><tr>${isClotured ? '<th>#</th>' : ''}<th>${dateLabel}</th><th style="text-align:right">HT (€)</th><th style="text-align:right">Taux appliqué</th><th style="text-align:right">Taux marché</th><th style="text-align:right">Δ taux</th><th style="text-align:right">= DH</th><th style="text-align:right">Gain FX (DH)</th><th style="text-align:right">Commission ${ratePct}%</th><th style="text-align:right">Net Benoit (DH)</th><th></th></tr></thead><tbody>`;
+      <thead><tr>${isClotured ? '<th>#</th>' : ''}<th data-sort="date">${dateLabel}</th><th data-sort="num" style="text-align:right">HT (€)</th><th data-sort="num" style="text-align:right">Taux appliqué</th><th data-sort="num" style="text-align:right">Taux marché</th><th data-sort="num" style="text-align:right">Δ taux</th><th data-sort="num" style="text-align:right">= DH</th><th data-sort="num" style="text-align:right">Gain FX (DH)</th><th data-sort="num" style="text-align:right">Commission ${ratePct}%</th><th data-sort="num" style="text-align:right">Net Benoit (DH)</th><th></th></tr></thead><tbody>`;
     transactions.forEach((t, i) => {
       const dateVal = t[dateField];
       const statusCell = isClotured
@@ -151,7 +151,7 @@ function renderBenoitYear(dataKey, opts = {}) {
     html += `</tbody></table></div>`;
   } else {
     html += `<div class="s"><div class="st">${tableTitle}</div><table>
-      <thead><tr>${isClotured ? '<th>#</th>' : ''}<th>${dateLabel}</th><th style="text-align:right">HT (€)</th><th style="text-align:right">Taux appliqué</th><th style="text-align:right">= DH</th><th style="text-align:right">Commission ${ratePct}%</th><th style="text-align:right">Net Benoit (DH)</th><th></th></tr></thead><tbody>`;
+      <thead><tr>${isClotured ? '<th>#</th>' : ''}<th data-sort="date">${dateLabel}</th><th data-sort="num" style="text-align:right">HT (€)</th><th data-sort="num" style="text-align:right">Taux appliqué</th><th data-sort="num" style="text-align:right">= DH</th><th data-sort="num" style="text-align:right">Commission ${ratePct}%</th><th data-sort="num" style="text-align:right">Net Benoit (DH)</th><th></th></tr></thead><tbody>`;
     transactions.forEach((t, i) => {
       const dateVal = t[dateField];
       const statusCell = isClotured
@@ -168,7 +168,7 @@ function renderBenoitYear(dataKey, opts = {}) {
   // ---- Virements ----
   if (d.virements.length > 0) {
     html += `<div class="s"><div class="st">Virements DH → Benoit ${year}</div><table>
-      <thead><tr><th>#</th><th>Date</th><th>Bénéficiaire</th><th style="text-align:right">DH</th><th>Motif</th></tr></thead><tbody>`;
+      <thead><tr><th>#</th><th data-sort="date">Date</th><th>Bénéficiaire</th><th data-sort="num" style="text-align:right">DH</th><th>Motif</th></tr></thead><tbody>`;
     d.virements.forEach((v, i) => {
       html += `<tr><td>${i+1}</td><td>${v.date}</td><td>${v.beneficiaire}</td><td class="a">${fmtPlain(v.dh)}</td><td>${v.motif}</td></tr>`;
     });
@@ -204,7 +204,7 @@ function renderBenoitYear(dataKey, opts = {}) {
   // ---- PRIV: Consolidation gains (clôture only) ----
   if (window.PRIV && isClotured) {
     html += `<div class="s"><div class="st">Consolidation des gains Amine — Benoit ${year}</div><table>
-      <thead><tr><th>Source du gain</th><th style="text-align:right">DH</th><th>Détail</th></tr></thead><tbody>
+      <thead><tr><th>Source du gain</th><th data-sort="num" style="text-align:right">DH</th><th>Détail</th></tr></thead><tbody>
       <tr><td><strong>Commission ${ratePct}%</strong></td><td class="a" style="color:var(--green)">${fmtSigned(totalCommission, '')}</td><td>${ratePct}% sur ${fmtPlain(totalDH)} DH de Councils HT</td></tr>
       <tr><td><strong>Gain FX (Δ taux)</strong></td><td class="a" style="color:var(--green)">${fmtSigned(totalGainFX, '')}</td><td>Taux appliqué inférieur au marché sur ${transactions.length} transactions</td></tr>
       <tr class="tr"><td><strong>Total gains Amine</strong></td><td class="a" style="color:var(--green)"><strong>${fmtSigned(totalGains, '')}</strong></td><td></td></tr>

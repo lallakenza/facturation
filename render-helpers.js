@@ -46,6 +46,78 @@ const badge = (type, text) => `<span class="b ${type}">${text}</span>`;
 
 const sum = (arr, key) => arr.reduce((s, x) => s + (typeof key === 'function' ? key(x) : (x[key] || 0)), 0);
 
+// ---- SORTABLE TABLE SUPPORT ----
+(function() {
+  const MOIS_FR = {'janvier':0,'février':1,'mars':2,'avril':3,'mai':4,'juin':5,
+    'juillet':6,'août':7,'septembre':8,'octobre':9,'novembre':10,'décembre':11};
+
+  function parseNum(s) {
+    if (!s || s === '—') return 0;
+    // Strip spaces, currency, signs → keep digits, minus, comma, dot
+    let c = s.replace(/\s/g,'').replace('−','-').replace(',','.');
+    c = c.replace(/[^0-9.\-]/g,'');
+    return parseFloat(c) || 0;
+  }
+
+  function parseDate(s) {
+    if (!s || s === '—') return 0;
+    s = s.trim();
+    // ISO: 2025-03-15
+    if (/^\d{4}-\d{2}/.test(s)) return new Date(s).getTime();
+    // DD/MM/YYYY
+    let m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (m) return new Date(+m[3],+m[2]-1,+m[1]).getTime();
+    // DD/MM
+    m = s.match(/^(\d{2})\/(\d{2})$/);
+    if (m) return new Date(2025,+m[2]-1,+m[1]).getTime();
+    // Month name (French), optionally with year: "Février", "Janvier 2026"
+    const lower = s.toLowerCase();
+    for (const [name, idx] of Object.entries(MOIS_FR)) {
+      if (lower.startsWith(name)) {
+        const ym = s.match(/\d{4}/);
+        return new Date(ym ? +ym[0] : 2025, idx, 1).getTime();
+      }
+    }
+    return 0;
+  }
+
+  document.addEventListener('click', function(e) {
+    const th = e.target.closest('th[data-sort]');
+    if (!th) return;
+    const table = th.closest('table');
+    const tbody = table && table.querySelector('tbody');
+    if (!tbody) return;
+
+    const headers = Array.from(th.closest('tr').children);
+    const colIdx = headers.indexOf(th);
+    const type = th.dataset.sort; // 'date' or 'num'
+    const curDir = th.dataset.dir || '';
+    const newDir = curDir === 'asc' ? 'desc' : 'asc';
+
+    // Reset sibling headers
+    headers.forEach(h => { delete h.dataset.dir; h.classList.remove('sort-asc','sort-desc'); });
+    th.dataset.dir = newDir;
+    th.classList.add('sort-' + newDir);
+
+    // Separate data rows vs total/separator rows
+    const allRows = Array.from(tbody.children);
+    const dataRows = allRows.filter(r => !r.classList.contains('tr') && !r.querySelector('td[colspan]'));
+    const otherRows = allRows.filter(r => r.classList.contains('tr') || r.querySelector('td[colspan]'));
+
+    const parser = type === 'date' ? parseDate : parseNum;
+    dataRows.sort((a, b) => {
+      const va = parser((a.children[colIdx] || {}).textContent || '');
+      const vb = parser((b.children[colIdx] || {}).textContent || '');
+      return newDir === 'asc' ? va - vb : vb - va;
+    });
+
+    // Rebuild: data rows first, then total/separator rows
+    while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+    dataRows.forEach(r => tbody.appendChild(r));
+    otherRows.forEach(r => tbody.appendChild(r));
+  });
+})();
+
 // ---- YEAR TOGGLE HELPER ----
 function yearToggle(section, activeYear) {
   return `<div class="year-toggle">

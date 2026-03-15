@@ -97,6 +97,12 @@
   /* Hide site content until gate is passed */
   .site-wrap{display:none}
   .site-wrap.visible{display:block}
+  /* Sortable table headers */
+  th[data-sort]{cursor:pointer;user-select:none;white-space:nowrap}
+  th[data-sort]:hover{background:rgba(255,255,255,.04)}
+  th[data-sort]::after{content:'⇅';opacity:.25;margin-left:4px;font-size:.65em}
+  th[data-sort].sort-asc::after{content:'▲';opacity:.7}
+  th[data-sort].sort-desc::after{content:'▼';opacity:.7}
 </style>
 </head>
 <body>
@@ -132,14 +138,14 @@
   </div>
 </div>
 </div><!-- /site-wrap -->
-<script src="data.js?v=27"></script>
-<script src="data-priv.enc.js?v=27"></script>
-<script src="render-helpers.js?v=27"></script>
-<script src="render-augustin.js?v=27"></script>
-<script src="render-benoit.js?v=27"></script>
-<script src="render-fxp2p.js?v=27"></script>
-<script src="render-gains.js?v=27"></script>
-<script src="render-main.js?v=27"></script>
+<script src="data.js?v=28"></script>
+<script src="data-priv.enc.js?v=28"></script>
+<script src="render-helpers.js?v=28"></script>
+<script src="render-augustin.js?v=28"></script>
+<script src="render-benoit.js?v=28"></script>
+<script src="render-fxp2p.js?v=28"></script>
+<script src="render-gains.js?v=28"></script>
+<script src="render-main.js?v=28"></script>
 <script>
 // ---- ACCESS MODE ----
 window.ACCESS_MODE = null; // 'full' or 'benoit'
