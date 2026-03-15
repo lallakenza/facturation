@@ -3,15 +3,20 @@
 ## Vue d'ensemble
 
 Site statique déployé sur GitHub Pages (`lallakenza/facturation`).
-3 fichiers principaux + 1 fichier chiffré :
+Architecture modulaire avec 8 fichiers JS + 1 fichier chiffré :
 
 ```
-index.html          → UI (gate, tabs, crypto, events)
-data.js             → Données publiques (counterparts, transactions)
-data-priv.enc.js    → Données privées chiffrées (AES-256-GCM)
-render.js           → Toute la logique de rendu HTML
-encrypt.js          → Script Node pour (re)chiffrer les données privées
-verify.js           → Script de vérification des données
+index.html            → UI (gate, crypto, events, year toggles)
+data.js               → Données publiques (counterparts, transactions)
+data-priv.enc.js      → Données privées chiffrées (AES-256-GCM)
+render-helpers.js     → Utilitaires (formatage, badges, sum, yearToggle)
+render-augustin.js    → Rendu Augustin 2025/2026
+render-benoit.js      → Rendu Benoit générique (2025/2026 via renderBenoitYear)
+render-fxp2p.js       → Pipeline FX P2P (3 legs EUR→AED→USDT→MAD)
+render-gains.js       → Consolidation gains (commissions, spread, FX)
+render-main.js        → TAB_CONFIG, buildTabs(), renderAll(), showTab()
+encrypt.js            → Script Node pour (re)chiffrer les données privées
+verify.js             → Script de vérification des données
 ```
 
 ## Accès & sécurité
@@ -27,6 +32,32 @@ verify.js           → Script de vérification des données
 ### Chiffrement
 
 Les données sensibles (taux marché, commissions PRIV, FX P2P) sont chiffrées dans `data-priv.enc.js` via AES-256-GCM (PBKDF2, 100k itérations, sel `facturation-augustin-2025`). Le déchiffrement se fait côté navigateur quand on tape `BINGA` dans le champ "Réf. dossier".
+
+## Dynamic Tab System (`render-main.js`)
+
+Les onglets sont générés dynamiquement depuis `TAB_CONFIG` :
+
+```javascript
+const TAB_CONFIG = [
+  { id: 'augustin', label: 'Augustin', access: 'full' },
+  { id: 'benoit',   label: 'Benoit',   access: 'all' },
+  { id: 'fxp2p',    label: 'FX P2P',   access: 'priv' },
+  { id: 'gains',    label: 'Mes Gains', access: 'priv' },
+];
+```
+
+| access | Visibilité |
+|--------|-----------|
+| `'all'` | Toujours visible |
+| `'full'` | `ACCESS_MODE === 'full'` uniquement |
+| `'priv'` | `window.PRIV === true` uniquement |
+
+Fonctions clés :
+- `buildTabs()` — Génère les onglets/panels après authentification
+- `refreshTabVisibility()` — Met à jour la visibilité quand PRIV change
+- `showTab(id)` — Active un onglet
+- `renderPanel(id)` — Rend un seul panel
+- `renderAll()` — Rend tous les panels
 
 ## Structure des données (`data.js`)
 
@@ -121,7 +152,23 @@ augustin2025: {
 
 ## Modèle Benoit (Councils EUR → DH avec commission)
 
-Benoit est un counterpart de type **sous-traitance** : il facture des Councils en EUR, Amine les convertit en DH au taux appliqué, retient 10% de commission, et paie le net en DH.
+Benoit est un counterpart de type **sous-traitance** : il facture des Councils en EUR, Amine les convertit en DH au taux appliqué, retient une commission, et paie le net en DH.
+
+### Rendu générique — `renderBenoitYear(dataKey, opts)`
+
+Les deux années partagent un seul renderer générique :
+
+```javascript
+function renderBenoitYear(dataKey, opts = {}) {
+  const { embedded = false, year = 2025, report = 0 } = opts;
+  const d = DATA[dataKey];
+  const rate = d.commissionRate || 0;
+  const isClotured = !d.councils[0]?.statut;  // Détection auto
+  // ...
+}
+```
+
+Les wrappers `renderBenoit2025()` et `renderBenoit2026()` appellent `renderBenoitYear()` avec les bons paramètres. Le rendu s'adapte automatiquement : colonnes, notes, statuts, gains FX.
 
 ### Données clé d'une année Benoit
 
@@ -129,23 +176,25 @@ Benoit est un counterpart de type **sous-traitance** : il facture des Councils e
 benoit2025: {
   title: "...",
   subtitle: "...",
-  commissionRate: 0.10,             // Taux de commission (10%)
+  commissionRate: 0.10,             // Taux de commission (dynamique, pas hardcodé)
 
-  // Factures Councils
   councils: [
     { date: "18/08/2025",           // ou mois: "Janvier" (2026)
       htEUR: 5625,                  // Montant HT en EUR
-      tauxApplique: 10.500,         // Taux EUR/MAD appliqué (par transaction)
+      tauxApplique: 10.500,         // Taux EUR/MAD par transaction
       // tauxMarche: ENCRYPTED      // Taux marché (injecté par BINGA)
       statut: "ok"|"w",             // (2026 only) Statut du paiement
       statutText: "Paid 11/02"      // (2026 only)
     }
   ],
 
-  // Virements DH envoyés à Benoit
   virements: [
     { date: "28/07/2025", beneficiaire: "Benoit Chevalier",
       dh: 50000, motif: "Prêt personnel" }
+  ],
+
+  notes: [                          // (optional) Notes affichées en footer
+    "Le virement du 06/03/2026 (31 750 DH) a été comptabilisé..."
   ]
 }
 ```
@@ -154,8 +203,8 @@ benoit2025: {
 
 | Calcul | Formule |
 |--------|---------|
-| DH brut par transaction | `htEUR × tauxApplique` (arrondi) |
-| Commission par transaction | `DH brut × commissionRate` (arrondi) |
+| DH brut par transaction | `Math.round(htEUR × tauxApplique)` |
+| Commission par transaction | `Math.round(DH brut × commissionRate)` |
 | Net Benoit par transaction | `DH brut − commission` |
 | Total net dû | `Σ netBenoit` |
 | Total payé | `Σ virements[].dh` |
@@ -164,27 +213,26 @@ benoit2025: {
 
 #### Carryforward automatique
 
-Le report 2025→2026 n'est **pas stocké dans les données**. Il est **calculé dynamiquement** dans `renderBenoit2026()` à partir des données de `benoit2025` :
+Le report 2025→2026 n'est **pas stocké dans les données**. Il est **calculé dynamiquement** dans `renderBenoit2026()` :
 
 ```javascript
 const b25 = DATA.benoit2025;
-const tx25 = b25.councils.map(m => {
+const rate25 = b25.commissionRate || 0;
+const net25 = b25.councils.reduce((s, m) => {
   const dh = Math.round(m.htEUR * m.tauxApplique);
-  const commission = Math.round(dh * b25.commissionRate);
-  return dh - commission;
-});
-const netBenoit25 = tx25.reduce((s, n) => s + n, 0);
+  return s + dh - Math.round(dh * rate25);
+}, 0);
 const paye25 = sum(b25.virements, 'dh');
-const report = netBenoit25 - paye25;  // Carryforward automatique
+const report = net25 - paye25;  // Carryforward automatique
 ```
 
-#### Réconciliation 2026
+#### Détection clôture vs en-cours
 
+```javascript
+const isClotured = !d.councils[0]?.statut;
+// 2025 (clôture): pas de champ statut → date field = "Date EBS"
+// 2026 (en-cours): statut: "ok"|"w" → date field = "Mois"
 ```
-Solde 2026 = report2025 + netCouncilsPayé2026 − virementsDH2026
-```
-
-Seuls les councils avec `statut: "ok"` comptent dans la réconciliation.
 
 ---
 
@@ -206,37 +254,52 @@ Quand `window.PRIV = true`, les données privées sont déchiffrées et injecté
 
 - **Benoit** : Taux marché, Δ taux, Gain FX, Consolidation gains Amine
 - **FX P2P** : 3 legs (EUR→AED→USDT→MAD), spreads, taux effectif
-- **Mes Gains** : Consolidation de tous les gains (commission + FX + P2P)
+- **Mes Gains** : Consolidation de tous les gains + DH/% toggle
 
 ---
 
-## Rendering (`render.js`)
+## Modules de rendu
 
-### Fonctions principales
+### render-helpers.js — Utilitaires partagés
+
+| Fonction | Usage |
+|----------|-------|
+| `fmtPlain(n)` | Nombre formaté FR sans signe (ex: `198 475`) |
+| `fmtSigned(n, suffix)` | Nombre avec signe (ex: `+4 754 DH`) |
+| `fmtRate(r)` | Taux avec 3 décimales (ex: `10,600`) |
+| `fmtDelta(d)` | Delta taux avec signe (ex: `−0,100`) |
+| `badge(type, text)` | Badge coloré (ok/w/e/i) |
+| `sum(arr, key)` | Somme avec key string ou function |
+| `yearToggle3(section, activeYear)` | Toggle Tout/2025/2026 |
+
+### render-augustin.js
 
 | Fonction | Description |
 |----------|-------------|
-| `renderAugustin2025(embedded)` | Clôture Augustin 2025 complète |
-| `renderAugustin2026(embedded)` | Augustin 2026 en cours |
+| `renderAugustin2025(embedded)` | Clôture complète (12 mois, 5 catégories) |
+| `renderAugustin2026(embedded)` | En cours (factures RTL, virements) |
 | `renderAugustinAll()` | Vue combinée (2026 + 2025 stacked) |
-| `renderBenoit2025(embedded)` | Clôture Benoit 2025 |
-| `renderBenoit2026(embedded)` | Benoit 2026 en cours |
-| `renderBenoitAll()` | Vue combinée Benoit |
-| `renderFXP2P()` | Pipeline FX P2P (PRIV only) |
-| `renderMesGains()` | Consolidation gains (PRIV only) |
-| `renderAll()` | Orchestre le rendu de tous les panels |
 
-### Paramètre `embedded`
+### render-benoit.js
 
-Quand `embedded = true`, la fonction skip le yearToggle header (utilisé dans les vues "Tout" qui empilent 2026 + 2025).
+| Fonction | Description |
+|----------|-------------|
+| `renderBenoitYear(dataKey, opts)` | Renderer générique (détecte clôture/en-cours) |
+| `renderBenoit2025(embedded)` | Wrapper → `renderBenoitYear('benoit2025', ...)` |
+| `renderBenoit2026(embedded)` | Wrapper avec report calculé dynamiquement |
+| `renderBenoitAll()` | Vue combinée |
 
-### Year toggle
+### render-fxp2p.js
 
-Chaque onglet a un toggle **Tout / 2025 / 2026** :
-- `switchAzYear(y)` → Augustin
-- `switchBaYear(y)` → Benoit
-- `switchFxYear(y)` → FX P2P
-- `switchGainsYear(y)` → Mes Gains
+Pipeline FX P2P (EUR→AED→USDT→MAD). Rendu conditionnel `window.PRIV`.
+
+### render-gains.js
+
+Consolidation gains avec 5 sources : Virements Augustin, Commission Ycarré, Commission Benoit, Écart taux Benoit, Spread P2P Benoit. Inclut un toggle DH/% via `window.gainsShowPct`.
+
+### render-main.js
+
+Orchestration : `TAB_CONFIG`, `buildTabs()`, `refreshTabVisibility()`, `showTab()`, `renderPanel()`, `renderAll()`.
 
 ---
 
@@ -264,44 +327,21 @@ Chaque onglet a un toggle **Tout / 2025 / 2026** :
 ### Passer à une nouvelle année (ex: Benoit 2027)
 
 1. Dans `data.js`, ajouter `benoit2027: { ... }` avec la même structure que `benoit2026`
-2. Dans `render.js`, créer `renderBenoit2027()` en copiant `renderBenoit2026()`
-3. Le report 2026→2027 se calculera automatiquement comme le report 2025→2026
-4. Mettre à jour le yearToggle pour inclure 2027
+2. Le `renderBenoitYear()` fonctionnera automatiquement (détecte clôture vs en-cours)
+3. Ajouter un wrapper `renderBenoit2027()` dans `render-benoit.js`
+4. Le report 2026→2027 se calculera automatiquement
+5. Mettre à jour le yearToggle pour inclure 2027
 
 ### Ajouter un nouveau counterpart
 
-1. Dans `data.js`, ajouter `nouveauClient2026: { ... }` avec :
-   - `title`, `subtitle`
-   - `commissionRate` (si applicable)
-   - `councils[]` ou équivalent (factures)
-   - `virements[]` (paiements)
-2. Dans `render.js`, créer `renderNouveauClient2026(embedded)` avec la logique de calcul
-3. Dans `index.html` :
-   - Ajouter un onglet : `<div class="tab" onclick="showTab('nouveauClient')">Nouveau Client</div>`
-   - Ajouter un panel : `<div id="nouveauClient" class="panel"></div>`
-   - Ajouter les fonctions de switch année
-4. Mettre à jour `renderAll()` dans render.js
-
----
-
-## Points d'attention architecture
-
-### Ce qui est bien
-
-- **Séparation claire** data / render / UI
-- **Chiffrement** des données sensibles côté client
-- **3 niveaux d'accès** (public, client, pro)
-- **Carryforward dynamique** (pas de duplication de données)
-
-### Ce qui pourrait être amélioré (futur)
-
-1. **Duplication render Benoit 2025/2026** : Les fonctions renderBenoit2025 et renderBenoit2026 partagent ~70% de code. Un refactor vers une fonction générique `renderBenoitYear(year, data, report)` réduirait la maintenance.
-
-2. **Formats de données inconsistants entre clôture et en-cours** : Augustin 2025 (clôturé) utilise `virementsMaroc[].excelEUR` alors que 2026 utilise `virementsMaroc[].dh`. Idem pour `divers[]`. Standardiser faciliterait l'ajout de nouvelles années.
-
-3. **Noms de counterparts hardcodés partout** : Les fonctions `switchAzYear`, `switchBaYear`, `renderAugustin2025`, etc. sont nommées par counterpart. Un système générique `renderCounterpart(name, year)` permettrait d'ajouter des clients sans toucher à render.js.
-
-4. **render.js monolithique (1194 lignes)** : Pourrait être séparé en modules par counterpart si le fichier continue de grossir.
+1. Dans `data.js`, ajouter `nouveauClient2026: { ... }`
+2. Créer un fichier `render-nouveauClient.js` avec la logique de rendu
+3. Dans `render-main.js`, ajouter à `TAB_CONFIG` :
+```javascript
+{ id: 'nouveauClient', label: 'Nouveau Client', access: 'full' },
+```
+4. Ajouter un `case` dans `renderPanel()` pour le nouveau panel
+5. Charger le script dans `index.html` et bumper le cache version
 
 ---
 
@@ -314,11 +354,11 @@ git commit -m "Description du changement"
 git push origin main
 
 # Cache bust (IMPORTANT — GitHub Pages CDN)
-# Incrémenter le ?v=N dans index.html pour data.js, data-priv.enc.js, render.js
-sed -i 's/v=24/v=25/g' index.html
+# Incrémenter le ?v=N dans index.html pour tous les scripts
+sed -i 's/v=26/v=27/g' index.html
 ```
 
-Le site se met à jour en ~30 secondes après le push. Si l'ancienne version persiste, ajouter un query param unique à l'URL (ex: `?deploy=v25`).
+Le site se met à jour en ~30 secondes après le push. Si l'ancienne version persiste, ajouter un query param unique à l'URL (ex: `?deploy=v27`).
 
 ## Chiffrement des données privées
 
