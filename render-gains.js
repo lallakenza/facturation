@@ -92,7 +92,11 @@ function renderMesGains() {
 
   const totalGainAz = gainMAD_az25 + gainMAD_az26;
 
-  // ===== 2. COMMISSION YCARRÉ (Oum Yakout) — 2025 only =====
+  // ===== 2. BENOIT DATA =====
+  const b25 = DATA.benoit2025;
+  const b26 = DATA.benoit2026;
+
+  // ===== 3. COMMISSION YCARRÉ (Oum Yakout) — 2025 only =====
   const ycarreTotal = DATA._ycarreTotal || sum(az25.ycarre, 'montant');
   const ycarreCommRate = DATA._ycarreCommission || 0;
   const ycarrePct = Math.round(ycarreCommRate * 100);
@@ -101,20 +105,18 @@ function renderMesGains() {
   const commYcarréEUR = Math.round(ycarreTotal * ycarreCommRate);
   const commYcarréMAD = Math.round(commYcarréEUR * mkt25);
 
-  // ===== 3. COMMISSION BENOIT 10% =====
-  const b25 = DATA.benoit2025;
-  const b26 = DATA.benoit2026;
+  // ===== 4. COMMISSION BENOIT =====
 
   const commBenoit25 = b25.councils.reduce((s, m) => s + Math.round(m.htEUR * m.tauxApplique * b25.commissionRate), 0);
   const commBenoit26 = b26.councils.filter(m => m.statut === 'ok').reduce((s, m) => s + Math.round(m.htEUR * m.tauxApplique * b26.commissionRate), 0);
   const totalComm = commBenoit25 + commBenoit26;
 
-  // ===== 4. ÉCART TAUX BENOIT (appliqué vs marché) =====
+  // ===== 5. ÉCART TAUX BENOIT (appliqué vs marché) =====
   const fxBenoit25 = b25.councils.reduce((s, m) => s + Math.round(m.htEUR * (m.tauxMarche - m.tauxApplique)), 0);
   const fxBenoit26 = b26.councils.filter(m => m.statut === 'ok' && m.tauxMarche).reduce((s, m) => s + Math.round(m.htEUR * (m.tauxMarche - m.tauxApplique)), 0);
   const totalFxBenoit = fxBenoit25 + fxBenoit26;
 
-  // ===== 5. P2P SPREAD on Benoit payments =====
+  // ===== 6. P2P SPREAD on Benoit payments =====
   const totalNetBenoit25 = b25.councils.reduce((s, m) => {
     const dh = Math.round(m.htEUR * m.tauxApplique);
     return s + dh - Math.round(dh * b25.commissionRate);
