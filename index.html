@@ -117,18 +117,8 @@
   <h1>Réconciliation Facturation 2025-2026</h1>
   <p>Audit croisé : Excel Augustin × EBS × Attijariwafa — Taux Augustin : 10 000 DH = 1 000€</p>
 </div>
-<div class="tabs">
-  <div class="tab active" onclick="showTab('augustin')">Augustin</div>
-  <div class="tab" onclick="showTab('benoit')">Benoit</div>
-  <div class="tab" id="tab-fxp2p" onclick="showTab('fxp2p')" style="display:none">FX P2P</div>
-  <div class="tab" id="tab-gains" onclick="showTab('gains')" style="display:none">Mes Gains</div>
-</div>
-<div class="content">
-  <div id="augustin" class="panel active"></div>
-  <div id="benoit" class="panel"></div>
-  <div id="fxp2p" class="panel"></div>
-  <div id="gains" class="panel"></div>
-</div>
+<div class="tabs" id="tabBar"></div>
+<div class="content" id="content"></div>
 <div style="padding:20px 32px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px">
   <span style="font-size:.72rem;color:var(--muted)">Réf. dossier</span>
   <input id="dref" type="text" placeholder="—" autocomplete="off" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 12px;color:var(--text);font-size:.78rem;width:140px;outline:none">
@@ -142,14 +132,14 @@
   </div>
 </div>
 </div><!-- /site-wrap -->
-<script src="data.js?v=25"></script>
-<script src="data-priv.enc.js?v=25"></script>
-<script src="render-helpers.js?v=25"></script>
-<script src="render-augustin.js?v=25"></script>
-<script src="render-benoit.js?v=25"></script>
-<script src="render-fxp2p.js?v=25"></script>
-<script src="render-gains.js?v=25"></script>
-<script src="render-main.js?v=25"></script>
+<script src="data.js?v=26"></script>
+<script src="data-priv.enc.js?v=26"></script>
+<script src="render-helpers.js?v=26"></script>
+<script src="render-augustin.js?v=26"></script>
+<script src="render-benoit.js?v=26"></script>
+<script src="render-fxp2p.js?v=26"></script>
+<script src="render-gains.js?v=26"></script>
+<script src="render-main.js?v=26"></script>
 <script>
 // ---- ACCESS MODE ----
 window.ACCESS_MODE = null; // 'full' or 'benoit'
@@ -214,15 +204,9 @@ window.ACCESS_MODE = null; // 'full' or 'benoit'
         siteWrap.classList.add('visible');
 
         if(window.ACCESS_MODE === 'benoit'){
-          document.querySelectorAll('.tab').forEach(t => {
-            if(t.textContent.trim() === 'Augustin') t.style.display = 'none';
-          });
-          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-          document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-          document.querySelector('.tab[onclick*="benoit"]').classList.add('active');
-          document.getElementById('benoit').classList.add('active');
           document.getElementById('dref').parentElement.style.display = 'none';
         }
+        buildTabs();
         renderAll();
       } else {
         attempts++;
@@ -246,14 +230,6 @@ window.ACCESS_MODE = null; // 'full' or 'benoit'
   // Focus on load
   gateInput.focus();
 })();
-
-// ---- Tab switching ----
-function showTab(id){
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  event.target.classList.add('active');
-}
 
 // ---- Year toggle ----
 window.azYear = 2026;
@@ -345,8 +321,7 @@ document.getElementById('dref').addEventListener('input', async function(){
       ovl.classList.add('show');
       setTimeout(()=>{ document.body.classList.add('dark'); }, 400);
       setTimeout(()=>{
-        document.getElementById('tab-fxp2p').style.display = '';
-        document.getElementById('tab-gains').style.display = '';
+        refreshTabVisibility();
         renderAll();
         ovl.classList.remove('show');
         this.placeholder = '✓';
