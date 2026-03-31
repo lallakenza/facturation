@@ -127,12 +127,12 @@ const DATA = {
     divers: [
       { label: "Augustin → Amine (via Zakaria Belghiti)", montant: -1200 },
       { label: "Amine → Augustin (via Oumaima)", montant: 800 },
-      { label: "Amine → Azarkan (via Nezha → Hanane) — remboursement solde cash", montant: 400 },
-      { label: "Amine → Azarkan (via Nezha → Hanane) — avec commission 6%", montant: 5600, commissionRate: 0.06 },
+      { label: "Amine → Azarkan (via Nezha → Hanane) — remboursement cash (prêts 2025 + Zak/Oumaima 2026)", montant: 2000 },
+      { label: "Amine → Azarkan (via Nezha → Hanane) — avec commission 6%", montant: 4000, commissionRate: 0.06 },
     ],
 
     insights: [
-      { type: "neutral", titre: "💸 Flux cash 2026 : Amine 6 800€ → Azarkan / Azarkan 1 200€ → Amine", desc: "<strong>Azarkan → Amine :</strong> 1 200€ (via Zakaria Belghiti).<br><strong>Amine → Azarkan :</strong> 800€ (via Oumaima) + 6 000€ (2×3 000€ via Nezha → Hanane) = <strong>6 800€</strong>.<br><em>Ventilation des 6 000€ :</em> 400€ = remboursement du solde cash (1 200 − 800 = 400€ restants), 5 600€ = avec commission 6% (brut = 5 600 ÷ 0,94 = 5 957€, commission Amine = 357€).<br>Solde cash net : <strong>+5 600€</strong> (Amine a envoyé 5 600€ de plus). Dette perso soldée." },
+      { type: "neutral", titre: "💸 Flux cash 2026 : Amine 6 800€ → Azarkan / Azarkan 1 200€ → Amine", desc: "<strong>Azarkan → Amine :</strong> 1 200€ (via Zakaria Belghiti).<br><strong>Amine → Azarkan :</strong> 800€ (via Oumaima) + 6 000€ (2×3 000€ via Nezha → Hanane) = <strong>6 800€</strong>.<br><em>Ventilation des 6 000€ :</em> 2 000€ = remboursement dette cash (prêts 2025 : 4 000€ − remboursés 2 400€ = 1 600€ + Zak 1 200 − Oumaima 800 = 400€), 4 000€ = avec commission 6% (brut = 4 000 ÷ 0,94 = 4 255€, commission Amine = 255€).<br>Dette cash personnelle <strong>soldée</strong>." },
       { type: "neutral", titre: "📄 Factures RTL 2026 : 2 émises, 1 à facturer", desc: "INVRTL013 (Jan, 11j, 9 350€ HT) émise le 31/12/2025, échéance 01/03/2026. INVRTL014 (Fév, 20j, 17 000€ HT) émise le 01/03/2026, échéance 01/04/2026. Mars (20j, 17 000€ HT) à facturer. <strong>Toutes les factures RTL sont HT (TVA 0% — Bairok LLC est basée aux EAU).</strong>" },
     ],
   },
