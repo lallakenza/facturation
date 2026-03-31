@@ -247,35 +247,51 @@ function renderAugustin2026(embedded) {
   const azcsInvoiced = azcsAll.filter(c => c.statut === 'ok' || c.statut === 'w');
   const azcsRecuInvoiced = sum(azcsInvoiced, 'htEUR');
   const azcsRecuAll = sum(azcsAll, 'htEUR');
-  // Delta = Amine reçu (RTL paid) − Augustin reçu (virements + divers + AZCS directement) + report 2025
-  const delta = amineRecu - augustinRecuEUR - diversNet - azcsRecuPaid + d.report2025;
+  // ---- POSITION ENTREPRISE = flux sociétés uniquement (RTL vs AZCS + report) ----
+  const deltaEntreprisePaid = amineRecu - azcsRecuPaid + d.report2025;
+  // ---- POSITION NET = entreprise − virements Maroc − divers cash perso ----
+  const delta = deltaEntreprisePaid - augustinRecuEUR - diversNet;
 
   // Invoiced = factures émises (ref !== '—'), statut ok ou w
   const invoicedRTL = d.rtl.filter(r => r.ref !== '—');
   const totalInvoiced = sum(invoicedRTL, 'montant');
-  const deltaInvoiced = totalInvoiced - augustinRecuEUR - diversNet - azcsRecuInvoiced + d.report2025;
+  const deltaEntrepriseInvoiced = totalInvoiced - azcsRecuInvoiced + d.report2025;
+  const deltaInvoiced = deltaEntrepriseInvoiced - augustinRecuEUR - diversNet;
   // Accrued = tout (y compris à facturer)
-  const deltaAccrued = totalFacture - augustinRecuEUR - diversNet - azcsRecuAll + d.report2025;
+  const deltaEntrepriseAccrued = totalFacture - azcsRecuAll + d.report2025;
+  const deltaAccrued = deltaEntrepriseAccrued - augustinRecuEUR - diversNet;
 
   let html = embedded ? '' : yearToggle3('Az', 2026);
   html += `<h2 style="font-size:1.05rem;margin-bottom:16px">${d.title}</h2>`;
 
-  // ---- HERO CARD: Position actuelle ----
-  html += `<div class="hero-card" style="border-color:${delta >= 0 ? 'var(--green)' : 'var(--red)'}">
-    <div class="hero-label">Position actuelle — Cash réel</div>
-    <div class="hero-value ${delta >= 0 ? 'green' : 'red'}">${fmtSigned(delta)}</div>
-    <div class="hero-who" style="color:${delta >= 0 ? 'var(--green)' : 'var(--red)'}">→ ${delta >= 0 ? 'Amine doit payer Augustin' : 'Augustin doit payer Amine'}</div>
-    <div class="hero-detail">RTL payé (${paidRTL.length}) + AZCS reçu par Azarkan (${azcsPaid.length}) · Report 2025 inclus</div>
+  // ---- HERO CARDS: Position Entreprise + Position Net ----
+  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+    <div class="hero-card" style="border-color:${deltaEntreprisePaid >= 0 ? 'var(--green)' : 'var(--red)'}">
+      <div class="hero-label">Position Entreprise</div>
+      <div class="hero-value ${deltaEntreprisePaid >= 0 ? 'green' : 'red'}">${fmtSigned(deltaEntreprisePaid)}</div>
+      <div class="hero-who" style="color:${deltaEntreprisePaid >= 0 ? 'var(--green)' : 'var(--red)'}">→ ${deltaEntreprisePaid >= 0 ? 'Amine doit à Augustin (entreprise)' : 'Augustin doit à Amine (entreprise)'}</div>
+      <div class="hero-detail">RTL (Bairok) − AZCS (Azarkan) + Report 2025</div>
+    </div>
+    <div class="hero-card" style="border-color:${delta >= 0 ? 'var(--green)' : 'var(--red)'}">
+      <div class="hero-label">Position Net (tout inclus)</div>
+      <div class="hero-value ${delta >= 0 ? 'green' : 'red'}">${fmtSigned(delta)}</div>
+      <div class="hero-who" style="color:${delta >= 0 ? 'var(--green)' : 'var(--red)'}">→ ${delta >= 0 ? 'Amine doit payer Augustin' : 'Augustin doit payer Amine'}</div>
+      <div class="hero-detail">Entreprise − Virements Maroc − Cash divers</div>
+    </div>
   </div>`;
 
   // ---- Summary row ----
-  html += `<div class="summary-row">
-    <div class="summary-item"><div class="sl">RTL reçu (paid)</div><div class="sv" style="color:var(--green)">${fmtPlain(amineRecu)} €</div><div class="sd">${paidRTL.length} facture(s) payée(s)</div></div>
-    <div class="summary-item"><div class="sl">AZCS reçu par Azarkan</div><div class="sv" style="color:var(--green)">${fmtPlain(azcsRecuPaid)} €</div><div class="sd">${azcsPaid.length} facture(s) Councils payée(s)</div></div>
-    <div class="summary-item"><div class="sl">Virements Maroc</div><div class="sv" style="color:var(--accent)">${fmtPlain(augustinRecuEUR)} €</div><div class="sd">${fmtPlain(totalMAD)} DH envoyés</div></div>
-    <div class="summary-item"><div class="sl">Cash direct</div><div class="sv" style="color:var(--accent)">${fmtPlain(diversNet)} €</div><div class="sd">Paiements perso net</div></div>
+  html += `<div style="font-size:.7rem;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Flux entreprise</div>`;
+  html += `<div class="summary-row" style="margin-bottom:8px">
+    <div class="summary-item"><div class="sl">RTL reçu (Bairok)</div><div class="sv" style="color:var(--green)">${fmtPlain(amineRecu)} €</div><div class="sd">${paidRTL.length} facture(s) payée(s)</div></div>
+    <div class="summary-item"><div class="sl">AZCS reçu (Azarkan)</div><div class="sv" style="color:var(--blue,#60a5fa)">${fmtPlain(azcsRecuPaid)} €</div><div class="sd">${azcsPaid.length} facture(s) Councils</div></div>
     <div class="summary-item"><div class="sl">Report 2025</div><div class="sv" style="color:var(--red)">${fmtSigned(d.report2025)}</div><div class="sd">Solde clôture 2025</div></div>
     <div class="summary-item"><div class="sl">En attente RTL</div><div class="sv" style="color:var(--yellow)">${fmtPlain(totalPending)} €</div><div class="sd">Pas encore payé</div></div>
+  </div>`;
+  html += `<div style="font-size:.7rem;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Flux personnel</div>`;
+  html += `<div class="summary-row">
+    <div class="summary-item"><div class="sl">Virements Maroc</div><div class="sv" style="color:var(--accent)">${fmtPlain(augustinRecuEUR)} €</div><div class="sd">${fmtPlain(totalMAD)} DH envoyés</div></div>
+    <div class="summary-item"><div class="sl">Cash divers net</div><div class="sv" style="color:var(--accent)">${fmtPlain(diversNet)} €</div><div class="sd">Via Nezha → Hanane</div></div>
   </div>`;
 
   // View toggle (secondary)
@@ -285,39 +301,54 @@ function renderAugustin2026(embedded) {
     <button onclick="switchRecoView('accrued')" id="reco-btn-accrued" style="padding:5px 14px;border:none;border-radius:6px;cursor:pointer;font-size:.7rem;font-weight:600;background:transparent;color:var(--muted);transition:all .2s">Projection</button>
   </div>`;
 
-  // 3 reconciliation tables
+  // 3 reconciliation tables — each shows Position Entreprise then Position Net
   html += `<div id="reco-table-paid" class="s"><div class="st">Réconciliation 2026 — Cash réel (paid)</div><table>
     <thead><tr><th>Ligne</th><th style="text-align:right">EUR</th><th>Détail</th></tr></thead><tbody>
-    <tr style="background:var(--green-bg,rgba(34,197,94,.07))"><td><strong>Amine a reçu (RTL paid)</strong></td><td class="a" style="color:var(--green)"><strong>${fmtPlain(amineRecu)}</strong></td><td>${paidRTL.length} facture${paidRTL.length > 1 ? 's' : ''} RTL payée${paidRTL.length > 1 ? 's' : ''}</td></tr>
-    <tr><td>− Augustin a reçu (virements Maroc)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(augustinRecuEUR)}</td><td>${fmtPlain(totalMAD)} DH ÷ ${d.tauxMaroc}</td></tr>
-    <tr><td>− Divers cash net (Amine → Azarkan)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(diversNet)}</td><td>Cash direct entre Amine et Azarkan</td></tr>
+    <tr style="background:var(--green-bg,rgba(34,197,94,.07))"><td colspan="3" style="font-size:.75rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)">① Position Entreprise (sociétés)</td></tr>
+    <tr style="background:var(--green-bg,rgba(34,197,94,.07))"><td><strong>+ Amine a reçu (RTL paid — Bairok)</strong></td><td class="a" style="color:var(--green)"><strong>${fmtPlain(amineRecu)}</strong></td><td>${paidRTL.length} facture${paidRTL.length > 1 ? 's' : ''} RTL payée${paidRTL.length > 1 ? 's' : ''}</td></tr>
     <tr><td>− AZCS reçu par Azarkan (Councils paid)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(azcsRecuPaid)}</td><td>${azcsPaid.length} facture(s) AZCS→Majalis payée(s)</td></tr>
     <tr><td>+ Report 2025</td><td class="a" style="color:var(--red)">${fmtSigned(d.report2025)}</td><td>Solde clôture 2025</td></tr>
-    <tr class="tr"><td><strong>Delta net (paid)</strong></td><td class="a" style="color:${delta >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(delta)}</strong></td><td>${delta >= 0 ? 'Amine doit ' + fmtPlain(delta) + '€ à Augustin' : 'Augustin doit ' + fmtPlain(Math.abs(delta)) + '€ à Amine'}</td></tr>
+    <tr class="tr" style="background:rgba(99,102,241,.06)"><td><strong>= Position Entreprise</strong></td><td class="a" style="color:${deltaEntreprisePaid >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(deltaEntreprisePaid)}</strong></td><td>${deltaEntreprisePaid >= 0 ? 'Amine doit ' + fmtPlain(deltaEntreprisePaid) + '€ (entreprise)' : 'Augustin doit ' + fmtPlain(Math.abs(deltaEntreprisePaid)) + '€ (entreprise)'}</td></tr>
+    <tr><td colspan="3" style="padding:6px 0"></td></tr>
+    <tr style="background:var(--yellow-bg,rgba(202,138,4,.07))"><td colspan="3" style="font-size:.75rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)">② Position Net (entreprise + personnel)</td></tr>
+    <tr><td>Position Entreprise (ci-dessus)</td><td class="a" style="color:${deltaEntreprisePaid >= 0 ? 'var(--green)' : 'var(--red)'}">${fmtSigned(deltaEntreprisePaid)}</td><td></td></tr>
+    <tr><td>− Virements Maroc (Amine → Augustin)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(augustinRecuEUR)}</td><td>${fmtPlain(totalMAD)} DH ÷ ${d.tauxMaroc}</td></tr>
+    <tr><td>− Cash divers net (Amine → Azarkan)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(diversNet)}</td><td>Paiements personnels via Nezha</td></tr>
+    <tr class="tr"><td><strong>= Position Net</strong></td><td class="a" style="color:${delta >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(delta)}</strong></td><td>${delta >= 0 ? 'Amine doit ' + fmtPlain(delta) + '€ à Augustin' : 'Augustin doit ' + fmtPlain(Math.abs(delta)) + '€ à Amine'}</td></tr>
     </tbody></table>
-    <div class="n" style="margin-top:8px;font-size:.72rem;color:var(--muted)">Seuls les montants effectivement encaissés/décaissés sont comptés. AZCS = revenus Councils reçus directement par Azarkan via sa société belge.</div></div>`;
+    <div class="n" style="margin-top:8px;font-size:.72rem;color:var(--muted)"><strong>Position Entreprise</strong> = flux entre sociétés (RTL Bairok vs AZCS Azarkan). <strong>Position Net</strong> = entreprise + paiements personnels (virements Maroc, cash divers). AZCS = revenus Councils reçus directement par Azarkan via sa société belge.</div></div>`;
 
   html += `<div id="reco-table-invoiced" class="s" style="display:none"><div class="st">Réconciliation 2026 — Factures émises (invoiced)</div><table>
     <thead><tr><th>Ligne</th><th style="text-align:right">EUR</th><th>Détail</th></tr></thead><tbody>
-    <tr style="background:var(--yellow-bg,rgba(202,138,4,.07))"><td><strong>RTL facturé (invoiced)</strong></td><td class="a" style="color:var(--yellow)"><strong>${fmtPlain(totalInvoiced)}</strong></td><td>${invoicedRTL.length} facture${invoicedRTL.length > 1 ? 's' : ''} émise${invoicedRTL.length > 1 ? 's' : ''}</td></tr>
-    <tr><td>− Augustin a reçu (virements Maroc)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(augustinRecuEUR)}</td><td>${fmtPlain(totalMAD)} DH ÷ ${d.tauxMaroc}</td></tr>
-    <tr><td>− Divers cash net (Amine → Azarkan)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(diversNet)}</td><td>Cash direct entre Amine et Azarkan</td></tr>
+    <tr style="background:var(--green-bg,rgba(34,197,94,.07))"><td colspan="3" style="font-size:.75rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)">① Position Entreprise (sociétés)</td></tr>
+    <tr style="background:var(--yellow-bg,rgba(202,138,4,.07))"><td><strong>+ RTL facturé (invoiced — Bairok)</strong></td><td class="a" style="color:var(--yellow)"><strong>${fmtPlain(totalInvoiced)}</strong></td><td>${invoicedRTL.length} facture${invoicedRTL.length > 1 ? 's' : ''} émise${invoicedRTL.length > 1 ? 's' : ''}</td></tr>
     <tr><td>− AZCS reçu par Azarkan (invoiced)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(azcsRecuInvoiced)}</td><td>${azcsInvoiced.length} facture(s) AZCS émises/payées</td></tr>
     <tr><td>+ Report 2025</td><td class="a" style="color:var(--red)">${fmtSigned(d.report2025)}</td><td>Solde clôture 2025</td></tr>
-    <tr class="tr"><td><strong>Delta net (invoiced)</strong></td><td class="a" style="color:${deltaInvoiced >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(deltaInvoiced)}</strong></td><td>${deltaInvoiced >= 0 ? 'Amine doit ' + fmtPlain(deltaInvoiced) + '€ à Augustin' : 'Augustin doit ' + fmtPlain(Math.abs(deltaInvoiced)) + '€ à Amine'}</td></tr>
+    <tr class="tr" style="background:rgba(99,102,241,.06)"><td><strong>= Position Entreprise</strong></td><td class="a" style="color:${deltaEntrepriseInvoiced >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(deltaEntrepriseInvoiced)}</strong></td><td>${deltaEntrepriseInvoiced >= 0 ? 'Amine doit ' + fmtPlain(deltaEntrepriseInvoiced) + '€ (entreprise)' : 'Augustin doit ' + fmtPlain(Math.abs(deltaEntrepriseInvoiced)) + '€ (entreprise)'}</td></tr>
+    <tr><td colspan="3" style="padding:6px 0"></td></tr>
+    <tr style="background:var(--yellow-bg,rgba(202,138,4,.07))"><td colspan="3" style="font-size:.75rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)">② Position Net (entreprise + personnel)</td></tr>
+    <tr><td>Position Entreprise (ci-dessus)</td><td class="a" style="color:${deltaEntrepriseInvoiced >= 0 ? 'var(--green)' : 'var(--red)'}">${fmtSigned(deltaEntrepriseInvoiced)}</td><td></td></tr>
+    <tr><td>− Virements Maroc (Amine → Augustin)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(augustinRecuEUR)}</td><td>${fmtPlain(totalMAD)} DH ÷ ${d.tauxMaroc}</td></tr>
+    <tr><td>− Cash divers net (Amine → Azarkan)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(diversNet)}</td><td>Paiements personnels via Nezha</td></tr>
+    <tr class="tr"><td><strong>= Position Net</strong></td><td class="a" style="color:${deltaInvoiced >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(deltaInvoiced)}</strong></td><td>${deltaInvoiced >= 0 ? 'Amine doit ' + fmtPlain(deltaInvoiced) + '€ à Augustin' : 'Augustin doit ' + fmtPlain(Math.abs(deltaInvoiced)) + '€ à Amine'}</td></tr>
     </tbody></table>
-    <div class="n" style="margin-top:8px;font-size:.72rem;color:var(--muted)">Inclut toutes les factures émises (payées ou non), exclut les périodes pas encore facturées. AZCS = factures émises + payées par Badre.</div></div>`;
+    <div class="n" style="margin-top:8px;font-size:.72rem;color:var(--muted)">Inclut toutes les factures émises (payées ou non). <strong>Position Entreprise</strong> = RTL − AZCS + report. <strong>Position Net</strong> = entreprise − virements − divers.</div></div>`;
 
   html += `<div id="reco-table-accrued" class="s" style="display:none"><div class="st">Réconciliation 2026 — Accrued (tout inclus)</div><table>
     <thead><tr><th>Ligne</th><th style="text-align:right">EUR</th><th>Détail</th></tr></thead><tbody>
-    <tr style="background:var(--yellow-bg,rgba(202,138,4,.07))"><td><strong>RTL total (accrued)</strong></td><td class="a" style="color:var(--yellow)"><strong>${fmtPlain(totalFacture)}</strong></td><td>${d.rtl.length} facture${d.rtl.length > 1 ? 's' : ''} (payées + émises + à facturer)</td></tr>
-    <tr><td>− Augustin a reçu (virements Maroc)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(augustinRecuEUR)}</td><td>${fmtPlain(totalMAD)} DH ÷ ${d.tauxMaroc}</td></tr>
-    <tr><td>− Divers cash net (Amine → Azarkan)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(diversNet)}</td><td>Cash direct entre Amine et Azarkan</td></tr>
+    <tr style="background:var(--green-bg,rgba(34,197,94,.07))"><td colspan="3" style="font-size:.75rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)">① Position Entreprise (sociétés)</td></tr>
+    <tr style="background:var(--yellow-bg,rgba(202,138,4,.07))"><td><strong>+ RTL total (accrued — Bairok)</strong></td><td class="a" style="color:var(--yellow)"><strong>${fmtPlain(totalFacture)}</strong></td><td>${d.rtl.length} facture${d.rtl.length > 1 ? 's' : ''} (payées + émises + à facturer)</td></tr>
     <tr><td>− AZCS reçu par Azarkan (toutes)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(azcsRecuAll)}</td><td>${azcsAll.length} facture(s) AZCS (projection complète)</td></tr>
     <tr><td>+ Report 2025</td><td class="a" style="color:var(--red)">${fmtSigned(d.report2025)}</td><td>Solde clôture 2025</td></tr>
-    <tr class="tr"><td><strong>Delta net (accrued)</strong></td><td class="a" style="color:${deltaAccrued >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(deltaAccrued)}</strong></td><td>${deltaAccrued >= 0 ? 'Amine doit ' + fmtPlain(deltaAccrued) + '€ à Augustin' : 'Augustin doit ' + fmtPlain(Math.abs(deltaAccrued)) + '€ à Amine'}</td></tr>
+    <tr class="tr" style="background:rgba(99,102,241,.06)"><td><strong>= Position Entreprise</strong></td><td class="a" style="color:${deltaEntrepriseAccrued >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(deltaEntrepriseAccrued)}</strong></td><td>${deltaEntrepriseAccrued >= 0 ? 'Amine doit ' + fmtPlain(deltaEntrepriseAccrued) + '€ (entreprise)' : 'Augustin doit ' + fmtPlain(Math.abs(deltaEntrepriseAccrued)) + '€ (entreprise)'}</td></tr>
+    <tr><td colspan="3" style="padding:6px 0"></td></tr>
+    <tr style="background:var(--yellow-bg,rgba(202,138,4,.07))"><td colspan="3" style="font-size:.75rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)">② Position Net (entreprise + personnel)</td></tr>
+    <tr><td>Position Entreprise (ci-dessus)</td><td class="a" style="color:${deltaEntrepriseAccrued >= 0 ? 'var(--green)' : 'var(--red)'}">${fmtSigned(deltaEntrepriseAccrued)}</td><td></td></tr>
+    <tr><td>− Virements Maroc (Amine → Augustin)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(augustinRecuEUR)}</td><td>${fmtPlain(totalMAD)} DH ÷ ${d.tauxMaroc}</td></tr>
+    <tr><td>− Cash divers net (Amine → Azarkan)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(diversNet)}</td><td>Paiements personnels via Nezha</td></tr>
+    <tr class="tr"><td><strong>= Position Net</strong></td><td class="a" style="color:${deltaAccrued >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(deltaAccrued)}</strong></td><td>${deltaAccrued >= 0 ? 'Amine doit ' + fmtPlain(deltaAccrued) + '€ à Augustin' : 'Augustin doit ' + fmtPlain(Math.abs(deltaAccrued)) + '€ à Amine'}</td></tr>
     </tbody></table>
-    <div class="n" style="margin-top:8px;font-size:.72rem;color:var(--muted)">Inclut tout : factures payées, émises en attente, et périodes pas encore facturées (projection). AZCS = toutes les factures Councils.</div></div>`;
+    <div class="n" style="margin-top:8px;font-size:.72rem;color:var(--muted)">Projection complète. <strong>Position Entreprise</strong> = RTL total − AZCS total + report. <strong>Position Net</strong> = entreprise − virements − divers.</div></div>`;
 
   // Factures RTL 2026
   let rtlTableHtml = `<table>

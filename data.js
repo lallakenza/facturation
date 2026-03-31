@@ -3,6 +3,30 @@
 // Les données privées (commissions, spreads, FX P2P) sont chiffrées
 // dans data-priv.enc.js et déchiffrées uniquement avec le bon mot de passe.
 // ============================================================
+//
+// DATA MODEL DOCUMENTATION
+// ========================
+//
+// ENTITÉS :
+//   Amine (moi)       — Bairok Consulting LLC (EAU), facture RTL en EUR HT (TVA 0%)
+//   Augustin (Azarkan) — AZCS (Azarkan Consulting Services, Belgique), facture Majalis (Badre)
+//   Benoit (Badre)     — Client Councils via AZCS, paie TTC (21% TVA belge)
+//
+// RÉCONCILIATION 2026 — DEUX POSITIONS :
+//   Position Entreprise = RTL_paid − AZCS_paid + report2025
+//     → Flux entre sociétés uniquement (Bairok vs AZCS)
+//   Position Net = Position Entreprise − virementsMaroc_EUR − divers_net
+//     → Inclut les paiements personnels (virements DH, cash via Nezha)
+//
+// CONVENTIONS :
+//   - montant > 0 dans divers = Amine paie Azarkan
+//   - montant < 0 dans divers = Azarkan paie Amine
+//   - virementsMaroc.dh / tauxMaroc = EUR brut (10 000 DH = 1 000€)
+//   - commissionRate sur divers = taux déduit du brut (ex: 6% → brut = net / 0.94)
+//   - report2025 = solde clôture 2025 (négatif = Augustin doit à Amine)
+//   - AZCS councils proviennent de benoit2026.councils (même source de données)
+//
+// ============================================================
 
 const DATA = {
 
@@ -107,6 +131,9 @@ const DATA = {
   },
 
   // ==================== AUGUSTIN 2026 ====================
+  // Position Entreprise (paid) = RTL_paid(26350) − AZCS_paid(30625) + report(-1683) = −5 958€
+  // Position Net (paid) = −5958 − virementsMaroc(5000) − divers(6000) = −16 958€
+  // → Augustin doit 16 958€ à Amine (position net)
   augustin2026: {
     title: "Augustin 2026 — En cours",
     report2025: -1683,
@@ -125,14 +152,12 @@ const DATA = {
     ],
 
     divers: [
-      { label: "Augustin → Amine (via Zakaria Belghiti)", montant: -1200 },
-      { label: "Amine → Augustin (via Oumaima)", montant: 800 },
       { label: "Amine → Azarkan (via Nezha → Hanane) — remboursement cash (prêts 2025 + Zak/Oumaima 2026)", montant: 2000 },
       { label: "Amine → Azarkan (via Nezha → Hanane) — avec commission 6%", montant: 4000, commissionRate: 0.06 },
     ],
 
     insights: [
-      { type: "neutral", titre: "💸 Flux cash 2026 : Amine 6 800€ → Azarkan / Azarkan 1 200€ → Amine", desc: "<strong>Azarkan → Amine :</strong> 1 200€ (via Zakaria Belghiti).<br><strong>Amine → Azarkan :</strong> 800€ (via Oumaima) + 6 000€ (2×3 000€ via Nezha → Hanane) = <strong>6 800€</strong>.<br><em>Ventilation des 6 000€ :</em> 2 000€ = remboursement dette cash (prêts 2025 : 4 000€ − remboursés 2 400€ = 1 600€ + Zak 1 200 − Oumaima 800 = 400€), 4 000€ = avec commission 6% (brut = 4 000 ÷ 0,94 = 4 255€, commission Amine = 255€).<br>Dette cash personnelle <strong>soldée</strong>." },
+      { type: "neutral", titre: "💸 Flux cash 2026 : Amine 6 000€ net → Azarkan (via Nezha → Hanane)", desc: "<strong>Amine → Azarkan :</strong> 6 000€ via Nezha → Hanane (2 virements).<br><em>Ventilation :</em> 2 000€ = remboursement cash (prêts 2025 + Zak/Oumaima 2026 inclus), 4 000€ = avec commission 6% (brut = 4 255€, commission Amine = 255€).<br>Note : Zak (-1 200€) et Oumaima (+800€) sont <strong>inclus</strong> dans le remboursement de 2 000€, pas comptés séparément.<br>Dette cash personnelle <strong>soldée</strong>." },
       { type: "pass", titre: "📄 Factures RTL 2026 : 2 payées, 1 à facturer", desc: "INVRTL013 (Jan, 11j, 9 350€ HT) payée. INVRTL014 (Fév, 20j, 17 000€ HT) payée le 01/04/2026 (payment advice CLT-UFA 26 350€ couvrant les 2 factures). Mars (20j, 17 000€ HT) à facturer. <strong>Toutes les factures RTL sont HT (TVA 0% — Bairok LLC est basée aux EAU).</strong>" },
     ],
   },

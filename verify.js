@@ -85,8 +85,33 @@ const az26 = DATA.augustin2026;
 check('Report 2025', az26.report2025, -1683);
 const totalMAD26 = sum(az26.virementsMaroc, 'dh');
 check('Total MAD 2026', totalMAD26, 50000);
+const totalEUR26 = totalMAD26 / az26.tauxMaroc;
+check('Total EUR Maroc 2026', totalEUR26, 5000);
 const totalRTL26 = sum(az26.rtl.filter(r => r.ref !== '—'), 'montant');
 check('Total RTL facturé 2026', totalRTL26, 26350);
+
+// Divers 2026 — should be 6000 (2 entries: 2000 + 4000, no Zak/Oumaima)
+const diversNet26 = az26.divers.reduce((s, x) => s + x.montant, 0);
+check('Divers net 2026', diversNet26, 6000);
+check('Divers count 2026 (no Zak/Oumaima)', az26.divers.length, 2);
+
+// AZCS (from benoit2026)
+const azcsAll26 = DATA.benoit2026.councils;
+const azcsPaid26 = azcsAll26.filter(c => c.statut === 'ok');
+const azcsRecuPaid26 = sum(azcsPaid26, 'htEUR');
+check('AZCS paid 2026', azcsRecuPaid26, 30625);
+
+// RTL paid
+const paidRTL26 = az26.rtl.filter(r => r.statut === 'ok');
+const amineRecu26 = sum(paidRTL26, 'montant');
+check('RTL paid 2026', amineRecu26, 26350);
+
+// Position Entreprise (paid) = RTL paid - AZCS paid + report2025
+const posEntreprise = amineRecu26 - azcsRecuPaid26 + az26.report2025;
+check('Position Entreprise (paid)', posEntreprise, 26350 - 30625 + (-1683)); // = -5958
+// Position Net (paid) = entreprise - virements - divers
+const posNet = posEntreprise - totalEUR26 - diversNet26;
+check('Position Net (paid)', posNet, -5958 - 5000 - 6000); // = -16958
 
 // ===== BENOIT 2025 =====
 console.log('\n=== BENOIT 2025 ===');
