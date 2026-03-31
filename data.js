@@ -119,26 +119,30 @@ const DATA = {
     ],
 
     rtl: [
-      { ref: "INVRTL013", periode: "Janvier", jours: 11, montant: 9350, statut: "w", statutText: "Pas encore reçu" },
-      { ref: "INVRTL014", periode: "Février", jours: 20, montant: 17000, statut: "w", statutText: "Pas encore reçu" },
+      { ref: "INVRTL013", periode: "Janvier", jours: 11, montant: 9350, dateFacture: "31/12/2025", po: "4500619649", dateDue: "01/03/2026", statut: "w", statutText: "Invoiced" },
+      { ref: "INVRTL014", periode: "Février", jours: 20, montant: 17000, dateFacture: "01/03/2026", po: "4500619649", dateDue: "01/04/2026", statut: "w", statutText: "Invoiced" },
       { ref: "—", periode: "Mars", jours: 20, montant: 17000, statut: "i", statutText: "À facturer" },
     ],
 
     divers: [
       { label: "Augustin → Amine (via Zakaria Belghiti)", montant: -1200 },
       { label: "Amine → Augustin (via Oumaima)", montant: 800 },
+      { label: "Amine → Azarkan perso (via Nezha → Hanane) — 1er virement", montant: 3000, commissionRate: 0.06 },
+      { label: "Amine → Azarkan perso (via Nezha → Hanane) — 2ème virement", montant: 3000, commissionRate: 0.06 },
     ],
 
     insights: [
-      { type: "neutral", titre: "💸 Flux cash direct 2026 : Amine 800€ → Augustin / Augustin 1 200€ → Amine", desc: "<strong>Amine → Augustin :</strong> 800€ (via Oumaima, on behalf of Amine).<br><strong>Augustin → Amine :</strong> 1 200€ (via Zakaria Belghiti).<br>Solde cash : <strong>−400€</strong> (Augustin a envoyé 400€ de plus)." },
+      { type: "neutral", titre: "💸 Flux cash 2026 : Amine 6 800€ → Augustin / Augustin 1 200€ → Amine", desc: "<strong>Amine → Augustin :</strong> 800€ (via Oumaima) + 6 000€ perso (2×3 000€ via Nezha → Hanane, commission 6%) = <strong>6 800€</strong>.<br><strong>Augustin → Amine :</strong> 1 200€ (via Zakaria Belghiti).<br>Solde cash : <strong>+5 600€</strong> (Amine a envoyé 5 600€ de plus).<br><em>Note : les 6 000€ perso couvrent un brut de 6 000 ÷ 0,94 = 6 383€ (commission Amine = 383€).</em>" },
+      { type: "neutral", titre: "📄 Factures RTL 2026 : 2 émises, 1 à facturer", desc: "INVRTL013 (Jan, 11j, 9 350€ HT) émise le 31/12/2025, échéance 01/03/2026. INVRTL014 (Fév, 20j, 17 000€ HT) émise le 01/03/2026, échéance 01/04/2026. Mars (20j, 17 000€ HT) à facturer. <strong>Toutes les factures RTL sont HT (TVA 0% — Bairok LLC est basée aux EAU).</strong>" },
     ],
   },
 
   // ==================== BENOIT 2025 (PUBLIC — sans taux marché ni commission) ====================
   benoit2025: {
     title: "Clôture Benoit 2025 — Tracking en DH",
-    subtitle: "Tout est comptabilisé en DH. Les paiements Councils (en EUR) sont convertis en DH au taux EUR/MAD du jour de chaque transaction.",
+    subtitle: "Tout est comptabilisé en DH. Les paiements Councils (en EUR) sont convertis en DH au taux EUR/MAD du jour de chaque transaction. Azarkan reçoit les paiements TTC en Belgique (21% TVA), mais on comptabilise en HT.",
     commissionRate: 0.10,
+    tvaRate: 0.21,
     // tauxMarche per transaction: ENCRYPTED — injected at runtime
 
     councils: [
@@ -164,6 +168,7 @@ const DATA = {
   benoit2026: {
     title: "Benoit 2026 — En cours (tracking en DH)",
     commissionRate: 0.10,
+    tvaRate: 0.21,
 
     councils: [
       { mois: "Janvier", htEUR: 5000, tauxApplique: 10.600, statut: "ok", statutText: "Paid 11/02" },

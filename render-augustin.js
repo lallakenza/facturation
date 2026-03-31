@@ -238,12 +238,12 @@ function renderAugustin2026(embedded) {
     </tbody></table></div>`;
 
   // Factures RTL 2026
-  html += `<div class="s"><div class="st">Factures RTL 2026</div><table>
-    <thead><tr><th>Facture</th><th data-sort="date">Période</th><th data-sort="num">Jours</th><th data-sort="num" style="text-align:right">Montant (€)</th><th>Statut</th></tr></thead><tbody>`;
+  html += `<div class="s"><div class="st">Factures RTL 2026 (HT — TVA 0% Bairok LLC / EAU)</div><table>
+    <thead><tr><th>Facture</th><th data-sort="date">Période</th><th data-sort="num">Jours</th><th data-sort="num" style="text-align:right">HT (€)</th><th data-sort="date">Date facture</th><th data-sort="date">Échéance</th><th>Statut</th></tr></thead><tbody>`;
   d.rtl.forEach(r => {
-    html += `<tr><td>${r.ref}</td><td>${r.periode}</td><td>${r.jours}</td><td class="a">${fmtPlain(r.montant)}</td><td>${badge(r.statut, r.statutText)}</td></tr>`;
+    html += `<tr><td>${r.ref}</td><td>${r.periode}</td><td>${r.jours}</td><td class="a">${fmtPlain(r.montant)}</td><td>${r.dateFacture || '—'}</td><td>${r.dateDue || '—'}</td><td>${badge(r.statut, r.statutText)}</td></tr>`;
   });
-  html += `<tr class="tr"><td colspan="3"><strong>Total facturé</strong></td><td class="a"><strong>${fmtPlain(totalFacture)}</strong></td><td></td></tr></tbody></table></div>`;
+  html += `<tr class="tr"><td colspan="3"><strong>Total facturé HT</strong></td><td class="a"><strong>${fmtPlain(totalFacture)}</strong></td><td></td><td></td><td></td></tr></tbody></table></div>`;
 
   // Virements Maroc
   html += `<div class="s"><div class="st">Augustin a reçu — Virements Maroc 2026</div><table>
@@ -264,14 +264,22 @@ function renderAugustin2026(embedded) {
     const diversOut = d.divers.filter(x => x.montant < 0);
     const totalIn = diversIn.reduce((s, x) => s + x.montant, 0);
     const totalOut = Math.abs(diversOut.reduce((s, x) => s + x.montant, 0));
+    // Commission on personal payments
+    const diversCommission = d.divers.filter(x => x.commissionRate).reduce((s, x) => {
+      const brut = Math.round(x.montant / (1 - x.commissionRate) * 100) / 100;
+      return s + (brut - x.montant);
+    }, 0);
     html += `<div class="s"><div class="st">Divers — Cash direct 2026</div><table>
-      <thead><tr><th>Opération</th><th data-sort="num" style="text-align:right">Montant (€)</th></tr></thead><tbody>`;
+      <thead><tr><th>Opération</th><th data-sort="num" style="text-align:right">Net payé (€)</th><th data-sort="num" style="text-align:right">Brut couvert (€)</th><th>Détail</th></tr></thead><tbody>`;
     d.divers.forEach(x => {
       const color = x.montant > 0 ? 'var(--green)' : 'var(--red)';
-      html += `<tr><td>${x.label}</td><td class="a" style="color:${color}">${fmtSigned(x.montant, '€')}</td></tr>`;
+      const brut = x.commissionRate ? Math.round(x.montant / (1 - x.commissionRate) * 100) / 100 : null;
+      const brutStr = brut ? fmtPlain(Math.round(brut)) : '—';
+      const detail = x.commissionRate ? `Commission ${Math.round(x.commissionRate * 100)}% → ${fmtPlain(Math.round(brut - x.montant))}€` : '';
+      html += `<tr><td>${x.label}</td><td class="a" style="color:${color}">${fmtSigned(x.montant, '€')}</td><td class="a">${brutStr}</td><td style="font-size:.72rem;color:var(--muted)">${detail}</td></tr>`;
     });
     const soldeDiv = totalIn - totalOut;
-    html += `<tr class="tr"><td><strong>Solde cash</strong></td><td class="a" style="color:${soldeDiv >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(soldeDiv, '€')}</strong></td></tr>`;
+    html += `<tr class="tr"><td><strong>Solde cash net</strong></td><td class="a" style="color:${soldeDiv >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(soldeDiv, '€')}</strong></td><td></td><td style="font-size:.72rem;color:var(--muted)">${diversCommission > 0 ? 'Commission perso totale : ' + fmtPlain(Math.round(diversCommission)) + '€' : ''}</td></tr>`;
     html += `</tbody></table></div>`;
   }
 
