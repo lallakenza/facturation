@@ -225,18 +225,45 @@ function renderAugustin2026(embedded) {
   // Delta = Amine reçu (RTL paid) − Augustin reçu (virements) − Divers net (cash payé à Azarkan) + report 2025
   const delta = amineRecu - augustinRecuEUR - diversNet + d.report2025;
 
+  // Invoiced = factures émises (ref !== '—'), statut ok ou w
+  const invoicedRTL = d.rtl.filter(r => r.ref !== '—');
+  const totalInvoiced = sum(invoicedRTL, 'montant');
+  const deltaInvoiced = totalInvoiced - augustinRecuEUR - diversNet + d.report2025;
+  // Accrued = tout (y compris à facturer)
+  const deltaAccrued = totalFacture - augustinRecuEUR - diversNet + d.report2025;
+
   let html = embedded ? '' : yearToggle3('Az', 2026);
   html += `<h2 style="font-size:1.05rem;margin-bottom:16px">${d.title}</h2>`;
 
-  html += `<div class="cards">
-    <div class="card"><div class="l">RTL reçu (paid)</div><div class="v green">${fmtPlain(amineRecu)} €</div></div>
-    <div class="card"><div class="l">Augustin a reçu</div><div class="v blue">${fmtPlain(augustinRecuEUR)} €</div><div style="font-size:.65rem;color:var(--muted)">+ ${fmtPlain(diversNet)}€ cash direct</div></div>
-    <div class="card"><div class="l">Delta net (paid only)</div><div class="v ${delta >= 0 ? 'green' : 'red'}">${fmtSigned(delta)}</div></div>
-    <div class="card"><div class="l">En attente paiement</div><div class="v yellow">${fmtPlain(totalPending)} €</div></div>
+  // Toggle Paid / Invoiced / Accrued
+  html += `<div style="display:flex;gap:0;margin-bottom:16px;background:var(--surface2);border-radius:8px;padding:3px;width:fit-content">
+    <button onclick="switchRecoView('paid')" id="reco-btn-paid" style="padding:6px 16px;border:none;border-radius:6px;cursor:pointer;font-size:.78rem;font-weight:600;background:var(--accent);color:#fff;transition:all .2s">Paid</button>
+    <button onclick="switchRecoView('invoiced')" id="reco-btn-invoiced" style="padding:6px 16px;border:none;border-radius:6px;cursor:pointer;font-size:.78rem;font-weight:600;background:transparent;color:var(--muted);transition:all .2s">Invoiced</button>
+    <button onclick="switchRecoView('accrued')" id="reco-btn-accrued" style="padding:6px 16px;border:none;border-radius:6px;cursor:pointer;font-size:.78rem;font-weight:600;background:transparent;color:var(--muted);transition:all .2s">Accrued</button>
   </div>`;
 
-  // Réconciliation résumé — PAID ONLY
-  html += `<div class="s"><div class="st">Réconciliation 2026 — Cash réel (paid only)</div><table>
+  // 3 card sets (only one visible at a time)
+  html += `<div id="reco-cards-paid" class="cards">
+    <div class="card"><div class="l">RTL reçu (paid)</div><div class="v green">${fmtPlain(amineRecu)} €</div></div>
+    <div class="card"><div class="l">Augustin a reçu</div><div class="v blue">${fmtPlain(augustinRecuEUR)} €</div><div style="font-size:.65rem;color:var(--muted)">+ ${fmtPlain(diversNet)}€ cash direct</div></div>
+    <div class="card"><div class="l">Delta net (paid)</div><div class="v ${delta >= 0 ? 'green' : 'red'}">${fmtSigned(delta)}</div></div>
+    <div class="card"><div class="l">En attente</div><div class="v yellow">${fmtPlain(totalPending)} €</div></div>
+  </div>`;
+  html += `<div id="reco-cards-invoiced" class="cards" style="display:none">
+    <div class="card"><div class="l">RTL facturé (invoiced)</div><div class="v yellow">${fmtPlain(totalInvoiced)} €</div></div>
+    <div class="card"><div class="l">Augustin a reçu</div><div class="v blue">${fmtPlain(augustinRecuEUR)} €</div><div style="font-size:.65rem;color:var(--muted)">+ ${fmtPlain(diversNet)}€ cash direct</div></div>
+    <div class="card"><div class="l">Delta net (invoiced)</div><div class="v ${deltaInvoiced >= 0 ? 'green' : 'red'}">${fmtSigned(deltaInvoiced)}</div></div>
+    <div class="card"><div class="l">dont payé</div><div class="v green">${fmtPlain(amineRecu)} €</div></div>
+  </div>`;
+  html += `<div id="reco-cards-accrued" class="cards" style="display:none">
+    <div class="card"><div class="l">RTL total (accrued)</div><div class="v yellow">${fmtPlain(totalFacture)} €</div></div>
+    <div class="card"><div class="l">Augustin a reçu</div><div class="v blue">${fmtPlain(augustinRecuEUR)} €</div><div style="font-size:.65rem;color:var(--muted)">+ ${fmtPlain(diversNet)}€ cash direct</div></div>
+    <div class="card"><div class="l">Delta net (accrued)</div><div class="v ${deltaAccrued >= 0 ? 'green' : 'red'}">${fmtSigned(deltaAccrued)}</div></div>
+    <div class="card"><div class="l">dont payé</div><div class="v green">${fmtPlain(amineRecu)} €</div></div>
+  </div>`;
+
+  // 3 reconciliation tables
+  html += `<div id="reco-table-paid" class="s"><div class="st">Réconciliation 2026 — Cash réel (paid)</div><table>
     <thead><tr><th>Ligne</th><th style="text-align:right">EUR</th><th>Détail</th></tr></thead><tbody>
     <tr style="background:var(--green-bg,rgba(34,197,94,.07))"><td><strong>Amine a reçu (RTL paid)</strong></td><td class="a" style="color:var(--green)"><strong>${fmtPlain(amineRecu)}</strong></td><td>${paidRTL.length} facture${paidRTL.length > 1 ? 's' : ''} RTL payée${paidRTL.length > 1 ? 's' : ''}</td></tr>
     <tr><td>− Augustin a reçu (virements Maroc)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(augustinRecuEUR)}</td><td>${fmtPlain(totalMAD)} DH ÷ ${d.tauxMaroc}</td></tr>
@@ -244,8 +271,27 @@ function renderAugustin2026(embedded) {
     <tr><td>+ Report 2025</td><td class="a" style="color:var(--red)">${fmtSigned(d.report2025)}</td><td>Solde clôture 2025</td></tr>
     <tr class="tr"><td><strong>Delta net (paid)</strong></td><td class="a" style="color:${delta >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(delta)}</strong></td><td>${delta < 0 ? 'Amine a avancé ' + fmtPlain(Math.abs(delta)) + '€ de plus' : 'Augustin doit ' + fmtPlain(delta) + '€'}</td></tr>
     </tbody></table>
-    <div class="n" style="margin-top:8px;font-size:.72rem;color:var(--muted)">ℹ️ Accrual total (info) : ${fmtPlain(totalFacture)}€ facturé dont ${fmtPlain(totalPending)}€ en attente de paiement. La réconciliation ci-dessus ne compte que les montants effectivement reçus/payés.</div>
-    </div>`;
+    <div class="n" style="margin-top:8px;font-size:.72rem;color:var(--muted)">Seuls les montants effectivement encaissés/décaissés sont comptés.</div></div>`;
+
+  html += `<div id="reco-table-invoiced" class="s" style="display:none"><div class="st">Réconciliation 2026 — Factures émises (invoiced)</div><table>
+    <thead><tr><th>Ligne</th><th style="text-align:right">EUR</th><th>Détail</th></tr></thead><tbody>
+    <tr style="background:var(--yellow-bg,rgba(202,138,4,.07))"><td><strong>RTL facturé (invoiced)</strong></td><td class="a" style="color:var(--yellow)"><strong>${fmtPlain(totalInvoiced)}</strong></td><td>${invoicedRTL.length} facture${invoicedRTL.length > 1 ? 's' : ''} émise${invoicedRTL.length > 1 ? 's' : ''}</td></tr>
+    <tr><td>− Augustin a reçu (virements Maroc)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(augustinRecuEUR)}</td><td>${fmtPlain(totalMAD)} DH ÷ ${d.tauxMaroc}</td></tr>
+    <tr><td>− Divers cash net (Amine → Azarkan)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(diversNet)}</td><td>Cash direct entre Amine et Azarkan</td></tr>
+    <tr><td>+ Report 2025</td><td class="a" style="color:var(--red)">${fmtSigned(d.report2025)}</td><td>Solde clôture 2025</td></tr>
+    <tr class="tr"><td><strong>Delta net (invoiced)</strong></td><td class="a" style="color:${deltaInvoiced >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(deltaInvoiced)}</strong></td><td>${deltaInvoiced < 0 ? 'Amine a avancé ' + fmtPlain(Math.abs(deltaInvoiced)) + '€' : 'Augustin doit ' + fmtPlain(deltaInvoiced) + '€'}</td></tr>
+    </tbody></table>
+    <div class="n" style="margin-top:8px;font-size:.72rem;color:var(--muted)">Inclut toutes les factures émises (payées ou non), exclut les périodes pas encore facturées.</div></div>`;
+
+  html += `<div id="reco-table-accrued" class="s" style="display:none"><div class="st">Réconciliation 2026 — Accrued (tout inclus)</div><table>
+    <thead><tr><th>Ligne</th><th style="text-align:right">EUR</th><th>Détail</th></tr></thead><tbody>
+    <tr style="background:var(--yellow-bg,rgba(202,138,4,.07))"><td><strong>RTL total (accrued)</strong></td><td class="a" style="color:var(--yellow)"><strong>${fmtPlain(totalFacture)}</strong></td><td>${d.rtl.length} facture${d.rtl.length > 1 ? 's' : ''} (payées + émises + à facturer)</td></tr>
+    <tr><td>− Augustin a reçu (virements Maroc)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(augustinRecuEUR)}</td><td>${fmtPlain(totalMAD)} DH ÷ ${d.tauxMaroc}</td></tr>
+    <tr><td>− Divers cash net (Amine → Azarkan)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(diversNet)}</td><td>Cash direct entre Amine et Azarkan</td></tr>
+    <tr><td>+ Report 2025</td><td class="a" style="color:var(--red)">${fmtSigned(d.report2025)}</td><td>Solde clôture 2025</td></tr>
+    <tr class="tr"><td><strong>Delta net (accrued)</strong></td><td class="a" style="color:${deltaAccrued >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(deltaAccrued)}</strong></td><td>${deltaAccrued < 0 ? 'Amine a avancé ' + fmtPlain(Math.abs(deltaAccrued)) + '€' : 'Augustin doit ' + fmtPlain(deltaAccrued) + '€'}</td></tr>
+    </tbody></table>
+    <div class="n" style="margin-top:8px;font-size:.72rem;color:var(--muted)">Inclut tout : factures payées, émises en attente, et périodes pas encore facturées (projection).</div></div>`;
 
   // Factures RTL 2026
   html += `<div class="s"><div class="st">Factures RTL 2026 (HT — TVA 0% Bairok LLC / EAU)</div><table>

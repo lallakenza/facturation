@@ -118,6 +118,21 @@ const sum = (arr, key) => arr.reduce((s, x) => s + (typeof key === 'function' ? 
   });
 })();
 
+// ---- RECO VIEW TOGGLE (Paid / Invoiced / Accrued) ----
+function switchRecoView(view) {
+  ['paid','invoiced','accrued'].forEach(v => {
+    const cards = document.getElementById('reco-cards-' + v);
+    const table = document.getElementById('reco-table-' + v);
+    const btn = document.getElementById('reco-btn-' + v);
+    if (cards) cards.style.display = v === view ? '' : 'none';
+    if (table) table.style.display = v === view ? '' : 'none';
+    if (btn) {
+      btn.style.background = v === view ? 'var(--accent)' : 'transparent';
+      btn.style.color = v === view ? '#fff' : 'var(--muted)';
+    }
+  });
+}
+
 // ---- YEAR TOGGLE HELPER ----
 function yearToggle(section, activeYear) {
   return `<div class="year-toggle">
