@@ -487,7 +487,7 @@ function renderAugustin2026(embedded) {
   });
   virementsMarocHtml += `<tr class="tr"><td></td><td colspan="2"><strong>Total 2026</strong></td><td class="a"><strong>${fmtPlain(totalMAD)}</strong></td><td class="a"><strong>${fmtPlain(virementsProEUR)}</strong></td></tr></tbody></table>`;
 
-  virementsMarocHtml += `<div class="n"><strong>Règle :</strong> 1 000€ pro = 10 000 MAD perso (taux fixe). Pro = Perso en EUR. Total : ${fmtPlain(totalMAD)} MAD = ${fmtPlain(virementsProEUR)}€ pro = ${fmtPlain(virementsPersoEUR)}€ perso.</div>`;
+  virementsMarocHtml += `<div class="n"><strong>Règle :</strong> 1 000€ pro = ${(PERSO_FACTOR * 1000).toLocaleString('fr-FR')}€ perso = ${(d.tauxMaroc * 1000).toLocaleString('fr-FR')} MAD. Total : ${fmtPlain(totalMAD)} MAD = ${fmtPlain(virementsProEUR)}€ pro = ${fmtPlain(Math.round(virementsProEUR * PERSO_FACTOR))}€ perso.</div>`;
 
   html += collapsible('Virements Maroc 2026', virementsMarocHtml);
 
