@@ -109,9 +109,30 @@ check('RTL paid 2026', amineRecu26, 26350);
 // Position Entreprise (paid) = RTL paid - AZCS paid + report2025
 const posEntreprise = amineRecu26 - azcsRecuPaid26 + az26.report2025;
 check('Position Entreprise (paid)', posEntreprise, 26350 - 30625 + (-1683)); // = -5958
-// Position Net (paid) = entreprise - virements - divers
-const posNet = posEntreprise - totalEUR26 - diversNet26;
-check('Position Net (paid)', posNet, -5958 - 5000 - 6000); // = -16958
+
+// Divers Pro (avec commission 6% sur le cash France)
+const diversPro26 = az26.divers.reduce((s, x) => {
+  if (x.commissionRate) return s + x.montant / (1 - x.commissionRate);
+  return s + x.montant;
+}, 0);
+const expectedDiversPro = 2000 + 4000 / 0.94; // = 2000 + 4255.32 = 6255.32
+check('Divers Pro 2026', Math.round(diversPro26 * 100), Math.round(expectedDiversPro * 100));
+
+// Commission Amine = diversPro - diversPerso
+const commAmine = diversPro26 - diversNet26;
+check('Commission Amine', Math.round(commAmine * 100), Math.round((4000 / 0.94 - 4000) * 100)); // ~255.32€
+
+// Position Net PERSO (paid) = entreprise - virements - divers_perso
+const posNetPerso = posEntreprise - totalEUR26 - diversNet26;
+check('Position Net Perso (paid)', posNetPerso, -5958 - 5000 - 6000); // = -16958
+
+// Position Net PRO (paid) = entreprise - virements - divers_pro
+const posNetPro = posEntreprise - totalEUR26 - diversPro26;
+check('Position Net Pro (paid)', Math.round(posNetPro), Math.round(-5958 - 5000 - expectedDiversPro)); // ≈ -17213
+
+// AZCS TTC
+const azcsPaidTTC26 = Math.round(azcsRecuPaid26 * 1.21);
+check('AZCS paid TTC', azcsPaidTTC26, Math.round(30625 * 1.21)); // = 37056
 
 // ===== BENOIT 2025 =====
 console.log('\n=== BENOIT 2025 ===');

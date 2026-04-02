@@ -4,25 +4,81 @@
 // dans data-priv.enc.js et déchiffrées uniquement avec le bon mot de passe.
 // ============================================================
 //
-// DATA MODEL DOCUMENTATION
-// ========================
+// ======================= BUSINESS MODEL =======================
 //
 // ENTITÉS :
-//   Amine (moi)       — Bairok Consulting LLC (EAU), facture RTL en EUR HT (TVA 0%)
-//   Augustin (Azarkan) — AZCS (Azarkan Consulting Services, Belgique), facture Majalis (Badre)
-//   Benoit (Badre)     — Client Councils via AZCS, paie TTC (21% TVA belge)
+//   Amine (moi)        — Bairok Consulting LLC (EAU), facture RTL en EUR HT (TVA 0%)
+//   Augustin (Azarkan)  — AZCS (Azarkan Consulting Services, Belgique)
+//   Benoit (Badre)      — Intermédiaire, paie AZCS pour le compte d'Amine (pay-on-behalf)
 //
-// RÉCONCILIATION 2026 — DEUX POSITIONS :
-//   Position Entreprise = RTL_paid − AZCS_paid + report2025
-//     → Flux entre sociétés uniquement (Bairok vs AZCS)
-//   Position Net = Position Entreprise − virementsMaroc_EUR − divers_net
-//     → Inclut les paiements personnels (virements DH, cash via Nezha)
+// FLUX PRINCIPAL :
+//   1. RTL (client d'Azarkan) paie Amine (Bairok) directement à Dubai
+//      → C'est l'argent d'Azarkan qu'Amine collecte pour lui
+//   2. Amine demande à Badre de payer AZCS (société d'Azarkan) directement
+//      → Système "pay on behalf" : réduit la dette d'Amine envers Azarkan
+//   3. Amine rend l'argent à Badre en perso, moyennant 10% de commission
+//   4. Azarkan peut sortir son argent de 2 manières :
+//      a. Au Maroc : 1 000€ pro = 10 000 MAD perso (taux fixe)
+//      b. En France (cash/virement perso) : commission 6%
+//         → 4 000€ cash perso = 4 000 / 0.94 = 4 255€ pro
+//
+// ===================== 3 MONTANTS PAR TRANSACTION =====================
+//
+// Chaque transaction est suivie selon 3 valeurs :
+//
+//   TTC   = Montant réel qui bouge (cash avec TVA si applicable)
+//   HT    = Valeur business / pro (hors TVA)
+//   PERSO = Équivalent en argent personnel
+//
+// RÈGLES DE CONVERSION PAR TYPE DE FLUX :
+//
+//   RTL (factures Bairok → client) :
+//     TTC = HT = montant (TVA 0% car Bairok est aux EAU)
+//     Perso = HT (100% argent d'Azarkan collecté par Amine)
+//
+//   AZCS (factures Azarkan → Majalis/Badre, 21% TVA belge) :
+//     TTC = HT × 1.21
+//     HT = montant facturé
+//     Perso = HT (crédit pro intégral pour Azarkan)
+//
+//   Virements Maroc (Amine → Azarkan en DH) :
+//     TTC = N/A (pas de facture)
+//     Pro = DH / 10 (taux fixe : 1 000€ pro = 10 000 MAD)
+//     Perso = Pro (même valeur en EUR, équivalent MAD pour Azarkan)
+//
+//   Cash divers — dette (remboursement prêts perso) :
+//     TTC = N/A
+//     Pro = Perso = montant (1:1, pas de commission)
+//
+//   Cash divers — avec commission 6% (sortie cash en France) :
+//     TTC = N/A
+//     Pro = montant / (1 − 0.06) = montant / 0.94
+//     Perso = montant (cash réellement reçu par Azarkan)
+//     Commission Amine = Pro − Perso
+//
+// ===================== RÉCONCILIATION =====================
+//
+// Position Entreprise (identique en HT et Perso) :
+//   = RTL_paid − AZCS_paid + report2025
+//   → Flux entre sociétés uniquement (Bairok vs AZCS)
+//
+// Position Net PRO :
+//   = Pos. Entreprise − virementsMaroc_pro − divers_pro
+//   → Inclut les paiements personnels valorisés en pro
+//   → divers_pro = dette (1:1) + cash_commission (montant/0.94)
+//
+// Position Net PERSO :
+//   = Pos. Entreprise − virementsMaroc_perso − divers_perso
+//   → Inclut les paiements personnels en cash réel
+//   → divers_perso = somme des montants
+//
+// Différence Pro − Perso = commission Amine sur cash 6%
 //
 // CONVENTIONS :
 //   - montant > 0 dans divers = Amine paie Azarkan
 //   - montant < 0 dans divers = Azarkan paie Amine
-//   - virementsMaroc.dh / tauxMaroc = EUR brut (10 000 DH = 1 000€)
-//   - commissionRate sur divers = taux déduit du brut (ex: 6% → brut = net / 0.94)
+//   - virementsMaroc.dh / tauxMaroc = EUR pro (10 000 DH = 1 000€)
+//   - commissionRate sur divers = taux déduit du brut (ex: 6% → pro = net / 0.94)
 //   - report2025 = solde clôture 2025 (négatif = Augustin doit à Amine)
 //   - AZCS councils proviennent de benoit2026.councils (même source de données)
 //

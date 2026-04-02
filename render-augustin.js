@@ -219,79 +219,125 @@ function renderAugustin2025(embedded) {
 function renderAugustin2026(embedded) {
   const d = DATA.augustin2026;
 
-  const totalMAD = sum(d.virementsMaroc, 'dh');
-  const totalEUR = totalMAD / d.tauxMaroc;
+  // =====================================================
+  // CALCULS — 3 montants par flux : TTC / HT (Pro) / Perso
+  // =====================================================
+  const tvaAZCS = (b26 && b26.tvaRate) ? b26.tvaRate : 0.21;
 
-  // Accrual (informationnel) = toutes les factures RTL 2026 (émises + à facturer)
-  const totalFacture = sum(d.rtl, 'montant');
-  // RÉCONCILIATION = seulement PAID (statut 'ok')
+  // --- RTL (Bairok, TVA 0%) : TTC = HT = Perso ---
+  const totalFacture = sum(d.rtl, 'montant');        // toutes factures
   const paidRTL = d.rtl.filter(r => r.statut === 'ok');
-  const amineRecu = sum(paidRTL, 'montant');
-  // Factures en attente (info)
+  const amineRecu = sum(paidRTL, 'montant');          // paid only
   const pendingRTL = d.rtl.filter(r => r.statut !== 'ok');
   const totalPending = sum(pendingRTL, 'montant');
-  // Augustin a reçu = virements Maroc en EUR
-  const augustinRecuEUR = totalEUR;
-  // Divers net (cash direct entre Amine et Azarkan)
-  const diversNet = d.divers ? d.divers.reduce((s, x) => s + x.montant, 0) : 0;
-  // Commission brut sur paiements perso
-  const diversBrut = d.divers ? d.divers.reduce((s, x) => {
-    if (x.commissionRate) return s + Math.round(x.montant / (1 - x.commissionRate) * 100) / 100;
-    return s + x.montant;
-  }, 0) : 0;
-  // AZCS → Majalis (Badre) : Azarkan reçoit directement via sa société AZCS
+  // RTL: TTC = HT = Perso (TVA 0%)
+  const rtlPaidHT = amineRecu;
+  const rtlPaidTTC = amineRecu;
+  const rtlPaidPerso = amineRecu;
+
+  // --- AZCS (21% TVA belge) : TTC = HT×1.21, Perso = HT ---
   const b26 = DATA.benoit2026;
   const azcsAll = (b26 && b26.councils) ? b26.councils : [];
   const azcsPaid = azcsAll.filter(c => c.statut === 'ok');
-  const azcsRecuPaid = sum(azcsPaid, 'htEUR');
   const azcsInvoiced = azcsAll.filter(c => c.statut === 'ok' || c.statut === 'w');
+  const azcsRecuPaid = sum(azcsPaid, 'htEUR');
   const azcsRecuInvoiced = sum(azcsInvoiced, 'htEUR');
   const azcsRecuAll = sum(azcsAll, 'htEUR');
-  // ---- POSITION ENTREPRISE = flux sociétés uniquement (RTL vs AZCS + report) ----
-  const deltaEntreprisePaid = amineRecu - azcsRecuPaid + d.report2025;
-  // ---- POSITION NET = entreprise − virements Maroc − divers cash perso ----
-  const delta = deltaEntreprisePaid - augustinRecuEUR - diversNet;
+  const azcsPaidTTC = Math.round(azcsRecuPaid * (1 + tvaAZCS));
+  const azcsInvoicedTTC = Math.round(azcsRecuInvoiced * (1 + tvaAZCS));
+  const azcsAllTTC = Math.round(azcsRecuAll * (1 + tvaAZCS));
 
-  // Invoiced = factures émises (ref !== '—'), statut ok ou w
+  // --- Virements Maroc : Pro = MAD / taux, Perso = Pro ---
+  const totalMAD = sum(d.virementsMaroc, 'dh');
+  const virementsProEUR = totalMAD / d.tauxMaroc;
+  const virementsPersoEUR = virementsProEUR; // même valeur en EUR
+
+  // --- Divers : Pro vs Perso (commission 6% sur certains) ---
+  const diversPerso = d.divers ? d.divers.reduce((s, x) => s + x.montant, 0) : 0;
+  const diversPro = d.divers ? d.divers.reduce((s, x) => {
+    if (x.commissionRate) return s + x.montant / (1 - x.commissionRate);
+    return s + x.montant;
+  }, 0) : 0;
+  const commissionAmine = Math.round((diversPro - diversPerso) * 100) / 100;
+
+  // --- Itemized divers for table display ---
+  const diversItems = d.divers ? d.divers.map(x => {
+    const pro = x.commissionRate ? x.montant / (1 - x.commissionRate) : x.montant;
+    const comm = x.commissionRate ? pro - x.montant : 0;
+    return { ...x, pro: Math.round(pro * 100) / 100, perso: x.montant, commission: Math.round(comm * 100) / 100 };
+  }) : [];
+
+  // =====================================================
+  // POSITIONS — Entreprise + Net (Pro & Perso)
+  // =====================================================
+
+  // Position Entreprise (identique en HT et Perso, pas de commission à ce niveau)
+  const deltaEntreprisePaid = rtlPaidHT - azcsRecuPaid + d.report2025;
+  const deltaEntreprisePaidTTC = rtlPaidTTC - azcsPaidTTC + d.report2025;
+
+  // Position Net PRO = entreprise − virements_pro − divers_pro
+  const deltaNetPro = deltaEntreprisePaid - virementsProEUR - diversPro;
+  // Position Net PERSO = entreprise − virements_perso − divers_perso
+  const deltaNetPerso = deltaEntreprisePaid - virementsPersoEUR - diversPerso;
+
+  // Invoiced
   const invoicedRTL = d.rtl.filter(r => r.ref !== '—');
   const totalInvoiced = sum(invoicedRTL, 'montant');
   const deltaEntrepriseInvoiced = totalInvoiced - azcsRecuInvoiced + d.report2025;
-  const deltaInvoiced = deltaEntrepriseInvoiced - augustinRecuEUR - diversNet;
-  // Accrued = tout (y compris à facturer)
+  const deltaInvoicedPro = deltaEntrepriseInvoiced - virementsProEUR - diversPro;
+  const deltaInvoicedPerso = deltaEntrepriseInvoiced - virementsPersoEUR - diversPerso;
+
+  // Accrued
   const deltaEntrepriseAccrued = totalFacture - azcsRecuAll + d.report2025;
-  const deltaAccrued = deltaEntrepriseAccrued - augustinRecuEUR - diversNet;
+  const deltaAccruedPro = deltaEntrepriseAccrued - virementsProEUR - diversPro;
+  const deltaAccruedPerso = deltaEntrepriseAccrued - virementsPersoEUR - diversPerso;
+
+  // Legacy aliases for compatibility
+  const delta = deltaNetPerso;
+  const augustinRecuEUR = virementsProEUR;
+  const diversNet = diversPerso;
+  const deltaInvoiced = deltaInvoicedPerso;
+  const deltaAccrued = deltaAccruedPerso;
 
   let html = embedded ? '' : yearToggle3('Az', 2026);
   html += `<h2 style="font-size:1.05rem;margin-bottom:16px">${d.title}</h2>`;
 
-  // ---- HERO CARDS: Position Entreprise + Position Net ----
-  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+  // ---- HERO CARDS: Entreprise / Net Pro / Net Perso ----
+  html += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
     <div class="hero-card" style="border-color:${deltaEntreprisePaid >= 0 ? 'var(--green)' : 'var(--red)'}">
       <div class="hero-label">Position Entreprise</div>
-      <div class="hero-value ${deltaEntreprisePaid >= 0 ? 'green' : 'red'}">${fmtSigned(deltaEntreprisePaid)}</div>
-      <div class="hero-who" style="color:${deltaEntreprisePaid >= 0 ? 'var(--green)' : 'var(--red)'}">→ ${deltaEntreprisePaid >= 0 ? 'Amine doit à Augustin (entreprise)' : 'Augustin doit à Amine (entreprise)'}</div>
-      <div class="hero-detail">RTL (Bairok) − AZCS (Azarkan) + Report 2025</div>
+      <div class="hero-value ${deltaEntreprisePaid >= 0 ? 'green' : 'red'}" style="font-size:1.3rem">${fmtSigned(deltaEntreprisePaid)}</div>
+      <div class="hero-who" style="color:${deltaEntreprisePaid >= 0 ? 'var(--green)' : 'var(--red)'}">→ ${deltaEntreprisePaid >= 0 ? 'Amine doit (entreprise)' : 'Augustin doit (entreprise)'}</div>
+      <div class="hero-detail">RTL − AZCS + Report</div>
     </div>
-    <div class="hero-card" style="border-color:${delta >= 0 ? 'var(--green)' : 'var(--red)'}">
-      <div class="hero-label">Position Net (tout inclus)</div>
-      <div class="hero-value ${delta >= 0 ? 'green' : 'red'}">${fmtSigned(delta)}</div>
-      <div class="hero-who" style="color:${delta >= 0 ? 'var(--green)' : 'var(--red)'}">→ ${delta >= 0 ? 'Amine doit payer Augustin' : 'Augustin doit payer Amine'}</div>
-      <div class="hero-detail">Entreprise − Virements Maroc − Cash divers</div>
+    <div class="hero-card" style="border-color:${deltaNetPro >= 0 ? 'var(--green)' : 'var(--red)'}">
+      <div class="hero-label">Position Net Pro</div>
+      <div class="hero-value ${deltaNetPro >= 0 ? 'green' : 'red'}" style="font-size:1.3rem">${fmtSigned(Math.round(deltaNetPro))}</div>
+      <div class="hero-who" style="color:${deltaNetPro >= 0 ? 'var(--green)' : 'var(--red)'}">→ ${deltaNetPro >= 0 ? 'Amine doit payer' : 'Augustin doit payer'}</div>
+      <div class="hero-detail">Avec équivalent pro des flux perso</div>
+    </div>
+    <div class="hero-card" style="border-color:${deltaNetPerso >= 0 ? 'var(--green)' : 'var(--red)'}">
+      <div class="hero-label">Position Net Perso</div>
+      <div class="hero-value ${deltaNetPerso >= 0 ? 'green' : 'red'}" style="font-size:1.3rem">${fmtSigned(Math.round(deltaNetPerso))}</div>
+      <div class="hero-who" style="color:${deltaNetPerso >= 0 ? 'var(--green)' : 'var(--red)'}">→ ${deltaNetPerso >= 0 ? 'Amine doit payer' : 'Augustin doit payer'}</div>
+      <div class="hero-detail">Cash réel sorti · Δ = ${fmtPlain(Math.round(commissionAmine))}€ commission</div>
     </div>
   </div>`;
 
   // ---- Summary row ----
-  html += `<div style="font-size:.7rem;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Flux entreprise</div>`;
+  html += `<div style="font-size:.7rem;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Flux entreprise (TTC / HT identiques car TVA 0% sur RTL)</div>`;
   html += `<div class="summary-row" style="margin-bottom:8px">
-    <div class="summary-item"><div class="sl">RTL reçu (Bairok)</div><div class="sv" style="color:var(--green)">${fmtPlain(amineRecu)} €</div><div class="sd">${paidRTL.length} facture(s) payée(s)</div></div>
-    <div class="summary-item"><div class="sl">AZCS reçu (Azarkan)</div><div class="sv" style="color:var(--blue,#60a5fa)">${fmtPlain(azcsRecuPaid)} €</div><div class="sd">${azcsPaid.length} facture(s) Councils</div></div>
+    <div class="summary-item"><div class="sl">RTL reçu (Bairok)</div><div class="sv" style="color:var(--green)">${fmtPlain(rtlPaidHT)} €</div><div class="sd">HT = TTC (TVA 0%)</div></div>
+    <div class="summary-item"><div class="sl">AZCS HT (Azarkan)</div><div class="sv" style="color:var(--blue,#60a5fa)">${fmtPlain(azcsRecuPaid)} €</div><div class="sd">TTC : ${fmtPlain(azcsPaidTTC)}€ (21% TVA)</div></div>
     <div class="summary-item"><div class="sl">Report 2025</div><div class="sv" style="color:var(--red)">${fmtSigned(d.report2025)}</div><div class="sd">Solde clôture 2025</div></div>
     <div class="summary-item"><div class="sl">En attente RTL</div><div class="sv" style="color:var(--yellow)">${fmtPlain(totalPending)} €</div><div class="sd">Pas encore payé</div></div>
   </div>`;
-  html += `<div style="font-size:.7rem;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Flux personnel</div>`;
+  html += `<div style="font-size:.7rem;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Flux personnel (Pro vs Perso)</div>`;
   html += `<div class="summary-row">
-    <div class="summary-item"><div class="sl">Virements Maroc</div><div class="sv" style="color:var(--accent)">${fmtPlain(augustinRecuEUR)} €</div><div class="sd">${fmtPlain(totalMAD)} DH envoyés</div></div>
-    <div class="summary-item"><div class="sl">Cash divers net</div><div class="sv" style="color:var(--accent)">${fmtPlain(diversNet)} €</div><div class="sd">Via Nezha → Hanane</div></div>
+    <div class="summary-item"><div class="sl">Virements Maroc</div><div class="sv" style="color:var(--accent)">${fmtPlain(virementsProEUR)} €</div><div class="sd">${fmtPlain(totalMAD)} MAD · Pro = Perso</div></div>
+    <div class="summary-item"><div class="sl">Cash divers (pro)</div><div class="sv" style="color:var(--accent)">${fmtPlain(Math.round(diversPro))} €</div><div class="sd">Avec commission 6%</div></div>
+    <div class="summary-item"><div class="sl">Cash divers (perso)</div><div class="sv" style="color:var(--accent)">${fmtPlain(Math.round(diversPerso))} €</div><div class="sd">Cash réel sorti</div></div>
+    <div class="summary-item"><div class="sl">Commission Amine</div><div class="sv" style="color:var(--green)">${fmtPlain(Math.round(commissionAmine))} €</div><div class="sd">6% sur cash France</div></div>
   </div>`;
 
   // View toggle (secondary)
@@ -301,54 +347,122 @@ function renderAugustin2026(embedded) {
     <button onclick="switchRecoView('accrued')" id="reco-btn-accrued" style="padding:5px 14px;border:none;border-radius:6px;cursor:pointer;font-size:.7rem;font-weight:600;background:transparent;color:var(--muted);transition:all .2s">Projection</button>
   </div>`;
 
-  // 3 reconciliation tables — each shows Position Entreprise then Position Net
-  html += `<div id="reco-table-paid" class="s"><div class="st">Réconciliation 2026 — Cash réel (paid)</div><table>
-    <thead><tr><th>Ligne</th><th style="text-align:right">EUR</th><th>Détail</th></tr></thead><tbody>
-    <tr style="background:var(--green-bg,rgba(34,197,94,.07))"><td colspan="3" style="font-size:.75rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)">① Position Entreprise (sociétés)</td></tr>
-    <tr style="background:var(--green-bg,rgba(34,197,94,.07))"><td><strong>+ Amine a reçu (RTL paid — Bairok)</strong></td><td class="a" style="color:var(--green)"><strong>${fmtPlain(amineRecu)}</strong></td><td>${paidRTL.length} facture${paidRTL.length > 1 ? 's' : ''} RTL payée${paidRTL.length > 1 ? 's' : ''}</td></tr>
-    <tr><td>− AZCS reçu par Azarkan (Councils paid)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(azcsRecuPaid)}</td><td>${azcsPaid.length} facture(s) AZCS→Majalis payée(s)</td></tr>
-    <tr><td>+ Report 2025</td><td class="a" style="color:var(--red)">${fmtSigned(d.report2025)}</td><td>Solde clôture 2025</td></tr>
-    <tr class="tr" style="background:rgba(99,102,241,.06)"><td><strong>= Position Entreprise</strong></td><td class="a" style="color:${deltaEntreprisePaid >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(deltaEntreprisePaid)}</strong></td><td>${deltaEntreprisePaid >= 0 ? 'Amine doit ' + fmtPlain(deltaEntreprisePaid) + '€ (entreprise)' : 'Augustin doit ' + fmtPlain(Math.abs(deltaEntreprisePaid)) + '€ (entreprise)'}</td></tr>
-    <tr><td colspan="3" style="padding:6px 0"></td></tr>
-    <tr style="background:var(--yellow-bg,rgba(202,138,4,.07))"><td colspan="3" style="font-size:.75rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)">② Position Net (entreprise + personnel)</td></tr>
-    <tr><td>Position Entreprise (ci-dessus)</td><td class="a" style="color:${deltaEntreprisePaid >= 0 ? 'var(--green)' : 'var(--red)'}">${fmtSigned(deltaEntreprisePaid)}</td><td></td></tr>
-    <tr><td>− Virements Maroc (Amine → Augustin)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(augustinRecuEUR)}</td><td>${fmtPlain(totalMAD)} DH ÷ ${d.tauxMaroc}</td></tr>
-    <tr><td>− Cash divers net (Amine → Azarkan)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(diversNet)}</td><td>Paiements personnels via Nezha</td></tr>
-    <tr class="tr"><td><strong>= Position Net</strong></td><td class="a" style="color:${delta >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(delta)}</strong></td><td>${delta >= 0 ? 'Amine doit ' + fmtPlain(delta) + '€ à Augustin' : 'Augustin doit ' + fmtPlain(Math.abs(delta)) + '€ à Amine'}</td></tr>
-    </tbody></table>
-    <div class="n" style="margin-top:8px;font-size:.72rem;color:var(--muted)"><strong>Position Entreprise</strong> = flux entre sociétés (RTL Bairok vs AZCS Azarkan). <strong>Position Net</strong> = entreprise + paiements personnels (virements Maroc, cash divers). AZCS = revenus Councils reçus directement par Azarkan via sa société belge.</div></div>`;
+  // =====================================================
+  // HELPER: Build a reconciliation table with TTC / Pro / Perso columns
+  // =====================================================
+  function recoTable(id, title, display, cfg) {
+    const { rtlLabel, rtlHT, rtlTTC, azcsHT, azcsTTC, azcsLabel, azcsCount,
+            rtlCount, deltaE, deltaEtc,
+            deltaNetPro: dnPro, deltaNetPerso: dnPerso } = cfg;
+    const s = display === 'none' ? ' style="display:none"' : '';
+    const thStyle = 'style="text-align:right;font-size:.7rem"';
+    const secHdr = (n, label, bg) => `<tr style="background:${bg}"><td colspan="6" style="font-size:.72rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)">${n} ${label}</td></tr>`;
 
-  html += `<div id="reco-table-invoiced" class="s" style="display:none"><div class="st">Réconciliation 2026 — Factures émises (invoiced)</div><table>
-    <thead><tr><th>Ligne</th><th style="text-align:right">EUR</th><th>Détail</th></tr></thead><tbody>
-    <tr style="background:var(--green-bg,rgba(34,197,94,.07))"><td colspan="3" style="font-size:.75rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)">① Position Entreprise (sociétés)</td></tr>
-    <tr style="background:var(--yellow-bg,rgba(202,138,4,.07))"><td><strong>+ RTL facturé (invoiced — Bairok)</strong></td><td class="a" style="color:var(--yellow)"><strong>${fmtPlain(totalInvoiced)}</strong></td><td>${invoicedRTL.length} facture${invoicedRTL.length > 1 ? 's' : ''} émise${invoicedRTL.length > 1 ? 's' : ''}</td></tr>
-    <tr><td>− AZCS reçu par Azarkan (invoiced)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(azcsRecuInvoiced)}</td><td>${azcsInvoiced.length} facture(s) AZCS émises/payées</td></tr>
-    <tr><td>+ Report 2025</td><td class="a" style="color:var(--red)">${fmtSigned(d.report2025)}</td><td>Solde clôture 2025</td></tr>
-    <tr class="tr" style="background:rgba(99,102,241,.06)"><td><strong>= Position Entreprise</strong></td><td class="a" style="color:${deltaEntrepriseInvoiced >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(deltaEntrepriseInvoiced)}</strong></td><td>${deltaEntrepriseInvoiced >= 0 ? 'Amine doit ' + fmtPlain(deltaEntrepriseInvoiced) + '€ (entreprise)' : 'Augustin doit ' + fmtPlain(Math.abs(deltaEntrepriseInvoiced)) + '€ (entreprise)'}</td></tr>
-    <tr><td colspan="3" style="padding:6px 0"></td></tr>
-    <tr style="background:var(--yellow-bg,rgba(202,138,4,.07))"><td colspan="3" style="font-size:.75rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)">② Position Net (entreprise + personnel)</td></tr>
-    <tr><td>Position Entreprise (ci-dessus)</td><td class="a" style="color:${deltaEntrepriseInvoiced >= 0 ? 'var(--green)' : 'var(--red)'}">${fmtSigned(deltaEntrepriseInvoiced)}</td><td></td></tr>
-    <tr><td>− Virements Maroc (Amine → Augustin)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(augustinRecuEUR)}</td><td>${fmtPlain(totalMAD)} DH ÷ ${d.tauxMaroc}</td></tr>
-    <tr><td>− Cash divers net (Amine → Azarkan)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(diversNet)}</td><td>Paiements personnels via Nezha</td></tr>
-    <tr class="tr"><td><strong>= Position Net</strong></td><td class="a" style="color:${deltaInvoiced >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(deltaInvoiced)}</strong></td><td>${deltaInvoiced >= 0 ? 'Amine doit ' + fmtPlain(deltaInvoiced) + '€ à Augustin' : 'Augustin doit ' + fmtPlain(Math.abs(deltaInvoiced)) + '€ à Amine'}</td></tr>
-    </tbody></table>
-    <div class="n" style="margin-top:8px;font-size:.72rem;color:var(--muted)">Inclut toutes les factures émises (payées ou non). <strong>Position Entreprise</strong> = RTL − AZCS + report. <strong>Position Net</strong> = entreprise − virements − divers.</div></div>`;
+    let t = `<div id="reco-table-${id}" class="s"${s}><div class="st">${title}</div><table style="font-size:.8rem">
+    <thead><tr><th>Ligne</th><th ${thStyle}>TTC</th><th ${thStyle}>HT (Pro)</th><th ${thStyle}>Perso</th><th>Détail</th></tr></thead><tbody>`;
 
-  html += `<div id="reco-table-accrued" class="s" style="display:none"><div class="st">Réconciliation 2026 — Accrued (tout inclus)</div><table>
-    <thead><tr><th>Ligne</th><th style="text-align:right">EUR</th><th>Détail</th></tr></thead><tbody>
-    <tr style="background:var(--green-bg,rgba(34,197,94,.07))"><td colspan="3" style="font-size:.75rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)">① Position Entreprise (sociétés)</td></tr>
-    <tr style="background:var(--yellow-bg,rgba(202,138,4,.07))"><td><strong>+ RTL total (accrued — Bairok)</strong></td><td class="a" style="color:var(--yellow)"><strong>${fmtPlain(totalFacture)}</strong></td><td>${d.rtl.length} facture${d.rtl.length > 1 ? 's' : ''} (payées + émises + à facturer)</td></tr>
-    <tr><td>− AZCS reçu par Azarkan (toutes)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(azcsRecuAll)}</td><td>${azcsAll.length} facture(s) AZCS (projection complète)</td></tr>
-    <tr><td>+ Report 2025</td><td class="a" style="color:var(--red)">${fmtSigned(d.report2025)}</td><td>Solde clôture 2025</td></tr>
-    <tr class="tr" style="background:rgba(99,102,241,.06)"><td><strong>= Position Entreprise</strong></td><td class="a" style="color:${deltaEntrepriseAccrued >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(deltaEntrepriseAccrued)}</strong></td><td>${deltaEntrepriseAccrued >= 0 ? 'Amine doit ' + fmtPlain(deltaEntrepriseAccrued) + '€ (entreprise)' : 'Augustin doit ' + fmtPlain(Math.abs(deltaEntrepriseAccrued)) + '€ (entreprise)'}</td></tr>
-    <tr><td colspan="3" style="padding:6px 0"></td></tr>
-    <tr style="background:var(--yellow-bg,rgba(202,138,4,.07))"><td colspan="3" style="font-size:.75rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)">② Position Net (entreprise + personnel)</td></tr>
-    <tr><td>Position Entreprise (ci-dessus)</td><td class="a" style="color:${deltaEntrepriseAccrued >= 0 ? 'var(--green)' : 'var(--red)'}">${fmtSigned(deltaEntrepriseAccrued)}</td><td></td></tr>
-    <tr><td>− Virements Maroc (Amine → Augustin)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(augustinRecuEUR)}</td><td>${fmtPlain(totalMAD)} DH ÷ ${d.tauxMaroc}</td></tr>
-    <tr><td>− Cash divers net (Amine → Azarkan)</td><td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(diversNet)}</td><td>Paiements personnels via Nezha</td></tr>
-    <tr class="tr"><td><strong>= Position Net</strong></td><td class="a" style="color:${deltaAccrued >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(deltaAccrued)}</strong></td><td>${deltaAccrued >= 0 ? 'Amine doit ' + fmtPlain(deltaAccrued) + '€ à Augustin' : 'Augustin doit ' + fmtPlain(Math.abs(deltaAccrued)) + '€ à Amine'}</td></tr>
-    </tbody></table>
-    <div class="n" style="margin-top:8px;font-size:.72rem;color:var(--muted)">Projection complète. <strong>Position Entreprise</strong> = RTL total − AZCS total + report. <strong>Position Net</strong> = entreprise − virements − divers.</div></div>`;
+    // Section 1: Position Entreprise
+    t += secHdr('①', 'Position Entreprise (sociétés)', 'var(--green-bg,rgba(34,197,94,.07))');
+    t += `<tr style="background:var(--green-bg,rgba(34,197,94,.07))">
+      <td><strong>+ ${rtlLabel}</strong></td>
+      <td class="a" style="color:var(--green)">${fmtPlain(rtlTTC)}</td>
+      <td class="a" style="color:var(--green)"><strong>${fmtPlain(rtlHT)}</strong></td>
+      <td class="a" style="color:var(--green)">${fmtPlain(rtlHT)}</td>
+      <td style="font-size:.72rem">${rtlCount} facture(s) · TVA 0%</td></tr>`;
+    t += `<tr>
+      <td>− ${azcsLabel}</td>
+      <td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(azcsTTC)}</td>
+      <td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(azcsHT)}</td>
+      <td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(azcsHT)}</td>
+      <td style="font-size:.72rem">${azcsCount} facture(s) · TVA 21%</td></tr>`;
+    t += `<tr>
+      <td>+ Report 2025</td>
+      <td class="a" style="color:var(--red)">${fmtSigned(d.report2025)}</td>
+      <td class="a" style="color:var(--red)">${fmtSigned(d.report2025)}</td>
+      <td class="a" style="color:var(--red)">${fmtSigned(d.report2025)}</td>
+      <td style="font-size:.72rem">Clôture 2025</td></tr>`;
+    const eColor = deltaE >= 0 ? 'var(--green)' : 'var(--red)';
+    const eMsg = deltaE >= 0 ? 'Amine doit' : 'Augustin doit';
+    t += `<tr class="tr" style="background:rgba(99,102,241,.06)">
+      <td><strong>= Pos. Entreprise</strong></td>
+      <td class="a" style="color:${eColor}">${fmtSigned(deltaEtc)}</td>
+      <td class="a" style="color:${eColor}"><strong>${fmtSigned(deltaE)}</strong></td>
+      <td class="a" style="color:${eColor}"><strong>${fmtSigned(deltaE)}</strong></td>
+      <td style="font-size:.72rem">${eMsg} ${fmtPlain(Math.abs(deltaE))}€</td></tr>`;
+
+    // Spacer
+    t += `<tr><td colspan="6" style="padding:6px 0"></td></tr>`;
+
+    // Section 2: Position Net
+    t += secHdr('②', 'Position Net (entreprise + personnel)', 'var(--yellow-bg,rgba(202,138,4,.07))');
+    t += `<tr>
+      <td>Pos. Entreprise</td>
+      <td class="a" style="color:var(--muted)">—</td>
+      <td class="a" style="color:${eColor}">${fmtSigned(deltaE)}</td>
+      <td class="a" style="color:${eColor}">${fmtSigned(deltaE)}</td>
+      <td></td></tr>`;
+    t += `<tr>
+      <td>− Virements Maroc</td>
+      <td class="a" style="color:var(--muted)">—</td>
+      <td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(virementsProEUR)}</td>
+      <td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(virementsPersoEUR)}</td>
+      <td style="font-size:.72rem">${fmtPlain(totalMAD)} MAD ÷ ${d.tauxMaroc} · Pro = Perso</td></tr>`;
+
+    // Divers itemized
+    diversItems.forEach(x => {
+      const c = x.perso > 0 ? 'var(--blue,#60a5fa)' : 'var(--green)';
+      const commNote = x.commission > 0 ? ` · comm. ${fmtPlain(Math.round(x.commission))}€` : ' · 1:1';
+      t += `<tr>
+        <td style="font-size:.75rem">− ${x.label.length > 45 ? x.label.substring(0, 45) + '…' : x.label}</td>
+        <td class="a" style="color:var(--muted)">—</td>
+        <td class="a" style="color:${c}">${fmtPlain(Math.round(x.pro))}</td>
+        <td class="a" style="color:${c}">${fmtPlain(x.perso)}</td>
+        <td style="font-size:.72rem;color:var(--muted)">${x.commissionRate ? 'Commission ' + Math.round(x.commissionRate*100) + '%' : 'Dette'} ${commNote}</td></tr>`;
+    });
+
+    // Net totals
+    const proColor = dnPro >= 0 ? 'var(--green)' : 'var(--red)';
+    const persoColor = dnPerso >= 0 ? 'var(--green)' : 'var(--red)';
+    const proMsg = dnPro >= 0 ? 'Amine doit' : 'Augustin doit';
+    t += `<tr class="tr">
+      <td><strong>= Pos. Net Pro</strong></td>
+      <td class="a" style="color:var(--muted)">—</td>
+      <td class="a" style="color:${proColor}"><strong>${fmtSigned(Math.round(dnPro))}</strong></td>
+      <td class="a" style="color:var(--muted)">—</td>
+      <td style="font-size:.72rem">${proMsg} ${fmtPlain(Math.abs(Math.round(dnPro)))}€ (pro)</td></tr>`;
+    t += `<tr class="tr">
+      <td><strong>= Pos. Net Perso</strong></td>
+      <td class="a" style="color:var(--muted)">—</td>
+      <td class="a" style="color:var(--muted)">—</td>
+      <td class="a" style="color:${persoColor}"><strong>${fmtSigned(Math.round(dnPerso))}</strong></td>
+      <td style="font-size:.72rem">${dnPerso >= 0 ? 'Amine doit' : 'Augustin doit'} ${fmtPlain(Math.abs(Math.round(dnPerso)))}€ (perso) · Δ = ${fmtPlain(Math.round(commissionAmine))}€</td></tr>`;
+
+    t += `</tbody></table>
+    <div class="n" style="margin-top:8px;font-size:.72rem;color:var(--muted)"><strong>TTC</strong> = cash réel (TVA incluse). <strong>HT/Pro</strong> = valeur business (réconciliation). <strong>Perso</strong> = cash reçu. Δ Pro−Perso = ${fmtPlain(Math.round(commissionAmine))}€ commission Amine (6% sur cash France).</div></div>`;
+    return t;
+  }
+
+  // 3 reconciliation tables
+  html += recoTable('paid', 'Réconciliation 2026 — Cash réel (paid)', 'block', {
+    rtlLabel: 'RTL paid (Bairok)', rtlHT: rtlPaidHT, rtlTTC: rtlPaidTTC, rtlCount: paidRTL.length,
+    azcsLabel: 'AZCS paid (Azarkan)', azcsHT: azcsRecuPaid, azcsTTC: azcsPaidTTC, azcsCount: azcsPaid.length,
+    deltaE: deltaEntreprisePaid, deltaEtc: deltaEntreprisePaidTTC,
+    deltaNetPro: deltaNetPro, deltaNetPerso: deltaNetPerso
+  });
+
+  html += recoTable('invoiced', 'Réconciliation 2026 — Facturé (invoiced)', 'none', {
+    rtlLabel: 'RTL facturé (Bairok)', rtlHT: totalInvoiced, rtlTTC: totalInvoiced, rtlCount: invoicedRTL.length,
+    azcsLabel: 'AZCS invoiced (Azarkan)', azcsHT: azcsRecuInvoiced, azcsTTC: azcsInvoicedTTC, azcsCount: azcsInvoiced.length,
+    deltaE: deltaEntrepriseInvoiced, deltaEtc: totalInvoiced - azcsInvoicedTTC + d.report2025,
+    deltaNetPro: deltaInvoicedPro, deltaNetPerso: deltaInvoicedPerso
+  });
+
+  html += recoTable('accrued', 'Réconciliation 2026 — Projection (accrued)', 'none', {
+    rtlLabel: 'RTL total (Bairok)', rtlHT: totalFacture, rtlTTC: totalFacture, rtlCount: d.rtl.length,
+    azcsLabel: 'AZCS total (Azarkan)', azcsHT: azcsRecuAll, azcsTTC: azcsAllTTC, azcsCount: azcsAll.length,
+    deltaE: deltaEntrepriseAccrued, deltaEtc: totalFacture - azcsAllTTC + d.report2025,
+    deltaNetPro: deltaAccruedPro, deltaNetPerso: deltaAccruedPerso
+  });
 
   // Factures RTL 2026
   let rtlTableHtml = `<table>
@@ -365,39 +479,25 @@ function renderAugustin2026(embedded) {
   d.virementsMaroc.forEach((v, i) => {
     virementsMarocHtml += `<tr><td>${i+1}</td><td>${v.date}</td><td>${v.beneficiaire}</td><td class="a">${fmtPlain(v.dh)}</td><td class="a">${fmtPlain(v.dh / d.tauxMaroc)}</td></tr>`;
   });
-  virementsMarocHtml += `<tr class="tr"><td></td><td colspan="2"><strong>Total 2026</strong></td><td class="a"><strong>${fmtPlain(totalMAD)}</strong></td><td class="a"><strong>${fmtPlain(totalEUR)}</strong></td></tr></tbody></table>`;
+  virementsMarocHtml += `<tr class="tr"><td></td><td colspan="2"><strong>Total 2026</strong></td><td class="a"><strong>${fmtPlain(totalMAD)}</strong></td><td class="a"><strong>${fmtPlain(virementsProEUR)}</strong></td></tr></tbody></table>`;
 
-  virementsMarocHtml += `<div class="n">${delta < 0
-    ? `<strong>Augustin doit ${fmtPlain(Math.abs(delta))}€ à Amine</strong> (cash réel). Azarkan a reçu plus (virements + AZCS + divers) que ce qu'Amine a encaissé en RTL.`
-    : `<strong>Amine doit ${fmtPlain(delta)}€ à Augustin</strong> (cash réel). ${totalPending > 0 ? fmtPlain(totalPending) + '€ de factures RTL en attente de paiement.' : ''}`
-  } Report 2025 : <strong>${fmtSigned(d.report2025)}</strong>.</div>`;
+  virementsMarocHtml += `<div class="n"><strong>Règle :</strong> 1 000€ pro = 10 000 MAD perso (taux fixe). Pro = Perso en EUR. Total : ${fmtPlain(totalMAD)} MAD = ${fmtPlain(virementsProEUR)}€ pro = ${fmtPlain(virementsPersoEUR)}€ perso.</div>`;
 
   html += collapsible('Virements Maroc 2026', virementsMarocHtml);
 
-  // Divers 2026 (cash direct)
+  // Divers 2026 (cash direct) — avec Pro vs Perso
   if (d.divers && d.divers.length) {
-    const diversIn = d.divers.filter(x => x.montant > 0);
-    const diversOut = d.divers.filter(x => x.montant < 0);
-    const totalIn = diversIn.reduce((s, x) => s + x.montant, 0);
-    const totalOut = Math.abs(diversOut.reduce((s, x) => s + x.montant, 0));
-    // Commission on personal payments
-    const diversCommission = d.divers.filter(x => x.commissionRate).reduce((s, x) => {
-      const brut = Math.round(x.montant / (1 - x.commissionRate) * 100) / 100;
-      return s + (brut - x.montant);
-    }, 0);
     let diversTable = `<table>
-      <thead><tr><th>Opération</th><th data-sort="num" style="text-align:right">Net payé (€)</th><th data-sort="num" style="text-align:right">Brut couvert (€)</th><th>Détail</th></tr></thead><tbody>`;
-    d.divers.forEach(x => {
-      const color = x.montant > 0 ? 'var(--green)' : 'var(--red)';
-      const brut = x.commissionRate ? Math.round(x.montant / (1 - x.commissionRate) * 100) / 100 : null;
-      const brutStr = brut ? fmtPlain(Math.round(brut)) : '—';
-      const detail = x.commissionRate ? `Commission ${Math.round(x.commissionRate * 100)}% → ${fmtPlain(Math.round(brut - x.montant))}€` : '';
-      diversTable += `<tr><td>${x.label}</td><td class="a" style="color:${color}">${fmtSigned(x.montant, '€')}</td><td class="a">${brutStr}</td><td style="font-size:.72rem;color:var(--muted)">${detail}</td></tr>`;
+      <thead><tr><th>Opération</th><th data-sort="num" style="text-align:right">Perso (€)</th><th data-sort="num" style="text-align:right">Pro (€)</th><th data-sort="num" style="text-align:right">Commission (€)</th><th>Règle</th></tr></thead><tbody>`;
+    diversItems.forEach(x => {
+      const color = x.perso > 0 ? 'var(--green)' : 'var(--red)';
+      const rule = x.commissionRate ? `${Math.round(x.commissionRate*100)}% → Pro = Perso ÷ ${(1 - x.commissionRate).toFixed(2)}` : '1:1 (dette, pas de commission)';
+      diversTable += `<tr><td>${x.label}</td><td class="a" style="color:${color}">${fmtSigned(x.perso, '€')}</td><td class="a">${fmtPlain(Math.round(x.pro))}</td><td class="a" style="color:var(--green)">${x.commission > 0 ? fmtPlain(Math.round(x.commission)) : '—'}</td><td style="font-size:.72rem;color:var(--muted)">${rule}</td></tr>`;
     });
-    const soldeDiv = totalIn - totalOut;
-    diversTable += `<tr class="tr"><td><strong>Solde cash net</strong></td><td class="a" style="color:${soldeDiv >= 0 ? 'var(--green)' : 'var(--red)'}"><strong>${fmtSigned(soldeDiv, '€')}</strong></td><td></td><td style="font-size:.72rem;color:var(--muted)">${diversCommission > 0 ? 'Commission perso totale : ' + fmtPlain(Math.round(diversCommission)) + '€' : ''}</td></tr>`;
+    diversTable += `<tr class="tr"><td><strong>Total</strong></td><td class="a" style="color:var(--accent)"><strong>${fmtSigned(Math.round(diversPerso), '€')}</strong></td><td class="a"><strong>${fmtPlain(Math.round(diversPro))}</strong></td><td class="a" style="color:var(--green)"><strong>${fmtPlain(Math.round(commissionAmine))}</strong></td><td style="font-size:.72rem;color:var(--muted)">Δ Pro − Perso = commission Amine</td></tr>`;
     diversTable += `</tbody></table>`;
-    html += collapsible('Divers — Cash direct 2026', diversTable);
+    diversTable += `<div class="n" style="margin-top:6px"><strong>Règles :</strong> Dette = 1:1 (pas de commission). Cash France = commission 6% (Pro = Perso ÷ 0.94). Maroc = 1 000€ pro = 10 000 MAD (traité dans Virements Maroc).</div>`;
+    html += collapsible('Divers — Cash direct 2026 (Pro vs Perso)', diversTable);
   }
 
   // Facturation AZCS → Majalis (Badre)
