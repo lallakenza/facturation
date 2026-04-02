@@ -256,20 +256,19 @@ function renderAugustin2026(embedded) {
   const totalMAD = sum(d.virementsMaroc, 'dh');
   const virementsProEUR = totalMAD / d.tauxMaroc;
 
-  // --- Divers : Pro (valeur business) ---
-  const diversPro = d.divers ? d.divers.reduce((s, x) => {
-    if (x.commissionRate) return s + x.montant / (1 - x.commissionRate);
-    return s + x.montant;
-  }, 0) : 0;
+  // --- Divers : montant = PERSO (cash réel donné). Pro = montant / PERSO_FACTOR ---
   const diversPerso = d.divers ? d.divers.reduce((s, x) => s + x.montant, 0) : 0;
-  // Commission réelle encaissée sur les divers (pour affichage détail)
+  const diversPro = d.divers ? d.divers.reduce((s, x) => {
+    return s + Math.round(x.montant / PERSO_FACTOR * 100) / 100;
+  }, 0) : 0;
+  // Commission réelle encaissée sur les divers
   const commissionAmineDivers = Math.round((diversPro - diversPerso) * 100) / 100;
 
   // --- Itemized divers for table display ---
   const diversItems = d.divers ? d.divers.map(x => {
-    const pro = x.commissionRate ? x.montant / (1 - x.commissionRate) : x.montant;
-    const perso = Math.round(pro * PERSO_FACTOR * 100) / 100;
-    return { ...x, pro: Math.round(pro * 100) / 100, perso, commission: Math.round((pro - perso) * 100) / 100 };
+    const perso = x.montant; // montant IS perso (cash réel)
+    const pro = Math.round(perso / PERSO_FACTOR * 100) / 100;
+    return { ...x, pro, perso, commission: Math.round((pro - perso) * 100) / 100 };
   }) : [];
 
   // =====================================================
@@ -344,8 +343,8 @@ function renderAugustin2026(embedded) {
   html += `<div style="font-size:.7rem;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Flux personnel (Pro vs Perso)</div>`;
   html += `<div class="summary-row">
     <div class="summary-item"><div class="sl">Virements Maroc</div><div class="sv" style="color:var(--accent)">${fmtPlain(virementsProEUR)} €</div><div class="sd">${fmtPlain(totalMAD)} MAD · Pro = Perso</div></div>
-    <div class="summary-item"><div class="sl">Cash divers (pro)</div><div class="sv" style="color:var(--accent)">${fmtPlain(Math.round(diversPro))} €</div><div class="sd">Avec commission 5%</div></div>
-    <div class="summary-item"><div class="sl">Cash divers (perso)</div><div class="sv" style="color:var(--accent)">${fmtPlain(Math.round(diversPerso))} €</div><div class="sd">Cash réel sorti</div></div>
+    <div class="summary-item"><div class="sl">Cash divers (perso)</div><div class="sv" style="color:var(--accent)">${fmtPlain(Math.round(diversPerso))} €</div><div class="sd">Cash réel donné</div></div>
+    <div class="summary-item"><div class="sl">Cash divers (pro)</div><div class="sv" style="color:var(--accent)">${fmtPlain(Math.round(diversPro))} €</div><div class="sd">= Perso ÷ 0.95</div></div>
     <div class="summary-item"><div class="sl">Commission Amine</div><div class="sv" style="color:var(--green)">${fmtPlain(Math.abs(commissionAmine))} €</div><div class="sd">5% sur position Pro</div></div>
   </div>`;
 
@@ -428,7 +427,7 @@ function renderAugustin2026(embedded) {
         <td class="a" style="color:var(--muted)">—</td>
         <td class="a" style="color:${c}">${fmtPlain(Math.round(x.pro))}</td>
         <td class="a" style="color:${c}">${fmtPlain(Math.round(x.perso))}</td>
-        <td style="font-size:.72rem;color:var(--muted)">Pro × ${PF} = Perso · comm. ${fmtPlain(Math.round(x.pro - x.perso))}€</td></tr>`;
+        <td style="font-size:.72rem;color:var(--muted)">${fmtPlain(Math.round(x.perso))}€ perso · Pro = Perso ÷ ${PF} · comm. ${fmtPlain(Math.round(x.pro - x.perso))}€</td></tr>`;
     });
 
     // Net totals
@@ -499,11 +498,19 @@ function renderAugustin2026(embedded) {
       <thead><tr><th>Opération</th><th data-sort="num" style="text-align:right">Pro (€)</th><th data-sort="num" style="text-align:right">Perso (€)</th><th data-sort="num" style="text-align:right">Commission (€)</th><th>Règle</th></tr></thead><tbody>`;
     diversItems.forEach(x => {
       const color = x.pro > 0 ? 'var(--green)' : 'var(--red)';
-      diversTable += `<tr><td>${nickText(x.label)}</td><td class="a" style="color:${color}">${fmtPlain(Math.round(x.pro))}</td><td class="a">${fmtPlain(Math.round(x.perso))}</td><td class="a" style="color:var(--green)">${fmtPlain(Math.round(x.commission))}</td><td style="font-size:.72rem;color:var(--muted)">Perso = Pro × ${PERSO_FACTOR}</td></tr>`;
+      diversTable += `<tr><td>${nickText(x.label)}</td><td class="a" style="color:${color}">${fmtPlain(Math.round(x.pro))}</td><td class="a">${fmtPlain(Math.round(x.perso))}</td><td class="a" style="color:var(--green)">${fmtPlain(Math.round(x.commission))}</td><td style="font-size:.72rem;color:var(--muted)">Pro = Perso ÷ ${PERSO_FACTOR}</td></tr>`;
+      // Breakdown sub-rows (if present)
+      if (x.breakdown && x.breakdown.length) {
+        x.breakdown.forEach(b => {
+          const bColor = b.montant >= 0 ? 'var(--muted)' : 'var(--green)';
+          const sign = b.montant >= 0 ? '+' : '−';
+          diversTable += `<tr style="background:rgba(99,102,241,.04)"><td style="padding-left:28px;font-size:.72rem;color:var(--muted)">${sign} ${nickText(b.label)}</td><td class="a" style="color:var(--muted);font-size:.72rem">—</td><td class="a" style="color:${bColor};font-size:.72rem">${sign}${fmtPlain(Math.abs(b.montant))}</td><td class="a" style="color:var(--muted);font-size:.72rem">—</td><td style="font-size:.68rem;color:var(--muted)">composant</td></tr>`;
+        });
+      }
     });
-    diversTable += `<tr class="tr"><td><strong>Total</strong></td><td class="a"><strong>${fmtPlain(Math.round(diversPro))}</strong></td><td class="a" style="color:var(--accent)"><strong>${fmtPlain(Math.round(totalDiversPerso))}</strong></td><td class="a" style="color:var(--green)"><strong>${fmtPlain(Math.round(totalDiversComm))}</strong></td><td style="font-size:.72rem;color:var(--muted)">Perso = Pro × ${PERSO_FACTOR}</td></tr>`;
+    diversTable += `<tr class="tr"><td><strong>Total</strong></td><td class="a"><strong>${fmtPlain(Math.round(diversPro))}</strong></td><td class="a" style="color:var(--accent)"><strong>${fmtPlain(Math.round(totalDiversPerso))}</strong></td><td class="a" style="color:var(--green)"><strong>${fmtPlain(Math.round(totalDiversComm))}</strong></td><td style="font-size:.72rem;color:var(--muted)">Pro = Perso ÷ ${PERSO_FACTOR}</td></tr>`;
     diversTable += `</tbody></table>`;
-    diversTable += `<div class="n" style="margin-top:6px"><strong>Règle universelle :</strong> Perso = Pro × ${PERSO_FACTOR} (commission 5% Amine). Maroc = Pro × ${d.tauxMaroc} (taux fixe). Donc 1 000€ pro = ${(1000 * PERSO_FACTOR).toLocaleString('fr-FR')}€ perso = ${(d.tauxMaroc * 1000).toLocaleString('fr-FR')} MAD.</div>`;
+    diversTable += `<div class="n" style="margin-top:6px"><strong>Règle :</strong> Les montants sont en <strong>Perso</strong> (cash réel donné). Pro = Perso ÷ ${PERSO_FACTOR} (5% commission Amine). Donc 950€ perso = 1 000€ pro = ${(d.tauxMaroc * 1000).toLocaleString('fr-FR')} MAD.</div>`;
     html += collapsible('Divers — Cash direct 2026 (Pro vs Perso)', diversTable);
   }
 

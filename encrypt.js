@@ -125,11 +125,18 @@ const FULL_DATA = {
       { ref: "—", periode: "Mars", jours: 20, montant: 17000, statut: "i", statutText: "À facturer" },
     ],
     divers: [
-      { label: "Amine → Azarkan (via Nezha → Hanane) — remboursement cash (prêts 2025 + Zak/Oumaima 2026)", montant: 2000 },
+      { label: "Amine → Azarkan (via Nezha → Hanane) — remboursement cash 2025 + ajustements 2026", montant: 2000,
+        breakdown: [
+          { label: "Prêts Azarkan → Amine 2025 (1 500 + 2 500)", montant: 4000 },
+          { label: "Virements Amine → Azarkan 2025 (600+700+500+600)", montant: -2400 },
+          { label: "Zakaria 2026 (avance)", montant: 1200 },
+          { label: "Oumaima 2026 (remboursement reçu)", montant: -800 },
+        ]
+      },
       { label: "Amine → Azarkan (via Nezha → Hanane) — avec commission 5%", montant: 4000, commissionRate: 0.05 },
     ],
     insights: [
-      { type: "neutral", titre: "💸 Flux cash 2026 : Amine 6 000€ net → Azarkan (via Nezha → Hanane)", desc: "<strong>Amine → Azarkan :</strong> 6 000€ via Nezha → Hanane (2 virements).<br><em>Ventilation :</em> 2 000€ = remboursement cash (prêts 2025 + Zak/Oumaima 2026 inclus), 4 000€ = avec commission 5% (brut = 4 211€, commission Amine = 211€).<br>Note : Zak (-1 200€) et Oumaima (+800€) sont <strong>inclus</strong> dans le remboursement de 2 000€, pas comptés séparément.<br>Dette cash personnelle <strong>soldée</strong>." },
+      { type: "neutral", titre: "💸 Flux cash 2026 : Amine 6 000€ net → Azarkan (via Nezha → Hanane)", desc: "<strong>Amine → Azarkan :</strong> 6 000€ via Nezha → Hanane (2 virements).<br><em>Ventilation :</em><br>• <strong>2 000€</strong> = remboursement : Prêts 2025 (4 000€) − Virements 2025 (2 400€) + Zak (1 200€) − Oumaima (800€) = <strong>2 000€</strong><br>• <strong>4 000€</strong> = avec commission 5% (brut = 4 211€, commission Amine = 211€).<br>Voir le détail dans la section Divers." },
       { type: "pass", titre: "📄 Factures RTL 2026 : 2 payées, 1 à facturer", desc: "INVRTL013 (Jan, 11j, 9 350€ HT) payée. INVRTL014 (Fév, 20j, 17 000€ HT) payée le 01/04/2026 (payment advice CLT-UFA 26 350€ couvrant les 2 factures). Mars (20j, 17 000€ HT) à facturer. <strong>Toutes les factures RTL sont HT (TVA 0% — Bairok LLC est basée aux EAU).</strong>" },
     ],
   },

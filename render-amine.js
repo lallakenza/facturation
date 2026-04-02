@@ -28,14 +28,12 @@ function renderAmine() {
   const totalMAD_az = sum(az.virementsMaroc, 'dh');
   const virementsEUR = totalMAD_az / az.tauxMaroc;
 
-  // Divers Pro
-  const diversPro = az.divers ? az.divers.reduce((s, x) => {
-    if (x.commissionRate) return s + x.montant / (1 - x.commissionRate);
-    return s + x.montant;
-  }, 0) : 0;
-
-  // Taux de conversion universels Azarkan
+  // Divers : montant = PERSO (cash réel). Pro = montant / PERSO_FACTOR
+  const diversPerso = az.divers ? az.divers.reduce((s, x) => s + x.montant, 0) : 0;
   const PERSO_FACTOR = 0.95; // Pro → Perso : 5% commission Amine
+  const diversPro = az.divers ? az.divers.reduce((s, x) => {
+    return s + Math.round(x.montant / PERSO_FACTOR * 100) / 100;
+  }, 0) : 0;
 
   // Positions Azarkan
   const posEntreprise = rtlPaidHT - azcsRecuPaid + az.report2025;
@@ -121,7 +119,7 @@ function renderAmine() {
   html += `<div style="font-size:.72rem;color:var(--muted);padding:8px 12px;background:var(--surface2);border-radius:8px;margin-bottom:6px">
     <strong>Détail :</strong> Pos. Entreprise = ${fmtSigned(posEntreprise)} (RTL ${fmtPlain(rtlPaidHT)} − AZCS ${fmtPlain(azcsRecuPaid)} + Report ${fmtSigned(az.report2025)}).
     Maroc = ${fmtPlain(Math.round(virementsEUR))}€ pro (${fmtPlain(totalMAD_az)} MAD).
-    Divers = ${fmtPlain(Math.round(diversPro))}€ pro.
+    Divers = ${fmtPlain(Math.round(diversPerso))}€ perso (= ${fmtPlain(Math.round(diversPro))}€ pro).
     <strong>Net Pro = ${fmtSigned(Math.round(posNetPro))} · Perso = Pro × ${PERSO_FACTOR} = ${fmtSigned(Math.round(posNetPerso))} · MAD = Pro × ${az.tauxMaroc} = ${fmtSigned(Math.round(posNetMAD), 'MAD')}</strong>
   </div>`;
   html += `</div>`;

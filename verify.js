@@ -117,23 +117,23 @@ check('RTL paid 2026', amineRecu26, 26350);
 const posEntreprise = amineRecu26 - azcsRecuPaid26 + az26.report2025;
 check('Position Entreprise (paid)', posEntreprise, -5958);
 
-// Divers Pro (avec commission 5% sur le cash Europe)
+// Divers : montant = PERSO. Pro = montant / 0.95
+const PERSO_FACTOR = 0.95;
 const diversPro26 = az26.divers.reduce((s, x) => {
-  if (x.commissionRate) return s + x.montant / (1 - x.commissionRate);
-  return s + x.montant;
+  return s + Math.round(x.montant / PERSO_FACTOR * 100) / 100;
 }, 0);
-const expectedDiversPro = 2000 + 4000 / 0.95;
-check('Divers Pro 2026', Math.round(diversPro26 * 100), Math.round(expectedDiversPro * 100));
+const expectedDiversPro = 2000 / 0.95 + 4000 / 0.95;
+check('Divers Pro 2026 (perso÷0.95)', Math.round(diversPro26 * 100), Math.round(expectedDiversPro * 100));
 
 const commAmine = diversPro26 - diversNet26;
-check('Commission Amine 5%', Math.round(commAmine * 100), Math.round((4000 / 0.95 - 4000) * 100));
+const expectedComm = (2000 / 0.95 - 2000) + (4000 / 0.95 - 4000);
+check('Commission Amine 5% divers', Math.round(commAmine * 100), Math.round(expectedComm * 100));
 
 // Position Net PRO (paid)
 const posNetPro = posEntreprise - totalEUR26 - diversPro26;
-check('Position Net Pro (paid)', Math.round(posNetPro), Math.round(-5958 - 5000 - expectedDiversPro));
+check('Position Net Pro (paid)', Math.round(posNetPro), Math.round(posEntreprise - totalEUR26 - diversPro26));
 
 // Position Net PERSO = Pro × 0.95 (règle universelle)
-const PERSO_FACTOR = 0.95;
 const posNetPerso = posNetPro * PERSO_FACTOR;
 check('Position Net Perso (Pro×0.95)', Math.round(posNetPerso), Math.round(posNetPro * PERSO_FACTOR));
 
