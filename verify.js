@@ -186,6 +186,11 @@ const tx26_jan = Math.round(5000 * 10.6);
 check('Jan 2026 DH', tx26_jan, 53000);
 check('Report 2025 (computed)', soldeBenoit, 4754);
 
+// Benoit 2026 virements (including 50k MAD payment 02/04/2026)
+const totalPaye26 = sum(ba26.virements, 'dh');
+check('Benoit 2026 virements total', totalPaye26, 100000);
+check('Benoit 2026 virements count', ba26.virements.length, 2);
+
 // Summary
 console.log(`\n=============================`);
 console.log(`Total: ${errors === 0 ? '✅ ALL CHECKS PASSED' : `❌ ${errors} ERROR(S) FOUND`}`);

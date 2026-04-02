@@ -174,6 +174,7 @@ const FULL_DATA = {
     ],
     virements: [
       { date: "09/03/2026", beneficiaire: "Benoit Chevalier", dh: 50000, motif: "Remboursement" },
+      { date: "02/04/2026", beneficiaire: "Badrecheikh Elmouksit", dh: 50000, motif: "Virement" },
     ],
     notes: [
       "Le virement du 06/03/2026 (31 750 DH) a été comptabilisé dans la clôture 2025. La réconciliation ne prend en compte que les Councils effectivement payés.",

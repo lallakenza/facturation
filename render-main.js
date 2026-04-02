@@ -4,6 +4,7 @@
 
 // ---- TAB CONFIGURATION (single source of truth) ----
 const TAB_CONFIG = [
+  { id: 'amine',    label: 'Ma Position', access: 'full' },
   { id: 'augustin', label: 'Azarkan', access: 'full' },
   { id: 'benoit',   label: 'Badre',   access: 'all' },
   { id: 'fxp2p',    label: 'FX P2P',   access: 'priv' },
@@ -15,6 +16,9 @@ function renderPanel(id) {
   const el = document.getElementById(id);
   if (!el) return;
   switch (id) {
+    case 'amine':
+      el.innerHTML = renderAmine();
+      break;
     case 'augustin': {
       const y = window.azYear || 2026;
       el.innerHTML = y === 0 ? renderAugustinAll() : y === 2025 ? renderAugustin2025() : renderAugustin2026();

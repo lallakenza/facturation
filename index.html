@@ -748,14 +748,15 @@ th[data-sort].sort-desc::after{content:'▼';opacity:.7}
 </div><!-- /site-wrap -->
 
 <!-- Scripts: encrypted data only (no plaintext) -->
-<script src="data-enc.js?v=45"></script>
-<script src="data-priv.enc.js?v=45"></script>
-<script src="render-helpers.js?v=45"></script>
-<script src="render-augustin.js?v=45"></script>
-<script src="render-benoit.js?v=45"></script>
-<script src="render-fxp2p.js?v=45"></script>
-<script src="render-gains.js?v=45"></script>
-<script src="render-main.js?v=45"></script>
+<script src="data-enc.js?v=46"></script>
+<script src="data-priv.enc.js?v=46"></script>
+<script src="render-helpers.js?v=46"></script>
+<script src="render-amine.js?v=46"></script>
+<script src="render-augustin.js?v=46"></script>
+<script src="render-benoit.js?v=46"></script>
+<script src="render-fxp2p.js?v=46"></script>
+<script src="render-gains.js?v=46"></script>
+<script src="render-main.js?v=46"></script>
 
 <script>
 // ============================================
@@ -822,13 +823,17 @@ window.DATA = {};
     if (!upper) return;
 
     // Determine which encrypted blob to try
-    let blob, mode;
+    let blob, mode, isBinga = false;
     if (upper === 'BRIDGEVALE') {
       blob = ENCRYPTED_FULL;
       mode = 'full';
     } else if (upper === 'COUPA') {
       blob = ENCRYPTED_BENOIT;
       mode = 'benoit';
+    } else if (upper === 'BINGA') {
+      blob = ENCRYPTED_FULL;
+      mode = 'full';
+      isBinga = true;
     } else {
       // Wrong code — show fake hotel error
       attempts++;
@@ -845,10 +850,17 @@ window.DATA = {};
     searchBtn.disabled = true;
 
     try {
-      // Decrypt main data
-      const data = await decryptBlob(blob, upper);
+      // Decrypt main data (BINGA decrypts with BRIDGEVALE key first)
+      const data = await decryptBlob(blob, isBinga ? 'BRIDGEVALE' : upper);
       window.DATA = data;
       window.ACCESS_MODE = mode;
+
+      // If BINGA: also decrypt private overlay
+      if (isBinga) {
+        const priv = await decryptBlob(ENCRYPTED_PRIV, 'BINGA');
+        injectPrivData(priv);
+        window.PRIV = true;
+      }
 
       // Transition: hotel → reconciliation
       hotelWrap.classList.add('hide');
@@ -856,6 +868,7 @@ window.DATA = {};
         hotelWrap.style.display = 'none';
         document.body.classList.remove('hotel-mode');
         document.body.classList.add('reco-mode');
+        if (isBinga) document.body.classList.add('dark');
         siteWrap.classList.add('visible');
 
         if (mode === 'benoit') {
@@ -863,6 +876,18 @@ window.DATA = {};
         }
         buildTabs();
         renderAll();
+
+        // BINGA splash animation
+        if (isBinga) {
+          const ovl = document.getElementById('bingaOvl');
+          ovl.classList.add('show');
+          setTimeout(() => {
+            ovl.classList.remove('show');
+            document.getElementById('dref').value = '';
+            document.getElementById('dref').placeholder = '✓';
+          }, 1900);
+        }
+
         overlay.classList.remove('show');
       }, 600);
     } catch(e) {
