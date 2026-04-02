@@ -23,9 +23,11 @@ Site statique hébergé sur GitHub Pages (lallakenza/facturation) permettant la 
 
 | Entité | Description |
 |---|---|
-| **Bairok Consulting LLC** | Société d'Azarkan aux EAU (Sharjah). Facture RTL en HT (TVA 0%). IBAN IFX Payments (GB). |
+| **Bairok Consulting LLC** | Société d'Amine aux EAU (Sharjah). Facture RTL en HT (TVA 0%). IBAN IFX Payments (GB). |
+| **AZCS (Azarkan Consulting Services)** | Société d'Azarkan en Belgique. Facture Councils/Majalis en TTC (21% TVA belge). |
+| **Majalis** | Société de Badre. Paie les factures AZCS pour le compte d'Amine (pay-on-behalf). |
 | **CLT-UFA S.A. (RTL Group)** | Client final au Luxembourg. Paie les factures Bairok. |
-| **Councils / Majalis / BridgeVale** | Clients qui paient Azarkan en EUR (TTC en Belgique, TVA 21%). On comptabilise en HT. |
+| **Councils / BridgeVale** | Clients d'Azarkan facturés via AZCS. Majalis (Badre) règle les factures. |
 
 ---
 
@@ -40,8 +42,10 @@ Le site a 3 niveaux d'accès contrôlés par un "gate" (mot de passe) :
 | **BINGA** | Champ caché `#dref` | `full` | `true` | Sombre | Tous les onglets + données privées (taux marché, commissions FX, gains détaillés) |
 
 ### Fonctionnement du gate
-- L'input principal accepte BRIDGEVALE ou COUPA (keydown Enter)
-- Un input caché `#dref` déclenche le mode BINGA (event input) avec déchiffrement AES-256-GCM des données privées (`data-priv.enc.js`)
+- Page d'accueil = portail facturation hôtelier fictif "Riad Mogador" (façade)
+- Le champ "N° de réservation" accepte BRIDGEVALE ou COUPA (case-insensitive) → déchiffre les données principales (data-enc.js) puis transition vers la réconciliation
+- Un input caché `#dref` ("Réf. dossier") déclenche le mode BINGA (event input) avec déchiffrement AES-256-GCM des données privées (`data-priv.enc.js`)
+- Tous les mots de passe sont normalisés en MAJUSCULE avant dérivation PBKDF2
 
 ---
 
@@ -50,8 +54,9 @@ Le site a 3 niveaux d'accès contrôlés par un "gate" (mot de passe) :
 ```
 site/
 ├── index.html            # HTML principal + CSS + gate + crypto + year toggles
-├── data.js               # Données publiques (augustin2025/2026, benoit2025/2026)
-├── data-priv.enc.js      # Données privées chiffrées (FX P2P, taux marché, spreads)
+├── data-enc.js           # Données publiques chiffrées (ENCRYPTED_FULL + ENCRYPTED_BENOIT)
+├── data-priv.enc.js      # Données privées chiffrées BINGA (FX P2P, taux marché, spreads)
+├── encrypt.js            # Script Node.js pour chiffrer les données (source de vérité)
 ├── render-helpers.js     # Fonctions utilitaires (fmtPlain, fmtSigned, badge, sum, yearToggle3, tri)
 ├── render-augustin.js    # Rendu onglet Augustin (2025 clôturé + 2026 en cours)
 ├── render-benoit.js      # Rendu onglet Benoit (2025 clôturé + 2026 en cours)

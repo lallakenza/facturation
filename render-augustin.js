@@ -236,7 +236,7 @@ function renderAugustin2026(embedded) {
   const rtlPaidTTC = amineRecu;
   const rtlPaidPerso = amineRecu;
 
-  // --- AZCS (21% TVA belge) : TTC = HT×1.21, Perso = HT ---
+  // --- AZCS (Majalis→AZCS via Badre, 21% TVA belge) : TTC = HT×1.21, Perso = HT ---
   const azcsAll = (b26 && b26.councils) ? b26.councils : [];
   const azcsPaid = azcsAll.filter(c => c.statut === 'ok');
   const azcsInvoiced = azcsAll.filter(c => c.statut === 'ok' || c.statut === 'w');
@@ -302,25 +302,33 @@ function renderAugustin2026(embedded) {
   let html = embedded ? '' : yearToggle3('Az', 2026);
   html += `<h2 style="font-size:1.05rem;margin-bottom:16px">${d.title}</h2>`;
 
-  // ---- HERO CARDS: Entreprise / Net Pro / Net Perso ----
+  // ---- HERO CARDS: 3 options de règlement équivalentes ----
+  const absNetPro = Math.abs(Math.round(deltaNetPro));
+  const absNetPerso = Math.abs(Math.round(deltaNetPerso));
+  const absNetMAD = Math.abs(Math.round(deltaNetPerso * d.tauxMaroc));
+  const whoOwes = deltaNetPerso >= 0 ? 'Amine doit à Augustin' : 'Augustin doit à Amine';
+  const heroColor = deltaNetPerso >= 0 ? 'var(--green)' : 'var(--red)';
+  const heroCls = deltaNetPerso >= 0 ? 'green' : 'red';
+
+  html += `<div style="font-size:.7rem;color:var(--muted);margin-bottom:6px">Position Entreprise : <strong style="color:${deltaEntreprisePaid >= 0 ? 'var(--green)' : 'var(--red)'}">${fmtSigned(deltaEntreprisePaid)}</strong> (RTL − Majalis→AZCS + Report) · <strong>${whoOwes}</strong></div>`;
   html += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
-    <div class="hero-card" style="border-color:${deltaEntreprisePaid >= 0 ? 'var(--green)' : 'var(--red)'}">
-      <div class="hero-label">Position Entreprise</div>
-      <div class="hero-value ${deltaEntreprisePaid >= 0 ? 'green' : 'red'}" style="font-size:1.3rem">${fmtSigned(deltaEntreprisePaid)}</div>
-      <div class="hero-who" style="color:${deltaEntreprisePaid >= 0 ? 'var(--green)' : 'var(--red)'}">→ ${deltaEntreprisePaid >= 0 ? 'Amine doit (entreprise)' : 'Augustin doit (entreprise)'}</div>
-      <div class="hero-detail">RTL − AZCS + Report</div>
+    <div class="hero-card" style="border-color:${heroColor}">
+      <div class="hero-label">Si paiement France (pro)</div>
+      <div class="hero-value ${heroCls}" style="font-size:1.3rem">${fmtSigned(Math.round(deltaNetPro))}</div>
+      <div class="hero-who" style="color:${heroColor}">→ ${whoOwes}</div>
+      <div class="hero-detail">Virement pro · commission 5% incluse</div>
     </div>
-    <div class="hero-card" style="border-color:${deltaNetPro >= 0 ? 'var(--green)' : 'var(--red)'}">
-      <div class="hero-label">Position Net Pro</div>
-      <div class="hero-value ${deltaNetPro >= 0 ? 'green' : 'red'}" style="font-size:1.3rem">${fmtSigned(Math.round(deltaNetPro))}</div>
-      <div class="hero-who" style="color:${deltaNetPro >= 0 ? 'var(--green)' : 'var(--red)'}">→ ${deltaNetPro >= 0 ? 'Amine doit payer' : 'Augustin doit payer'}</div>
-      <div class="hero-detail">Avec équivalent pro des flux perso</div>
+    <div class="hero-card" style="border-color:${heroColor}">
+      <div class="hero-label">Si paiement France (perso)</div>
+      <div class="hero-value ${heroCls}" style="font-size:1.3rem">${fmtSigned(Math.round(deltaNetPerso))}</div>
+      <div class="hero-who" style="color:${heroColor}">→ ${whoOwes}</div>
+      <div class="hero-detail">Cash réel · sans commission</div>
     </div>
-    <div class="hero-card" style="border-color:${deltaNetPerso >= 0 ? 'var(--green)' : 'var(--red)'}">
-      <div class="hero-label">Position Net Perso</div>
-      <div class="hero-value ${deltaNetPerso >= 0 ? 'green' : 'red'}" style="font-size:1.3rem">${fmtSigned(Math.round(deltaNetPerso))}</div>
-      <div class="hero-who" style="color:${deltaNetPerso >= 0 ? 'var(--green)' : 'var(--red)'}">→ ${deltaNetPerso >= 0 ? 'Amine doit payer' : 'Augustin doit payer'}</div>
-      <div class="hero-detail">Cash réel sorti · Δ = ${fmtPlain(Math.round(commissionAmine))}€ commission</div>
+    <div class="hero-card" style="border-color:${heroColor}">
+      <div class="hero-label">Si paiement Maroc</div>
+      <div class="hero-value ${heroCls}" style="font-size:1.3rem">${deltaNetPerso >= 0 ? '+' : '−'}${absNetMAD.toLocaleString('fr-FR')} MAD</div>
+      <div class="hero-who" style="color:${heroColor}">→ ${whoOwes}</div>
+      <div class="hero-detail">Taux fixe : 1 000€ = ${(d.tauxMaroc * 1000).toLocaleString('fr-FR')} MAD</div>
     </div>
   </div>`;
 
@@ -328,7 +336,7 @@ function renderAugustin2026(embedded) {
   html += `<div style="font-size:.7rem;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Flux entreprise (TTC / HT identiques car TVA 0% sur RTL)</div>`;
   html += `<div class="summary-row" style="margin-bottom:8px">
     <div class="summary-item"><div class="sl">RTL reçu (Bairok)</div><div class="sv" style="color:var(--green)">${fmtPlain(rtlPaidHT)} €</div><div class="sd">HT = TTC (TVA 0%)</div></div>
-    <div class="summary-item"><div class="sl">AZCS HT (Azarkan)</div><div class="sv" style="color:var(--blue,#60a5fa)">${fmtPlain(azcsRecuPaid)} €</div><div class="sd">TTC : ${fmtPlain(azcsPaidTTC)}€ (21% TVA)</div></div>
+    <div class="summary-item"><div class="sl">Majalis → AZCS (via Badre)</div><div class="sv" style="color:var(--blue,#60a5fa)">${fmtPlain(azcsRecuPaid)} €</div><div class="sd">TTC : ${fmtPlain(azcsPaidTTC)}€ (21% TVA)</div></div>
     <div class="summary-item"><div class="sl">Report 2025</div><div class="sv" style="color:var(--red)">${fmtSigned(d.report2025)}</div><div class="sd">Solde clôture 2025</div></div>
     <div class="summary-item"><div class="sl">En attente RTL</div><div class="sv" style="color:var(--yellow)">${fmtPlain(totalPending)} €</div><div class="sd">Pas encore payé</div></div>
   </div>`;
@@ -445,21 +453,21 @@ function renderAugustin2026(embedded) {
   // 3 reconciliation tables
   html += recoTable('paid', 'Réconciliation 2026 — Cash réel (paid)', 'block', {
     rtlLabel: 'RTL paid (Bairok)', rtlHT: rtlPaidHT, rtlTTC: rtlPaidTTC, rtlCount: paidRTL.length,
-    azcsLabel: 'AZCS paid (Azarkan)', azcsHT: azcsRecuPaid, azcsTTC: azcsPaidTTC, azcsCount: azcsPaid.length,
+    azcsLabel: 'Majalis → AZCS paid (via Badre)', azcsHT: azcsRecuPaid, azcsTTC: azcsPaidTTC, azcsCount: azcsPaid.length,
     deltaE: deltaEntreprisePaid, deltaEtc: deltaEntreprisePaidTTC,
     deltaNetPro: deltaNetPro, deltaNetPerso: deltaNetPerso
   });
 
   html += recoTable('invoiced', 'Réconciliation 2026 — Facturé (invoiced)', 'none', {
     rtlLabel: 'RTL facturé (Bairok)', rtlHT: totalInvoiced, rtlTTC: totalInvoiced, rtlCount: invoicedRTL.length,
-    azcsLabel: 'AZCS invoiced (Azarkan)', azcsHT: azcsRecuInvoiced, azcsTTC: azcsInvoicedTTC, azcsCount: azcsInvoiced.length,
+    azcsLabel: 'Majalis → AZCS invoiced (via Badre)', azcsHT: azcsRecuInvoiced, azcsTTC: azcsInvoicedTTC, azcsCount: azcsInvoiced.length,
     deltaE: deltaEntrepriseInvoiced, deltaEtc: totalInvoiced - azcsInvoicedTTC + d.report2025,
     deltaNetPro: deltaInvoicedPro, deltaNetPerso: deltaInvoicedPerso
   });
 
   html += recoTable('accrued', 'Réconciliation 2026 — Projection (accrued)', 'none', {
     rtlLabel: 'RTL total (Bairok)', rtlHT: totalFacture, rtlTTC: totalFacture, rtlCount: d.rtl.length,
-    azcsLabel: 'AZCS total (Azarkan)', azcsHT: azcsRecuAll, azcsTTC: azcsAllTTC, azcsCount: azcsAll.length,
+    azcsLabel: 'Majalis → AZCS total (via Badre)', azcsHT: azcsRecuAll, azcsTTC: azcsAllTTC, azcsCount: azcsAll.length,
     deltaE: deltaEntrepriseAccrued, deltaEtc: totalFacture - azcsAllTTC + d.report2025,
     deltaNetPro: deltaAccruedPro, deltaNetPerso: deltaAccruedPerso
   });

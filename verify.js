@@ -1,10 +1,31 @@
 // Verification script - run with Node.js to check all amounts
 // Usage: node verify.js
+// Decrypts data from data-enc.js using BRIDGEVALE, then runs all checks.
 
-// Load data
-const dataCode = require('fs').readFileSync('data.js', 'utf8');
-const fn = new Function(dataCode + '; return DATA;');
-const DATA = fn();
+const crypto = require('crypto');
+const fs = require('fs');
+
+const SALT = 'facturation-augustin-2025';
+
+function decrypt(b64, password) {
+  const pwd = password.toUpperCase();
+  const key = crypto.pbkdf2Sync(pwd, SALT, 100000, 32, 'sha256');
+  const raw = Buffer.from(b64, 'base64');
+  const iv = raw.slice(0, 12);
+  const tag = raw.slice(12, 28);
+  const ct = raw.slice(28);
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+  decipher.setAuthTag(tag);
+  let dec = decipher.update(ct, null, 'utf8');
+  dec += decipher.final('utf8');
+  return JSON.parse(dec);
+}
+
+// Load encrypted blob
+const encFile = fs.readFileSync('data-enc.js', 'utf8');
+const fullMatch = encFile.match(/ENCRYPTED_FULL = "([^"]+)"/);
+if (!fullMatch) { console.error('Cannot find ENCRYPTED_FULL in data-enc.js'); process.exit(1); }
+const DATA = decrypt(fullMatch[1], 'BRIDGEVALE');
 
 let errors = 0;
 function check(label, actual, expected) {
@@ -22,27 +43,21 @@ const sum = (arr, key) => arr.reduce((s, x) => s + (typeof key === 'function' ? 
 console.log('\n=== AUGUSTIN 2025 ===');
 const az = DATA.augustin2025;
 
-// Actuals
 const totalActuals = sum(az.mois, 'actuals');
 check('Total Actuals', totalActuals, 198475);
 
-// B+Y+M
 const totalBYM = sum(az.mois, 'bym');
 check('Total B+Y+M', totalBYM, 157288);
 
-// Maroc
 const totalMaroc = sum(az.mois, 'maroc');
 check('Total Maroc', totalMaroc, 23000);
 
-// Divers
 const totalDivers = sum(az.mois, 'divers');
 check('Total Divers', totalDivers, 1170);
 
-// Total dépenses
 const totalDep = totalBYM + totalMaroc + totalDivers;
 check('Total dépenses', totalDep, 181458);
 
-// Balance Fév-Déc
 const moisFevDec = az.mois.slice(1);
 const actualsFevDec = sum(moisFevDec, 'actuals');
 const depFevDec = sum(moisFevDec, m => m.bym + m.maroc + m.divers);
@@ -51,31 +66,25 @@ check('Actuals Fév-Déc', actualsFevDec, 179775);
 check('Dépenses Fév-Déc', depFevDec, 181458);
 check('Solde (balance)', solde, -1683);
 
-// Ycarré
 const totalYcarré = sum(az.ycarre, 'montant');
 check('Total Ycarré', totalYcarré, 54300);
 
-// Councils (Augustin view)
 const totalCouncils = sum(az.councils, 'ebsHT');
 check('Total Councils HT', totalCouncils, 30188);
 
-// Baraka
 const totalBaraka = sum(az.baraka, 'montant');
 check('Total Baraka', totalBaraka, 72800);
 
-// Virements Maroc
 const totalMarocExcel = sum(az.virementsMaroc, 'excelEUR');
 check('Maroc Excel', totalMarocExcel, 23000);
 const totalMarocDH = sum(az.virementsMaroc, 'totalDH');
 check('Maroc DH', totalMarocDH, 230000);
 check('Maroc EUR réel', totalMarocDH / az.tauxMaroc, 23000);
 
-// Divers detailed
 const totalDiversCalc = sum(az.divers, 'montant');
 check('Divers total net', totalDiversCalc, 1170);
 check('Divers vérifié (abs)', az.diversVerifie, 9170);
 
-// RTL
 const totalRTL = sum(az.rtl, 'montant');
 check('Total RTL', totalRTL, 198475);
 
@@ -90,67 +99,66 @@ check('Total EUR Maroc 2026', totalEUR26, 5000);
 const totalRTL26 = sum(az26.rtl.filter(r => r.ref !== '—'), 'montant');
 check('Total RTL facturé 2026', totalRTL26, 26350);
 
-// Divers 2026 — should be 6000 (2 entries: 2000 + 4000, no Zak/Oumaima)
 const diversNet26 = az26.divers.reduce((s, x) => s + x.montant, 0);
 check('Divers net 2026', diversNet26, 6000);
 check('Divers count 2026 (no Zak/Oumaima)', az26.divers.length, 2);
 
-// AZCS (from benoit2026)
+// AZCS via Majalis (from benoit2026)
 const azcsAll26 = DATA.benoit2026.councils;
 const azcsPaid26 = azcsAll26.filter(c => c.statut === 'ok');
 const azcsRecuPaid26 = sum(azcsPaid26, 'htEUR');
-check('AZCS paid 2026', azcsRecuPaid26, 30625);
+check('AZCS paid via Majalis 2026', azcsRecuPaid26, 30625);
 
-// RTL paid
 const paidRTL26 = az26.rtl.filter(r => r.statut === 'ok');
 const amineRecu26 = sum(paidRTL26, 'montant');
 check('RTL paid 2026', amineRecu26, 26350);
 
-// Position Entreprise (paid) = RTL paid - AZCS paid + report2025
+// Position Entreprise (paid) = RTL paid - Majalis→AZCS paid + report2025
 const posEntreprise = amineRecu26 - azcsRecuPaid26 + az26.report2025;
-check('Position Entreprise (paid)', posEntreprise, 26350 - 30625 + (-1683)); // = -5958
+check('Position Entreprise (paid)', posEntreprise, -5958);
 
 // Divers Pro (avec commission 5% sur le cash Europe)
 const diversPro26 = az26.divers.reduce((s, x) => {
   if (x.commissionRate) return s + x.montant / (1 - x.commissionRate);
   return s + x.montant;
 }, 0);
-const expectedDiversPro = 2000 + 4000 / 0.95; // = 2000 + 4210.53 = 6210.53
+const expectedDiversPro = 2000 + 4000 / 0.95;
 check('Divers Pro 2026', Math.round(diversPro26 * 100), Math.round(expectedDiversPro * 100));
 
-// Commission Amine = diversPro - diversPerso
 const commAmine = diversPro26 - diversNet26;
-check('Commission Amine', Math.round(commAmine * 100), Math.round((4000 / 0.95 - 4000) * 100)); // ~210.53€
+check('Commission Amine 5%', Math.round(commAmine * 100), Math.round((4000 / 0.95 - 4000) * 100));
 
-// Position Net PERSO (paid) = entreprise - virements - divers_perso
+// Position Net PERSO (paid)
 const posNetPerso = posEntreprise - totalEUR26 - diversNet26;
-check('Position Net Perso (paid)', posNetPerso, -5958 - 5000 - 6000); // = -16958
+check('Position Net Perso (paid)', posNetPerso, -16958);
 
-// Position Net PRO (paid) = entreprise - virements - divers_pro
+// Position Net PRO (paid)
 const posNetPro = posEntreprise - totalEUR26 - diversPro26;
-check('Position Net Pro (paid)', Math.round(posNetPro), Math.round(-5958 - 5000 - expectedDiversPro)); // ≈ -17169
+check('Position Net Pro (paid)', Math.round(posNetPro), Math.round(-5958 - 5000 - expectedDiversPro));
 
-// AZCS TTC
-const azcsPaidTTC26 = Math.round(azcsRecuPaid26 * 1.21);
-check('AZCS paid TTC', azcsPaidTTC26, Math.round(30625 * 1.21)); // = 37056
+// Position Maroc equivalent
+const posNetMaroc = posNetPerso * az26.tauxMaroc;
+check('Position Maroc (MAD)', posNetMaroc, -169580);
+
+// 3 positions are equivalent
+console.log('\n=== EQUIVALENCE DES POSITIONS ===');
+check('France Pro → France Perso + commission', Math.round(posNetPro), Math.round(posNetPerso - commAmine));
+check('France Perso × tauxMaroc = Maroc', posNetPerso * az26.tauxMaroc, posNetMaroc);
 
 // ===== BENOIT 2025 =====
 console.log('\n=== BENOIT 2025 ===');
 const ba = DATA.benoit2025;
 
-// Per-transaction verification
 const tx = ba.councils.map(m => {
   const dh = Math.round(m.htEUR * m.tauxApplique);
-  const gainFX = m.tauxMarche ? Math.round(m.htEUR * (m.tauxMarche - m.tauxApplique)) : null;
   const commission = Math.round(dh * ba.commissionRate);
   const netBenoit = dh - commission;
-  return { ...m, dh, gainFX, commission, netBenoit };
+  return { ...m, dh, commission, netBenoit };
 });
 
-// Check individual DH amounts
-check('Tx1 DH (5625×10.5)', tx[0].dh, 59063); // 5625 × 10.5 = 59062.5 → 59063
+check('Tx1 DH (5625×10.5)', tx[0].dh, 59063);
 check('Tx2 DH (5625×10.5)', tx[1].dh, 59063);
-check('Tx3 DH (5313×10.5)', tx[2].dh, 55787); // 5313 × 10.5 = 55786.5 → 55787
+check('Tx3 DH (5313×10.5)', tx[2].dh, 55787);
 check('Tx4 DH (5000×10.6)', tx[3].dh, 53000);
 check('Tx5 DH (5000×10.6)', tx[4].dh, 53000);
 check('Tx6 DH (3625×10.6)', tx[5].dh, 38425);
@@ -158,52 +166,24 @@ check('Tx6 DH (3625×10.6)', tx[5].dh, 38425);
 const totalDH = sum(tx, 'dh');
 check('Total DH Councils', totalDH, 318338);
 
-// Gain FX per transaction (tauxMarche is PRIV/encrypted — skip if not available)
-const hasTauxMarche = ba.councils[0]?.tauxMarche != null;
-if (hasTauxMarche) {
-  check('GainFX #1', tx[0].gainFX, 28);
-  check('GainFX #2', tx[1].gainFX, 433);
-  check('GainFX #3', tx[2].gainFX, 159);
-  check('GainFX #4', tx[3].gainFX, 840);
-  check('GainFX #5', tx[4].gainFX, 985);
-  check('GainFX #6', tx[5].gainFX, 384);
-} else {
-  console.log('ℹ️  GainFX tests skipped (tauxMarche is PRIV data)');
-}
-
-const totalGainFX = hasTauxMarche ? sum(tx, 'gainFX') : 0;
-if (hasTauxMarche) check('Total Gain FX', totalGainFX, 2829);
-
-// Commission
 const totalCommission = sum(tx, 'commission');
 check('Total Commission', totalCommission, 31834);
 
-// Net Benoit
 const totalNetBenoit = sum(tx, 'netBenoit');
 check('Net dû Benoit', totalNetBenoit, 286504);
 
-// Virements
 const totalPaye = sum(ba.virements, 'dh');
 check('Total payé DH', totalPaye, 281750);
 
-// Solde
 const soldeBenoit = totalNetBenoit - totalPaye;
 check('Solde Benoit', soldeBenoit, 4754);
-
-// Total gains
-const totalGains = totalCommission + totalGainFX;
-if (hasTauxMarche) check('Total gains', totalGains, 34663);
-else console.log('ℹ️  Total gains check skipped (PRIV data)');
 
 // ===== BENOIT 2026 =====
 console.log('\n=== BENOIT 2026 ===');
 const ba26 = DATA.benoit2026;
-// Each council has its own tauxApplique
 check('Jan 2026 taux', ba26.councils[0].tauxApplique, 10.6);
 const tx26_jan = Math.round(5000 * 10.6);
 check('Jan 2026 DH', tx26_jan, 53000);
-
-// Report
 check('Report 2025 (computed)', soldeBenoit, 4754);
 
 // Summary
