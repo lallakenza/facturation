@@ -28,19 +28,21 @@ function renderAmine() {
   const totalMAD_az = sum(az.virementsMaroc, 'dh');
   const virementsEUR = totalMAD_az / az.tauxMaroc;
 
-  // Divers Pro vs Perso
-  const diversPerso = az.divers ? az.divers.reduce((s, x) => s + x.montant, 0) : 0;
+  // Divers Pro
   const diversPro = az.divers ? az.divers.reduce((s, x) => {
     if (x.commissionRate) return s + x.montant / (1 - x.commissionRate);
     return s + x.montant;
   }, 0) : 0;
-  const commissionAmine = Math.round((diversPro - diversPerso) * 100) / 100;
+
+  // Taux de conversion universels Azarkan
+  const PERSO_FACTOR = 0.95; // Pro → Perso : 5% commission Amine
 
   // Positions Azarkan
   const posEntreprise = rtlPaidHT - azcsRecuPaid + az.report2025;
   const posNetPro = posEntreprise - virementsEUR - diversPro;
-  const posNetPerso = posEntreprise - virementsEUR - diversPerso;
+  const posNetPerso = posNetPro * PERSO_FACTOR; // Règle universelle
   const posNetMAD = posNetPro * az.tauxMaroc;
+  const commissionAmine = Math.round(posNetPro * (1 - PERSO_FACTOR) * 100) / 100;
 
   // From Amine's perspective: negative delta = Augustin owes Amine
   // posNetPro = -17169 → Augustin doit 17169€ → Amine receivable
@@ -117,9 +119,10 @@ function renderAmine() {
 
   // Azarkan breakdown
   html += `<div style="font-size:.72rem;color:var(--muted);padding:8px 12px;background:var(--surface2);border-radius:8px;margin-bottom:6px">
-    <strong>Détail :</strong> Position Entreprise = ${fmtSigned(posEntreprise)} (RTL ${fmtPlain(rtlPaidHT)} − AZCS ${fmtPlain(azcsRecuPaid)} + Report ${fmtSigned(az.report2025)}).
-    Virements Maroc = ${fmtPlain(Math.round(virementsEUR))}€ (${fmtPlain(totalMAD_az)} MAD).
-    Divers Pro = ${fmtPlain(Math.round(diversPro))}€ · Perso = ${fmtPlain(diversPerso)}€ · Commission = ${fmtPlain(Math.round(commissionAmine))}€.
+    <strong>Détail :</strong> Pos. Entreprise = ${fmtSigned(posEntreprise)} (RTL ${fmtPlain(rtlPaidHT)} − AZCS ${fmtPlain(azcsRecuPaid)} + Report ${fmtSigned(az.report2025)}).
+    Maroc = ${fmtPlain(Math.round(virementsEUR))}€ pro (${fmtPlain(totalMAD_az)} MAD).
+    Divers = ${fmtPlain(Math.round(diversPro))}€ pro.
+    <strong>Net Pro = ${fmtSigned(Math.round(posNetPro))} · Perso = Pro × ${PERSO_FACTOR} = ${fmtSigned(Math.round(posNetPerso))} · MAD = Pro × ${az.tauxMaroc} = ${fmtSigned(Math.round(posNetMAD), 'MAD')}</strong>
   </div>`;
   html += `</div>`;
 

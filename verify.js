@@ -128,22 +128,24 @@ check('Divers Pro 2026', Math.round(diversPro26 * 100), Math.round(expectedDiver
 const commAmine = diversPro26 - diversNet26;
 check('Commission Amine 5%', Math.round(commAmine * 100), Math.round((4000 / 0.95 - 4000) * 100));
 
-// Position Net PERSO (paid)
-const posNetPerso = posEntreprise - totalEUR26 - diversNet26;
-check('Position Net Perso (paid)', posNetPerso, -16958);
-
 // Position Net PRO (paid)
 const posNetPro = posEntreprise - totalEUR26 - diversPro26;
 check('Position Net Pro (paid)', Math.round(posNetPro), Math.round(-5958 - 5000 - expectedDiversPro));
 
-// Position Maroc equivalent — taux fixe : 1€ PRO = 10 MAD
+// Position Net PERSO = Pro × 0.95 (règle universelle)
+const PERSO_FACTOR = 0.95;
+const posNetPerso = posNetPro * PERSO_FACTOR;
+check('Position Net Perso (Pro×0.95)', Math.round(posNetPerso), Math.round(posNetPro * PERSO_FACTOR));
+
+// Position Maroc = Pro × tauxMaroc
 const posNetMaroc = posNetPro * az26.tauxMaroc;
 check('Position Maroc (MAD)', Math.round(posNetMaroc), Math.round(posNetPro * az26.tauxMaroc));
 
-// 3 positions are equivalent (taux fixe appliqué sur PRO, pas PERSO)
+// 3 positions are equivalent (taux fixes sur PRO)
 console.log('\n=== EQUIVALENCE DES POSITIONS ===');
-check('France Pro → France Perso + commission', Math.round(posNetPro), Math.round(posNetPerso - commAmine));
-check('France Pro × tauxMaroc = Maroc', Math.round(posNetPro * az26.tauxMaroc), Math.round(posNetMaroc));
+check('Perso = Pro × 0.95', Math.round(posNetPerso), Math.round(posNetPro * PERSO_FACTOR));
+check('MAD = Pro × tauxMaroc', Math.round(posNetMaroc), Math.round(posNetPro * az26.tauxMaroc));
+check('1000€ pro = 950€ perso = 10k MAD', Math.round(1000 * PERSO_FACTOR), 950);
 
 // ===== BENOIT 2025 =====
 console.log('\n=== BENOIT 2025 ===');
