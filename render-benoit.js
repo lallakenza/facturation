@@ -97,7 +97,7 @@ function renderBenoitYear(dataKey, opts = {}) {
 
   // ---- HERO CARD ----
   const heroColor = solde > 0 ? 'yellow' : 'green';
-  const heroMsg = solde > 0 ? 'Amine doit payer Badre' : solde < 0 ? 'Badre a un excédent' : 'Soldé — aucune action';
+  const heroMsg = solde > 0 ? 'Amine doit payer Benoit' : solde < 0 ? 'Benoit a un excédent' : 'Soldé — aucune action';
   html += `<div class="hero-card" style="border-color:var(--${heroColor})">
     <div class="hero-label">Position actuelle</div>
     <div class="hero-value ${heroColor}">${fmtSigned(solde, 'DH')}</div>
@@ -108,7 +108,7 @@ function renderBenoitYear(dataKey, opts = {}) {
   // ---- Summary row ----
   if (isClotured) {
     html += `<div class="summary-row">
-      <div class="summary-item"><div class="sl">Dû à Badre (${netPct}%)</div><div class="sv" style="color:var(--accent)">${fmtPlain(totalNetBenoit)} DH</div></div>
+      <div class="summary-item"><div class="sl">Dû à Benoit (${netPct}%)</div><div class="sv" style="color:var(--accent)">${fmtPlain(totalNetBenoit)} DH</div></div>
       <div class="summary-item"><div class="sl">Payé en DH</div><div class="sv" style="color:var(--green)">${fmtPlain(totalPaye)} DH</div><div class="sd">${d.virements.length} virement(s)</div></div>
       ${window.PRIV ? `<div class="summary-item"><div class="sl">Gains Amine</div><div class="sv" style="color:var(--green)">${fmtPlain(totalGains)} DH</div><div class="sd">FX + Commission</div></div>` : ''}
     </div>`;
@@ -126,7 +126,7 @@ function renderBenoitYear(dataKey, opts = {}) {
     : `Paiements Councils ${year} — convertis en DH`;
 
   let councilsTableHtml = '';
-  if (tvaRate) councilsTableHtml += `<div class="n" style="margin-bottom:8px">AZCS → Majalis. Azarkan reçoit les paiements <strong>TTC</strong> (TVA ${tvaPct}%) en Belgique — on comptabilise en <strong>HT</strong>.</div>`;
+  if (tvaRate) councilsTableHtml += `<div class="n" style="margin-bottom:8px">AZCS → Majalis. Augustin reçoit les paiements <strong>TTC</strong> (TVA ${tvaPct}%) en Belgique — on comptabilise en <strong>HT</strong>.</div>`;
 
   if (window.PRIV) {
     const privTitle = tableTitle.replace('convertis en DH', 'convertis en DH (taux appliqué vs marché)');
@@ -181,10 +181,10 @@ function renderBenoitYear(dataKey, opts = {}) {
     let virementsHtml = `<table>
       <thead><tr><th>#</th><th data-sort="date">Date</th><th>Bénéficiaire</th><th data-sort="num" style="text-align:right">DH</th><th>Motif</th></tr></thead><tbody>`;
     d.virements.forEach((v, i) => {
-      virementsHtml += `<tr><td>${i+1}</td><td>${v.date}</td><td>${v.beneficiaire}</td><td class="a">${fmtPlain(v.dh)}</td><td>${v.motif}</td></tr>`;
+      virementsHtml += `<tr><td>${i+1}</td><td>${v.date}</td><td>${nick(v.beneficiaire)}</td><td class="a">${fmtPlain(v.dh)}</td><td>${v.motif}</td></tr>`;
     });
     virementsHtml += `<tr class="tr"><td></td><td colspan="2"><strong>Total payé ${year}</strong></td><td class="a"><strong>${fmtPlain(totalPaye)}</strong></td><td></td></tr></tbody></table>`;
-    html += collapsible(`Virements DH → Badre ${year}`, virementsHtml);
+    html += collapsible(`Virements DH → Benoit ${year}`, virementsHtml);
   }
 
   // ---- Réconciliation ----
@@ -213,7 +213,7 @@ function renderBenoitYear(dataKey, opts = {}) {
       d.notes.forEach(n => { recoHtml += `<div class="n">${n}</div>`; });
     }
   }
-  html += collapsible(`Réconciliation Badre ${year}${!isClotured ? ' (payé uniquement)' : ''}`, recoHtml);
+  html += collapsible(`Réconciliation Benoit ${year}${!isClotured ? ' (payé uniquement)' : ''}`, recoHtml);
 
   // ---- PRIV: Consolidation gains (clôture only) ----
   if (window.PRIV && isClotured) {
@@ -226,7 +226,7 @@ function renderBenoitYear(dataKey, opts = {}) {
 
     const gainDetails = transactions.map((t, i) => `#${i+1} ${fmtSigned(t.gainFX || 0, '')} DH (Δ ${fmtDelta(t.delta)})`).join(' · ');
     gainsHtml += `<div class="n ok"><strong>Gains FX par transaction :</strong> ${gainDetails}. Le taux appliqué est systématiquement inférieur au taux marché, générant un gain FX de <strong>${fmtPlain(totalGainFX)} DH</strong> en plus de la commission.</div>`;
-    html += collapsible(`Consolidation des gains Amine — Badre ${year}`, gainsHtml);
+    html += collapsible(`Consolidation des gains Amine — Benoit ${year}`, gainsHtml);
   }
 
   return html;

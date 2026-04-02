@@ -337,7 +337,7 @@ function renderAugustin2026(embedded) {
   html += `<div style="font-size:.7rem;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Flux entreprise (TTC / HT identiques car TVA 0% sur RTL)</div>`;
   html += `<div class="summary-row" style="margin-bottom:8px">
     <div class="summary-item"><div class="sl">RTL reçu (Bairok)</div><div class="sv" style="color:var(--green)">${fmtPlain(rtlPaidHT)} €</div><div class="sd">HT = TTC (TVA 0%)</div></div>
-    <div class="summary-item"><div class="sl">Majalis → AZCS (via Badre)</div><div class="sv" style="color:var(--blue,#60a5fa)">${fmtPlain(azcsRecuPaid)} €</div><div class="sd">TTC : ${fmtPlain(azcsPaidTTC)}€ (21% TVA)</div></div>
+    <div class="summary-item"><div class="sl">Majalis → AZCS (via Benoit)</div><div class="sv" style="color:var(--blue,#60a5fa)">${fmtPlain(azcsRecuPaid)} €</div><div class="sd">TTC : ${fmtPlain(azcsPaidTTC)}€ (21% TVA)</div></div>
     <div class="summary-item"><div class="sl">Report 2025</div><div class="sv" style="color:var(--red)">${fmtSigned(d.report2025)}</div><div class="sd">Solde clôture 2025</div></div>
     <div class="summary-item"><div class="sl">En attente RTL</div><div class="sv" style="color:var(--yellow)">${fmtPlain(totalPending)} €</div><div class="sd">Pas encore payé</div></div>
   </div>`;
@@ -454,21 +454,21 @@ function renderAugustin2026(embedded) {
   // 3 reconciliation tables
   html += recoTable('paid', 'Réconciliation 2026 — Cash réel (paid)', 'block', {
     rtlLabel: 'RTL paid (Bairok)', rtlHT: rtlPaidHT, rtlTTC: rtlPaidTTC, rtlCount: paidRTL.length,
-    azcsLabel: 'Majalis → AZCS paid (via Badre)', azcsHT: azcsRecuPaid, azcsTTC: azcsPaidTTC, azcsCount: azcsPaid.length,
+    azcsLabel: 'Majalis → AZCS paid (via Benoit)', azcsHT: azcsRecuPaid, azcsTTC: azcsPaidTTC, azcsCount: azcsPaid.length,
     deltaE: deltaEntreprisePaid, deltaEtc: deltaEntreprisePaidTTC,
     deltaNetPro: deltaNetPro, deltaNetPerso: deltaNetPerso
   });
 
   html += recoTable('invoiced', 'Réconciliation 2026 — Facturé (invoiced)', 'none', {
     rtlLabel: 'RTL facturé (Bairok)', rtlHT: totalInvoiced, rtlTTC: totalInvoiced, rtlCount: invoicedRTL.length,
-    azcsLabel: 'Majalis → AZCS invoiced (via Badre)', azcsHT: azcsRecuInvoiced, azcsTTC: azcsInvoicedTTC, azcsCount: azcsInvoiced.length,
+    azcsLabel: 'Majalis → AZCS invoiced (via Benoit)', azcsHT: azcsRecuInvoiced, azcsTTC: azcsInvoicedTTC, azcsCount: azcsInvoiced.length,
     deltaE: deltaEntrepriseInvoiced, deltaEtc: totalInvoiced - azcsInvoicedTTC + d.report2025,
     deltaNetPro: deltaInvoicedPro, deltaNetPerso: deltaInvoicedPerso
   });
 
   html += recoTable('accrued', 'Réconciliation 2026 — Projection (accrued)', 'none', {
     rtlLabel: 'RTL total (Bairok)', rtlHT: totalFacture, rtlTTC: totalFacture, rtlCount: d.rtl.length,
-    azcsLabel: 'Majalis → AZCS total (via Badre)', azcsHT: azcsRecuAll, azcsTTC: azcsAllTTC, azcsCount: azcsAll.length,
+    azcsLabel: 'Majalis → AZCS total (via Benoit)', azcsHT: azcsRecuAll, azcsTTC: azcsAllTTC, azcsCount: azcsAll.length,
     deltaE: deltaEntrepriseAccrued, deltaEtc: totalFacture - azcsAllTTC + d.report2025,
     deltaNetPro: deltaAccruedPro, deltaNetPerso: deltaAccruedPerso
   });
@@ -486,7 +486,7 @@ function renderAugustin2026(embedded) {
   let virementsMarocHtml = `<table>
     <thead><tr><th>#</th><th data-sort="date">Date</th><th>Bénéficiaire</th><th data-sort="num" style="text-align:right">DH</th><th data-sort="num" style="text-align:right">= EUR (÷${d.tauxMaroc})</th></tr></thead><tbody>`;
   d.virementsMaroc.forEach((v, i) => {
-    virementsMarocHtml += `<tr><td>${i+1}</td><td>${v.date}</td><td>${v.beneficiaire}</td><td class="a">${fmtPlain(v.dh)}</td><td class="a">${fmtPlain(v.dh / d.tauxMaroc)}</td></tr>`;
+    virementsMarocHtml += `<tr><td>${i+1}</td><td>${v.date}</td><td>${nick(v.beneficiaire)}</td><td class="a">${fmtPlain(v.dh)}</td><td class="a">${fmtPlain(v.dh / d.tauxMaroc)}</td></tr>`;
   });
   virementsMarocHtml += `<tr class="tr"><td></td><td colspan="2"><strong>Total 2026</strong></td><td class="a"><strong>${fmtPlain(totalMAD)}</strong></td><td class="a"><strong>${fmtPlain(virementsProEUR)}</strong></td></tr></tbody></table>`;
 
@@ -509,7 +509,7 @@ function renderAugustin2026(embedded) {
     html += collapsible('Divers — Cash direct 2026 (Pro vs Perso)', diversTable);
   }
 
-  // Facturation AZCS → Majalis (Badre)
+  // Facturation AZCS → Majalis (Benoit)
   if (b26 && b26.councils) {
     const tjm = b26.tjm || 625;
     const tva = b26.tvaRate || 0.21;
@@ -526,7 +526,7 @@ function renderAugustin2026(embedded) {
       azcsHtml += `<tr><td style="font-size:.72rem">${c.ref || '—'}${bl}</td><td>${c.mois}</td><td>${c.jours || '—'}</td><td class="a">${fmtPlain(c.htEUR)}</td><td class="a" style="color:var(--muted)">${fmtPlain(Math.round(ttcVal))}</td><td>${c.dateFacture || '—'}</td><td>${c.dateDue || '—'}</td><td>${badge(c.statut, c.statutText)}</td></tr>`;
     });
     azcsHtml += `<tr class="tr"><td colspan="3"><strong>Total</strong></td><td class="a"><strong>${fmtPlain(totalHTBadre)}</strong></td><td class="a" style="color:var(--muted)"><strong>${fmtPlain(totalTTCBadre)}</strong></td><td></td><td></td><td></td></tr></tbody></table>`;
-    html += collapsible('Facturation AZCS → Majalis (Badre) — ' + fmtPlain(totalHTBadre) + '€ HT (' + fmtPlain(totalTTCBadre) + '€ TTC)', azcsHtml);
+    html += collapsible('Facturation AZCS → Majalis (Benoit) — ' + fmtPlain(totalHTBadre) + '€ HT (' + fmtPlain(totalTTCBadre) + '€ TTC)', azcsHtml);
   }
 
   // Insights 2026

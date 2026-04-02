@@ -44,7 +44,7 @@ function renderAmine() {
 
   // From Amine's perspective: negative delta = Augustin owes Amine
   // posNetPro = -17169 → Augustin doit 17169€ → Amine receivable
-  const azOwedPro = -posNetPro;   // positive = Azarkan me doit
+  const azOwedPro = -posNetPro;   // positive = Augustin me doit
   const azOwedPerso = -posNetPerso;
   const azOwedMAD = -posNetMAD;
 
@@ -69,7 +69,7 @@ function renderAmine() {
   const totalPaye26 = sum(b26.virements, 'dh');
   const soldeBadre = report25 + netPaid26 - totalPaye26;
   // soldeBadre > 0 → Amine doit à Badre. From Amine's perspective: negative (I owe)
-  const baOwedDH = -soldeBadre; // positive = Badre me doit
+  const baOwedDH = -soldeBadre; // positive = Benoit me doit
 
   // ============================================================
   // HERO SECTION — Position globale
@@ -79,19 +79,19 @@ function renderAmine() {
   const azSign = azOwedPro >= 0;
   const azColor = azSign ? 'var(--green)' : 'var(--red)';
   const azCls = azSign ? 'green' : 'red';
-  const azLabel = azSign ? 'Azarkan me doit' : 'Je dois à Azarkan';
+  const azLabel = azSign ? 'Augustin me doit' : 'Je dois à Augustin';
 
   // Badre card
   const baSign = baOwedDH >= 0;
   const baColor = baSign ? 'var(--green)' : 'var(--red)';
   const baCls = baSign ? 'green' : 'red';
-  const baLabel = baSign ? 'Badre me doit' : 'Je dois à Badre';
+  const baLabel = baSign ? 'Benoit me doit' : 'Je dois à Benoit';
 
   html += `<div style="font-size:.7rem;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Situation par personne</div>`;
 
   // ---- AZARKAN SECTION ----
   html += `<div style="margin-bottom:20px">`;
-  html += `<div style="font-size:.82rem;font-weight:700;margin-bottom:8px;color:var(--text)">Azarkan (Augustin)</div>`;
+  html += `<div style="font-size:.82rem;font-weight:700;margin-bottom:8px;color:var(--text)">Augustin</div>`;
   html += `<div style="font-size:.7rem;color:var(--muted);margin-bottom:8px">Pro → EUR perso = Pro × 0.95 (−5% commission Amine) · Pro → MAD = Pro × 10 (taux fixe)</div>`;
 
   html += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
@@ -125,12 +125,12 @@ function renderAmine() {
 
   // ---- BADRE SECTION ----
   html += `<div style="margin-bottom:20px">`;
-  html += `<div style="font-size:.82rem;font-weight:700;margin-bottom:8px;color:var(--text)">Badre (Benoit)</div>`;
+  html += `<div style="font-size:.82rem;font-weight:700;margin-bottom:8px;color:var(--text)">Benoit</div>`;
   html += `<div style="font-size:.7rem;color:var(--muted);margin-bottom:8px">Pro × taux appliqué → DH − 10% commission Amine. Taux fixe 2026 : 10.6. Paiement cash DH uniquement.</div>`;
 
   html += `<div style="display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:10px;max-width:340px">
     <div class="hero-card" style="border-color:${baColor}">
-      <div class="hero-label">Position Badre</div>
+      <div class="hero-label">Position Benoit</div>
       <div class="hero-value ${baCls}" style="font-size:1.3rem">${fmtSigned(-soldeBadre, 'DH')}</div>
       <div class="hero-who" style="color:${baColor}">${baLabel}</div>
       <div class="hero-detail">En cours 2026 · ${paidCouncils26.length} Councils payés</div>
@@ -148,10 +148,10 @@ function renderAmine() {
   html += `</div>`;
 
   // ---- VIREMENTS TABLE ----
-  html += `<div style="font-size:.7rem;font-weight:600;color:var(--muted);margin-bottom:6px;margin-top:20px;text-transform:uppercase;letter-spacing:.5px">Historique virements Badre 2026</div>`;
+  html += `<div style="font-size:.7rem;font-weight:600;color:var(--muted);margin-bottom:6px;margin-top:20px;text-transform:uppercase;letter-spacing:.5px">Historique virements Benoit 2026</div>`;
   html += `<table style="font-size:.8rem"><thead><tr><th>Date</th><th>Bénéficiaire</th><th style="text-align:right">Montant (DH)</th><th>Motif</th></tr></thead><tbody>`;
   b26.virements.forEach(v => {
-    html += `<tr><td>${v.date}</td><td>${v.beneficiaire}</td><td class="a" style="color:var(--green)">${fmtPlain(v.dh)}</td><td style="font-size:.72rem">${v.motif}</td></tr>`;
+    html += `<tr><td>${v.date}</td><td>${nick(v.beneficiaire)}</td><td class="a" style="color:var(--green)">${fmtPlain(v.dh)}</td><td style="font-size:.72rem">${v.motif}</td></tr>`;
   });
   html += `<tr class="tr"><td colspan="2"><strong>Total</strong></td><td class="a"><strong>${fmtPlain(totalPaye26)} DH</strong></td><td></td></tr></tbody></table>`;
 
@@ -168,11 +168,11 @@ function renderAmine() {
     <div style="font-size:.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Position globale estimée (EUR)</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:center">
       <div style="text-align:center">
-        <div style="font-size:.72rem;color:var(--muted)">vs Azarkan (perso)</div>
+        <div style="font-size:.72rem;color:var(--muted)">vs Augustin (perso)</div>
         <div style="font-size:1.1rem;font-weight:700;color:${azColor}">${fmtSigned(Math.round(azOwedPerso))}</div>
       </div>
       <div style="text-align:center">
-        <div style="font-size:.72rem;color:var(--muted)">vs Badre (≈EUR)</div>
+        <div style="font-size:.72rem;color:var(--muted)">vs Benoit (≈EUR)</div>
         <div style="font-size:1.1rem;font-weight:700;color:${baColor}">${fmtSigned(Math.round(baOwedEUR))}</div>
         <div style="font-size:.65rem;color:var(--muted)">${fmtSigned(-soldeBadre, 'DH')} ÷ ${tauxBadre}</div>
       </div>
@@ -181,7 +181,7 @@ function renderAmine() {
         <div style="font-size:1.3rem;font-weight:900;color:${combColor}">${fmtSigned(Math.round(combinedEUR))}</div>
       </div>
     </div>
-    <div style="font-size:.65rem;color:var(--muted);margin-top:8px;text-align:center">Estimation : position Badre convertie en EUR au taux fixe ${tauxBadre}. Position Azarkan en base perso (cash).</div>
+    <div style="font-size:.65rem;color:var(--muted);margin-top:8px;text-align:center">Estimation : position Benoit convertie en EUR au taux fixe ${tauxBadre}. Position Augustin en base perso (cash).</div>
   </div>`;
 
   return html;
