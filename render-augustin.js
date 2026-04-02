@@ -365,6 +365,15 @@ function renderAugustin2026(embedded) {
     const s = display === 'none' ? ' style="display:none"' : '';
     const thStyle = 'style="text-align:right;font-size:.7rem"';
     const secHdr = (n, label, bg) => `<tr style="background:${bg}"><td colspan="7" style="font-size:.72rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)">${n} ${label}</td></tr>`;
+    // Pill badge for native currency highlighting
+    const pill = (val, type) => {
+      const styles = {
+        pro:  'background:rgba(99,102,241,.13);color:#6366f1;border-radius:4px;padding:1px 6px;font-weight:700',
+        eur:  'background:rgba(16,185,129,.13);color:#059669;border-radius:4px;padding:1px 6px;font-weight:700',
+        mad:  'background:rgba(245,158,11,.13);color:#d97706;border-radius:4px;padding:1px 6px;font-weight:700',
+      };
+      return `<span style="${styles[type] || styles.pro};display:inline-block;white-space:nowrap">${val}</span>`;
+    };
 
     let t = `<div id="reco-table-${id}" class="s"${s}><div class="st">${title}</div><table style="font-size:.8rem">
     <thead><tr><th>Ligne</th><th ${thStyle}>TTC</th><th ${thStyle}>HT (Pro)</th><th ${thStyle}>Perso €</th><th ${thStyle}>Perso MAD</th><th>Détail</th></tr></thead><tbody>`;
@@ -373,30 +382,30 @@ function renderAugustin2026(embedded) {
     const PF = PERSO_FACTOR;
     t += secHdr('①', 'Position Entreprise (sociétés)', 'var(--green-bg,rgba(34,197,94,.07))');
     const TX = d.tauxMaroc;
-    // RTL = invoiced in Pro → highlight Pro column
+    // RTL = invoiced in Pro → pill on Pro column
     t += `<tr style="background:var(--green-bg,rgba(34,197,94,.07))">
       <td><strong>+ ${rtlLabel}</strong></td>
       <td class="a" style="color:var(--green)">${fmtPlain(rtlTTC)}</td>
-      <td class="a native-col" style="color:var(--green);font-weight:800;text-decoration:underline;text-underline-offset:2px">${fmtPlain(rtlHT)}</td>
+      <td class="a">${pill(fmtPlain(rtlHT), 'pro')}</td>
       <td class="a" style="color:var(--green)">${fmtPlain(Math.round(rtlHT * PF))}</td>
       <td class="a" style="color:var(--green)">${fmtPlain(Math.round(rtlHT * TX))}</td>
-      <td style="font-size:.72rem">${rtlCount} facture(s) · TVA 0% · <span style="font-size:.65rem;color:var(--accent)">★ Pro</span></td></tr>`;
-    // AZCS = invoiced in Pro → highlight Pro column
+      <td style="font-size:.72rem">${rtlCount} facture(s) · TVA 0%</td></tr>`;
+    // AZCS = invoiced in Pro → pill on Pro column
     t += `<tr>
       <td>− ${azcsLabel}</td>
       <td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(azcsTTC)}</td>
-      <td class="a native-col" style="color:var(--blue,#60a5fa);font-weight:800;text-decoration:underline;text-underline-offset:2px">${fmtPlain(azcsHT)}</td>
+      <td class="a">${pill(fmtPlain(azcsHT), 'pro')}</td>
       <td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(Math.round(azcsHT * PF))}</td>
       <td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(Math.round(azcsHT * TX))}</td>
-      <td style="font-size:.72rem">${azcsCount} facture(s) · TVA 21% · <span style="font-size:.65rem;color:var(--accent)">★ Pro</span></td></tr>`;
-    // Report = Pro origin → highlight Pro column
+      <td style="font-size:.72rem">${azcsCount} facture(s) · TVA 21%</td></tr>`;
+    // Report = Pro origin → pill on Pro column
     t += `<tr>
       <td>+ Report 2025</td>
       <td class="a" style="color:var(--red)">${fmtSigned(d.report2025)}</td>
-      <td class="a native-col" style="color:var(--red);font-weight:800;text-decoration:underline;text-underline-offset:2px">${fmtSigned(d.report2025)}</td>
+      <td class="a">${pill(fmtSigned(d.report2025), 'pro')}</td>
       <td class="a" style="color:var(--red)">${fmtSigned(Math.round(d.report2025 * PF))}</td>
       <td class="a" style="color:var(--red)">${fmtSigned(Math.round(d.report2025 * TX))}</td>
-      <td style="font-size:.72rem">Clôture 2025 · <span style="font-size:.65rem;color:var(--accent)">★ Pro</span></td></tr>`;
+      <td style="font-size:.72rem">Clôture 2025</td></tr>`;
     const eColor = deltaE >= 0 ? 'var(--green)' : 'var(--red)';
     const ePerso = Math.round(deltaE * PF);
     const eMAD = Math.round(deltaE * TX);
@@ -423,26 +432,26 @@ function renderAugustin2026(embedded) {
       <td class="a" style="color:${eColor}">${fmtSigned(ePerso)}</td>
       <td class="a" style="color:${eColor}">${fmtSigned(eMAD, 'MAD')}</td>
       <td></td></tr>`;
-    // Virements Maroc = cash DH → highlight Perso MAD column
+    // Virements Maroc = cash DH → pill on Perso MAD column
     t += `<tr>
       <td>− Virements Maroc</td>
       <td class="a" style="color:var(--muted)">—</td>
       <td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(virementsProEUR)}</td>
       <td class="a" style="color:var(--blue,#60a5fa)">${fmtPlain(virementsPerso)}</td>
-      <td class="a native-col" style="color:var(--blue,#60a5fa);font-weight:800;text-decoration:underline;text-underline-offset:2px">${fmtPlain(totalMAD)}</td>
-      <td style="font-size:.72rem">${fmtPlain(totalMAD)} MAD · Pro = MAD ÷ ${TX} · <span style="font-size:.65rem;color:var(--accent)">★ MAD</span></td></tr>`;
+      <td class="a">${pill(fmtPlain(totalMAD), 'mad')}</td>
+      <td style="font-size:.72rem">${fmtPlain(totalMAD)} MAD · Pro = MAD ÷ ${TX}</td></tr>`;
 
     // Divers itemized
-    // Divers = cash EUR perso → highlight Perso € column
+    // Divers = cash EUR perso → pill on Perso € column
     diversItems.forEach(x => {
       const c = x.perso > 0 ? 'var(--blue,#60a5fa)' : 'var(--green)';
       t += `<tr>
         <td style="font-size:.75rem">− ${((l) => l.length > 45 ? l.substring(0, 45) + '…' : l)(nickText(x.label))}</td>
         <td class="a" style="color:var(--muted)">—</td>
         <td class="a" style="color:${c}">${fmtPlain(Math.round(x.pro))}</td>
-        <td class="a native-col" style="color:${c};font-weight:800;text-decoration:underline;text-underline-offset:2px">${fmtPlain(Math.round(x.perso))}</td>
+        <td class="a">${pill(fmtPlain(Math.round(x.perso)), 'eur')}</td>
         <td class="a" style="color:${c}">${fmtPlain(Math.round(x.pro * TX))}</td>
-        <td style="font-size:.72rem;color:var(--muted)">comm. ${fmtPlain(Math.round(x.pro - x.perso))}€ · <span style="color:var(--accent)">★ Perso €</span></td></tr>`;
+        <td style="font-size:.72rem;color:var(--muted)">comm. ${fmtPlain(Math.round(x.pro - x.perso))}€</td></tr>`;
     });
 
     // Net totals
@@ -461,7 +470,7 @@ function renderAugustin2026(embedded) {
 
     t += `</tbody></table>
     <div class="n" style="margin-top:8px;font-size:.72rem;color:var(--muted)"><strong>TTC</strong> = cash réel (TVA incluse). <strong>Pro</strong> = valeur business. <strong>Perso € = Pro × ${PF}</strong> (commission 5% Amine). <strong>Perso MAD = Pro × ${TX}</strong> (taux fixe). Donc 1 000€ pro = ${(PF * 1000).toLocaleString('fr-FR')}€ perso = ${(TX * 1000).toLocaleString('fr-FR')} MAD.</div>
-    <div class="n" style="margin-top:4px;font-size:.7rem;color:var(--accent)">★ = devise d'origine de la transaction (gras + souligné). Les autres colonnes sont des conversions.</div></div>`;
+    <div class="n" style="margin-top:6px;font-size:.7rem;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span style="color:var(--muted)">Devise d'origine :</span> ${pill('Pro', 'pro')} <span style="color:var(--muted)">factures</span> ${pill('Perso €', 'eur')} <span style="color:var(--muted)">cash EUR</span> ${pill('MAD', 'mad')} <span style="color:var(--muted)">virements DH</span></div></div>`;
     return t;
   }
 
