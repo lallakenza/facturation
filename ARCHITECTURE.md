@@ -112,11 +112,11 @@ commission = Math.round(DH × commissionRate)
 netBenoit = DH - commission
 ```
 
-### Commission virements personnels (6%)
+### Commission virements personnels (5% cash Europe)
 ```
 brut = montantNet / (1 - commissionRate)
 commission = brut - montantNet
-// Ex: 3000€ net → brut = 3000/0.94 = 3191€, commission = 191€
+// Ex: 3000€ net → brut = 3000/0.95 = 3158€, commission = 158€
 ```
 
 ### Report (carryforward)

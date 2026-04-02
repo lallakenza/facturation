@@ -252,7 +252,7 @@ function renderAugustin2026(embedded) {
   const virementsProEUR = totalMAD / d.tauxMaroc;
   const virementsPersoEUR = virementsProEUR; // même valeur en EUR
 
-  // --- Divers : Pro vs Perso (commission 6% sur certains) ---
+  // --- Divers : Pro vs Perso (commission 5% sur cash Europe) ---
   const diversPerso = d.divers ? d.divers.reduce((s, x) => s + x.montant, 0) : 0;
   const diversPro = d.divers ? d.divers.reduce((s, x) => {
     if (x.commissionRate) return s + x.montant / (1 - x.commissionRate);
@@ -335,9 +335,9 @@ function renderAugustin2026(embedded) {
   html += `<div style="font-size:.7rem;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Flux personnel (Pro vs Perso)</div>`;
   html += `<div class="summary-row">
     <div class="summary-item"><div class="sl">Virements Maroc</div><div class="sv" style="color:var(--accent)">${fmtPlain(virementsProEUR)} €</div><div class="sd">${fmtPlain(totalMAD)} MAD · Pro = Perso</div></div>
-    <div class="summary-item"><div class="sl">Cash divers (pro)</div><div class="sv" style="color:var(--accent)">${fmtPlain(Math.round(diversPro))} €</div><div class="sd">Avec commission 6%</div></div>
+    <div class="summary-item"><div class="sl">Cash divers (pro)</div><div class="sv" style="color:var(--accent)">${fmtPlain(Math.round(diversPro))} €</div><div class="sd">Avec commission 5%</div></div>
     <div class="summary-item"><div class="sl">Cash divers (perso)</div><div class="sv" style="color:var(--accent)">${fmtPlain(Math.round(diversPerso))} €</div><div class="sd">Cash réel sorti</div></div>
-    <div class="summary-item"><div class="sl">Commission Amine</div><div class="sv" style="color:var(--green)">${fmtPlain(Math.round(commissionAmine))} €</div><div class="sd">6% sur cash France</div></div>
+    <div class="summary-item"><div class="sl">Commission Amine</div><div class="sv" style="color:var(--green)">${fmtPlain(Math.round(commissionAmine))} €</div><div class="sd">5% sur cash Europe</div></div>
   </div>`;
 
   // View toggle (secondary)
@@ -438,7 +438,7 @@ function renderAugustin2026(embedded) {
       <td style="font-size:.72rem">${dnPerso >= 0 ? 'Amine doit' : 'Augustin doit'} ${fmtPlain(Math.abs(Math.round(dnPerso)))}€ (perso) · Δ = ${fmtPlain(Math.round(commissionAmine))}€</td></tr>`;
 
     t += `</tbody></table>
-    <div class="n" style="margin-top:8px;font-size:.72rem;color:var(--muted)"><strong>TTC</strong> = cash réel (TVA incluse). <strong>HT/Pro</strong> = valeur business (réconciliation). <strong>Perso</strong> = cash reçu. Δ Pro−Perso = ${fmtPlain(Math.round(commissionAmine))}€ commission Amine (6% sur cash France).</div></div>`;
+    <div class="n" style="margin-top:8px;font-size:.72rem;color:var(--muted)"><strong>TTC</strong> = cash réel (TVA incluse). <strong>HT/Pro</strong> = valeur business (réconciliation). <strong>Perso</strong> = cash reçu. Δ Pro−Perso = ${fmtPlain(Math.round(commissionAmine))}€ commission Amine (5% sur cash Europe).</div></div>`;
     return t;
   }
 
@@ -496,7 +496,7 @@ function renderAugustin2026(embedded) {
     });
     diversTable += `<tr class="tr"><td><strong>Total</strong></td><td class="a" style="color:var(--accent)"><strong>${fmtSigned(Math.round(diversPerso), '€')}</strong></td><td class="a"><strong>${fmtPlain(Math.round(diversPro))}</strong></td><td class="a" style="color:var(--green)"><strong>${fmtPlain(Math.round(commissionAmine))}</strong></td><td style="font-size:.72rem;color:var(--muted)">Δ Pro − Perso = commission Amine</td></tr>`;
     diversTable += `</tbody></table>`;
-    diversTable += `<div class="n" style="margin-top:6px"><strong>Règles :</strong> Dette = 1:1 (pas de commission). Cash France = commission 6% (Pro = Perso ÷ 0.94). Maroc = 1 000€ pro = 10 000 MAD (traité dans Virements Maroc).</div>`;
+    diversTable += `<div class="n" style="margin-top:6px"><strong>Règles :</strong> Dette = 1:1 (pas de commission). Cash Europe = commission 5% (Pro = Perso ÷ 0.95). Maroc = 1 000€ pro = 10 000 MAD (traité dans Virements Maroc).</div>`;
     html += collapsible('Divers — Cash direct 2026 (Pro vs Perso)', diversTable);
   }
 

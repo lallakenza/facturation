@@ -19,8 +19,8 @@
 //   3. Amine rend l'argent à Badre en perso, moyennant 10% de commission
 //   4. Azarkan peut sortir son argent de 2 manières :
 //      a. Au Maroc : 1 000€ pro = 10 000 MAD perso (taux fixe)
-//      b. En France (cash/virement perso) : commission 6%
-//         → 4 000€ cash perso = 4 000 / 0.94 = 4 255€ pro
+//      b. En France (cash/virement perso) : commission 5%
+//         → 4 000€ cash perso = 4 000 / 0.95 = 4 210.53€ pro
 //
 // ===================== 3 MONTANTS PAR TRANSACTION =====================
 //
@@ -50,9 +50,9 @@
 //     TTC = N/A
 //     Pro = Perso = montant (1:1, pas de commission)
 //
-//   Cash divers — avec commission 6% (sortie cash en France) :
+//   Cash divers — avec commission 5% (sortie cash en Europe) :
 //     TTC = N/A
-//     Pro = montant / (1 − 0.06) = montant / 0.94
+//     Pro = montant / (1 − 0.05) = montant / 0.95
 //     Perso = montant (cash réellement reçu par Azarkan)
 //     Commission Amine = Pro − Perso
 //
@@ -72,13 +72,13 @@
 //   → Inclut les paiements personnels en cash réel
 //   → divers_perso = somme des montants
 //
-// Différence Pro − Perso = commission Amine sur cash 6%
+// Différence Pro − Perso = commission Amine sur cash 5%
 //
 // CONVENTIONS :
 //   - montant > 0 dans divers = Amine paie Azarkan
 //   - montant < 0 dans divers = Azarkan paie Amine
 //   - virementsMaroc.dh / tauxMaroc = EUR pro (10 000 DH = 1 000€)
-//   - commissionRate sur divers = taux déduit du brut (ex: 6% → pro = net / 0.94)
+//   - commissionRate sur divers = taux déduit du brut (ex: 5% → pro = net / 0.95)
 //   - report2025 = solde clôture 2025 (négatif = Augustin doit à Amine)
 //   - AZCS councils proviennent de benoit2026.councils (même source de données)
 //
@@ -209,11 +209,11 @@ const DATA = {
 
     divers: [
       { label: "Amine → Azarkan (via Nezha → Hanane) — remboursement cash (prêts 2025 + Zak/Oumaima 2026)", montant: 2000 },
-      { label: "Amine → Azarkan (via Nezha → Hanane) — avec commission 6%", montant: 4000, commissionRate: 0.06 },
+      { label: "Amine → Azarkan (via Nezha → Hanane) — avec commission 5%", montant: 4000, commissionRate: 0.05 },
     ],
 
     insights: [
-      { type: "neutral", titre: "💸 Flux cash 2026 : Amine 6 000€ net → Azarkan (via Nezha → Hanane)", desc: "<strong>Amine → Azarkan :</strong> 6 000€ via Nezha → Hanane (2 virements).<br><em>Ventilation :</em> 2 000€ = remboursement cash (prêts 2025 + Zak/Oumaima 2026 inclus), 4 000€ = avec commission 6% (brut = 4 255€, commission Amine = 255€).<br>Note : Zak (-1 200€) et Oumaima (+800€) sont <strong>inclus</strong> dans le remboursement de 2 000€, pas comptés séparément.<br>Dette cash personnelle <strong>soldée</strong>." },
+      { type: "neutral", titre: "💸 Flux cash 2026 : Amine 6 000€ net → Azarkan (via Nezha → Hanane)", desc: "<strong>Amine → Azarkan :</strong> 6 000€ via Nezha → Hanane (2 virements).<br><em>Ventilation :</em> 2 000€ = remboursement cash (prêts 2025 + Zak/Oumaima 2026 inclus), 4 000€ = avec commission 5% (brut = 4 211€, commission Amine = 211€).<br>Note : Zak (-1 200€) et Oumaima (+800€) sont <strong>inclus</strong> dans le remboursement de 2 000€, pas comptés séparément.<br>Dette cash personnelle <strong>soldée</strong>." },
       { type: "pass", titre: "📄 Factures RTL 2026 : 2 payées, 1 à facturer", desc: "INVRTL013 (Jan, 11j, 9 350€ HT) payée. INVRTL014 (Fév, 20j, 17 000€ HT) payée le 01/04/2026 (payment advice CLT-UFA 26 350€ couvrant les 2 factures). Mars (20j, 17 000€ HT) à facturer. <strong>Toutes les factures RTL sont HT (TVA 0% — Bairok LLC est basée aux EAU).</strong>" },
     ],
   },
