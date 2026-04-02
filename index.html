@@ -3,143 +3,729 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Réconciliation 2025-2026</title>
+<title>Riad Mogador — Portail Facturation</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>🏨</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <style>
-  /* ---- LIGHT THEME (default) ---- */
-  :root {
-    --bg: #f1f5f9; --surface: #ffffff; --surface2: #e2e8f0;
-    --border: #cbd5e1; --text: #1e293b; --muted: #64748b;
-    --accent: #2563eb; --green: #16a34a; --yellow: #ca8a04; --red: #dc2626;
-    --green-bg: rgba(22,163,74,.10); --yellow-bg: rgba(202,138,4,.10); --red-bg: rgba(220,38,38,.10);
-    --blue-bg: rgba(37,99,235,.10);
-    --header-grad: linear-gradient(135deg,#2563eb,#1e40af);
-  }
-  /* ---- DARK / PRO THEME ---- */
-  body.dark {
-    --bg: #0f172a; --surface: #1e293b; --surface2: #334155;
-    --border: #475569; --text: #e2e8f0; --muted: #94a3b8;
-    --accent: #3b82f6; --green: #22c55e; --yellow: #eab308; --red: #ef4444;
-    --green-bg: rgba(34,197,94,.12); --yellow-bg: rgba(234,179,8,.12); --red-bg: rgba(239,68,68,.12);
-    --blue-bg: rgba(59,130,246,.12);
-    --header-grad: linear-gradient(135deg,#1e3a5f,#0f172a);
-  }
-  /* ---- BINGA MODE ANIMATION ---- */
-  .binga-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0}
-  .binga-overlay.show{animation:bingaFade 1.8s ease forwards}
-  .binga-overlay .binga-bg{position:absolute;inset:0;background:radial-gradient(circle,rgba(59,130,246,.25),rgba(15,23,42,.95));backdrop-filter:blur(6px)}
-  .binga-overlay .binga-text{position:relative;font-size:2.4rem;font-weight:900;letter-spacing:.15em;color:#3b82f6;text-shadow:0 0 40px rgba(59,130,246,.6),0 0 80px rgba(59,130,246,.3);text-transform:uppercase}
-  .binga-overlay .binga-line{position:absolute;left:50%;transform:translateX(-50%);height:2px;background:linear-gradient(90deg,transparent,#3b82f6,transparent);animation:bingaLine .8s ease .3s forwards;width:0}
-  .binga-overlay .binga-line.top{top:-14px} .binga-overlay .binga-line.bot{bottom:-14px}
-  @keyframes bingaFade{0%{opacity:0}12%{opacity:1}75%{opacity:1}100%{opacity:0}}
-  @keyframes bingaLine{to{width:260px}}
-  body *{transition:background-color .5s ease,color .3s ease,border-color .4s ease}
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-  .header{background:var(--header-grad);border-bottom:1px solid var(--border);padding:20px 32px}
-  .header h1{font-size:1.4rem;font-weight:700;color:#fff} .header p{color:rgba(255,255,255,.7);font-size:.82rem;margin-top:3px}
-  .tabs{display:flex;background:var(--surface);border-bottom:2px solid var(--border);padding:0 32px;flex-wrap:wrap}
-  .tab{padding:12px 20px;cursor:pointer;color:var(--muted);font-weight:600;font-size:.82rem;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;user-select:none}
-  .tab:hover{color:var(--text);background:var(--surface2)} .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-  .content{padding:24px 32px;max-width:1400px} .panel{display:none} .panel.active{display:block}
-  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:22px}
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
-  .card .l{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
-  .card .v{font-size:1.2rem;font-weight:700}
-  .card .v.green{color:var(--green)} .card .v.yellow{color:var(--yellow)} .card .v.red{color:var(--red)} .card .v.blue{color:var(--accent)}
-  .s{margin-bottom:26px}
-  .st{font-size:.92rem;font-weight:700;color:var(--accent);margin-bottom:10px;display:flex;align-items:center;gap:8px}
-  .st::before{content:'';width:3px;height:16px;background:var(--accent);border-radius:2px}
-  table{width:100%;border-collapse:collapse;background:var(--surface);border-radius:10px;overflow:hidden;border:1px solid var(--border)}
-  thead th{background:var(--surface2);padding:9px 12px;text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;white-space:nowrap}
-  tbody td{padding:8px 12px;border-top:1px solid var(--border);font-size:.8rem}
-  tbody tr:hover{background:rgba(59,130,246,.06)}
-  .b{padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:600;display:inline-block;white-space:nowrap}
-  .b.ok{background:var(--green-bg);color:var(--green)} .b.w{background:var(--yellow-bg);color:var(--yellow)}
-  .b.e{background:var(--red-bg);color:var(--red)} .b.i{background:var(--blue-bg);color:var(--accent)}
-  .a{font-variant-numeric:tabular-nums;font-weight:600;text-align:right;white-space:nowrap}
-  .n{background:var(--surface);border-left:3px solid var(--yellow);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:.78rem;color:var(--muted);line-height:1.5}
-  .n.e{border-left-color:var(--red)} .n.ok{border-left-color:var(--green)}
-  .tr td{font-weight:700;background:var(--surface2);border-top:2px solid var(--border)}
-  .insight{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;border-left:4px solid var(--accent);margin-bottom:12px}
-  .insight.pass{border-left-color:var(--green)} .insight.warn{border-left-color:var(--yellow)} .insight.fail{border-left-color:var(--red)}
-  .insight strong{color:var(--text)} .insight .t{font-weight:700;font-size:.88rem;margin-bottom:6px} .insight .d{font-size:.8rem;color:var(--muted);line-height:1.5}
-  /* Year toggle */
-  .year-toggle{display:inline-flex;background:var(--surface2);border-radius:8px;padding:3px;margin-bottom:18px;border:1px solid var(--border)}
-  .year-btn{padding:7px 18px;border-radius:6px;cursor:pointer;font-size:.78rem;font-weight:600;color:var(--muted);transition:all .2s;user-select:none}
-  .year-btn:hover{color:var(--text)}
-  .year-btn.active{background:var(--accent);color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.15)}
-  @media(max-width:768px){.content{padding:14px}.tabs{padding:0 10px}.tab{padding:10px 12px;font-size:.72rem}table{font-size:.72rem}thead th,tbody td{padding:6px 7px}.cards{grid-template-columns:repeat(2,1fr)}}
-  /* ---- GATE OVERLAY ---- */
-  .gate-overlay{position:fixed;inset:0;z-index:10000;background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f172a 100%);display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity .6s ease,transform .6s ease}
-  .gate-overlay.hide{opacity:0;transform:scale(1.05);pointer-events:none}
-  .gate-box{text-align:center;max-width:380px;width:90%}
-  .gate-logo{font-size:1.1rem;font-weight:800;letter-spacing:.18em;color:#3b82f6;text-transform:uppercase;margin-bottom:6px;text-shadow:0 0 30px rgba(59,130,246,.3)}
-  .gate-sub{font-size:.72rem;color:#64748b;margin-bottom:32px;letter-spacing:.04em}
-  .gate-input{width:100%;background:rgba(30,41,59,.8);border:1px solid #334155;border-radius:10px;padding:14px 18px;color:#e2e8f0;font-size:.92rem;font-weight:500;letter-spacing:.12em;text-align:center;outline:none;transition:border-color .3s,box-shadow .3s}
-  .gate-input:focus{border-color:#3b82f6;box-shadow:0 0 20px rgba(59,130,246,.15)}
-  .gate-input::placeholder{color:#475569;letter-spacing:.06em;font-weight:400}
-  .gate-error{color:#ef4444;font-size:.78rem;margin-top:12px;opacity:0;transition:opacity .4s;min-height:20px}
-  .gate-error.show{opacity:1}
-  .gate-hint{color:#334155;font-size:.62rem;margin-top:28px;letter-spacing:.03em}
-  .gate-input.shake{animation:gateShake .6s ease}
-  .gate-input.nope{animation:gateNope .8s ease}
-  .gate-input.dizzy{animation:gateDizzy 1s ease}
-  .gate-input.bounce{animation:gateBounce .7s ease}
-  .gate-input.melt{animation:gateMelt .9s ease}
-  @keyframes gateShake{0%,100%{transform:translateX(0)}10%,30%,50%,70%,90%{transform:translateX(-8px)}20%,40%,60%,80%{transform:translateX(8px)}}
-  @keyframes gateNope{0%{transform:translateX(0) rotate(0)}15%{transform:translateX(-15px) rotate(-3deg)}30%{transform:translateX(12px) rotate(2deg)}45%{transform:translateX(-9px) rotate(-1.5deg)}60%{transform:translateX(6px) rotate(1deg)}75%{transform:translateX(-3px)}100%{transform:translateX(0) rotate(0)}}
-  @keyframes gateDizzy{0%{transform:rotate(0) scale(1)}20%{transform:rotate(5deg) scale(1.02)}40%{transform:rotate(-4deg) scale(.98)}60%{transform:rotate(3deg) scale(1.01)}80%{transform:rotate(-1deg)}100%{transform:rotate(0) scale(1)}}
-  @keyframes gateBounce{0%{transform:translateY(0)}20%{transform:translateY(-18px)}40%{transform:translateY(0)}55%{transform:translateY(-10px)}70%{transform:translateY(0)}85%{transform:translateY(-4px)}100%{transform:translateY(0)}}
-  @keyframes gateMelt{0%{transform:scaleY(1) scaleX(1);filter:blur(0)}30%{transform:scaleY(.85) scaleX(1.08);filter:blur(1px)}50%{transform:scaleY(1.1) scaleX(.95);filter:blur(0)}70%{transform:scaleY(.97) scaleX(1.02)}100%{transform:scaleY(1) scaleX(1);filter:blur(0)}}
-  @keyframes emojiPop{0%{transform:scale(0) rotate(-30deg)}50%{transform:scale(1.3) rotate(10deg)}100%{transform:scale(1) rotate(0)}}
-  .gate-emoji{font-size:2rem;margin-bottom:8px;opacity:0;transition:opacity .3s;min-height:44px;display:flex;align-items:center;justify-content:center}
-  .gate-emoji.show{opacity:1;animation:emojiPop .5s ease}
-  /* Hide site content until gate is passed */
-  .site-wrap{display:none}
-  .site-wrap.visible{display:block}
-  /* Sortable table headers */
-  th[data-sort]{cursor:pointer;user-select:none;white-space:nowrap}
-  th[data-sort]:hover{background:rgba(255,255,255,.04)}
-  th[data-sort]::after{content:'⇅';opacity:.25;margin-left:4px;font-size:.65em}
-  th[data-sort].sort-asc::after{content:'▲';opacity:.7}
-  th[data-sort].sort-desc::after{content:'▼';opacity:.7}
-  /* ---- HERO CARD (big position card) ---- */
-  .hero-card{background:var(--surface);border:2px solid var(--accent);border-radius:14px;padding:24px 28px;margin-bottom:20px;text-align:center}
-  .hero-card .hero-label{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
-  .hero-card .hero-value{font-size:2.2rem;font-weight:800;line-height:1.1}
-  .hero-card .hero-value.green{color:var(--green)} .hero-card .hero-value.yellow{color:var(--yellow)} .hero-card .hero-value.red{color:var(--red)}
-  .hero-card .hero-who{font-size:.88rem;font-weight:600;margin-top:8px}
-  .hero-card .hero-detail{font-size:.72rem;color:var(--muted);margin-top:6px}
-  /* ---- COLLAPSIBLE SECTIONS ---- */
-  .section-toggle{cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px}
-  .section-toggle::after{content:'▸';font-size:.7rem;color:var(--muted);transition:transform .2s}
-  .section-toggle.open::after{transform:rotate(90deg)}
-  .section-body{max-height:0;overflow:hidden;transition:max-height .35s ease}
-  .section-body.open{max-height:none}
-  /* ---- SUMMARY ROW (compact cards) ---- */
-  .summary-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
-  .summary-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px}
-  .summary-item .sl{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-  .summary-item .sv{font-size:1rem;font-weight:700;margin-top:2px}
-  .summary-item .sd{font-size:.62rem;color:var(--muted);margin-top:2px}
-  /* ---- UPDATED CARDS (slightly bigger) ---- */
-  @media(max-width:768px){.hero-card .hero-value{font-size:1.6rem}.summary-row{grid-template-columns:repeat(2,1fr)}.cards{grid-template-columns:1fr 1fr}}
-  @media(max-width:480px){.summary-row{grid-template-columns:1fr}.cards{grid-template-columns:1fr}}
+/* =============================== */
+/* HOTEL PORTAL — Riad Mogador     */
+/* =============================== */
+:root {
+  --rm-primary: #1a4a3a;
+  --rm-primary-light: #2d6b54;
+  --rm-gold: #c9a84c;
+  --rm-gold-light: #e8d5a0;
+  --rm-sand: #f7f3ec;
+  --rm-sand-dark: #ede6d8;
+  --rm-text: #2c3e50;
+  --rm-muted: #7f8c8d;
+  --rm-border: #ddd5c7;
+}
+
+/* -- Hotel body -- */
+body.hotel-mode {
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  background: var(--rm-sand);
+  color: var(--rm-text);
+  margin: 0;
+}
+
+/* -- Top bar -- */
+.rm-topbar {
+  background: var(--rm-primary);
+  color: #fff;
+  padding: 0 0;
+  font-size: .72rem;
+  border-bottom: 3px solid var(--rm-gold);
+}
+.rm-topbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 8px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rm-topbar a { color: var(--rm-gold-light); text-decoration: none; }
+.rm-topbar a:hover { color: #fff; }
+.rm-topbar .rm-contact-info { display: flex; gap: 18px; flex-wrap: wrap; }
+
+/* -- Header / Logo area -- */
+.rm-header {
+  background: #fff;
+  border-bottom: 1px solid var(--rm-border);
+  padding: 16px 0;
+}
+.rm-header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.rm-logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.rm-logo-icon {
+  width: 48px; height: 48px;
+  background: var(--rm-primary);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.rm-logo-icon::before {
+  content: '';
+  width: 20px; height: 20px;
+  border: 2px solid var(--rm-gold);
+  transform: rotate(45deg);
+}
+.rm-logo-icon::after {
+  content: '';
+  position: absolute;
+  width: 10px; height: 10px;
+  border: 1.5px solid var(--rm-gold-light);
+  transform: rotate(45deg);
+}
+.rm-logo-text h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--rm-primary);
+  margin: 0;
+  letter-spacing: .03em;
+}
+.rm-logo-text p {
+  font-size: .7rem;
+  color: var(--rm-muted);
+  margin: 0;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+/* -- Nav -- */
+.rm-nav {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.rm-nav a {
+  padding: 8px 16px;
+  color: var(--rm-text);
+  text-decoration: none;
+  font-size: .78rem;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: all .2s;
+}
+.rm-nav a:hover { background: var(--rm-sand); color: var(--rm-primary); }
+.rm-nav a.active { background: var(--rm-primary); color: #fff; }
+
+/* -- Main content -- */
+.rm-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* -- Stats cards -- */
+.rm-stat-card {
+  background: #fff;
+  border: 1px solid var(--rm-border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+}
+.rm-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--rm-gold);
+}
+.rm-stat-label {
+  font-size: .68rem;
+  color: var(--rm-muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 6px;
+}
+.rm-stat-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--rm-primary);
+}
+.rm-stat-sub {
+  font-size: .7rem;
+  color: var(--rm-muted);
+  margin-top: 4px;
+}
+.rm-stat-up { color: #27ae60; }
+.rm-stat-down { color: #c0392b; }
+
+/* -- Section titles -- */
+.rm-section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--rm-primary);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--rm-gold);
+  display: inline-block;
+}
+
+/* -- Search box (the secret field) -- */
+.rm-search-box {
+  background: #fff;
+  border: 1px solid var(--rm-border);
+  border-radius: 12px;
+  padding: 28px 32px;
+  margin-bottom: 28px;
+  position: relative;
+}
+.rm-search-box::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 24px; right: 24px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--rm-gold), transparent);
+}
+.rm-search-title {
+  font-family: 'Playfair Display', serif;
+  font-size: .95rem;
+  font-weight: 600;
+  color: var(--rm-primary);
+  margin-bottom: 14px;
+}
+.rm-search-row {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+.rm-search-field {
+  flex: 1;
+  min-width: 200px;
+}
+.rm-search-field label {
+  display: block;
+  font-size: .72rem;
+  color: var(--rm-muted);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.rm-search-field input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--rm-border);
+  border-radius: 8px;
+  font-size: .88rem;
+  font-family: 'Inter', sans-serif;
+  color: var(--rm-text);
+  background: var(--rm-sand);
+  outline: none;
+  transition: border-color .3s, box-shadow .3s;
+}
+.rm-search-field input:focus {
+  border-color: var(--rm-primary);
+  box-shadow: 0 0 0 3px rgba(26,74,58,.1);
+}
+.rm-search-field input::placeholder { color: #bbb; }
+.rm-search-btn {
+  padding: 10px 28px;
+  background: var(--rm-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s;
+  white-space: nowrap;
+}
+.rm-search-btn:hover { background: var(--rm-primary-light); }
+.rm-search-error {
+  font-size: .78rem;
+  color: #c0392b;
+  margin-top: 10px;
+  min-height: 20px;
+  opacity: 0;
+  transition: opacity .3s;
+}
+.rm-search-error.show { opacity: 1; }
+
+/* -- Tables -- */
+.rm-table {
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--rm-border);
+}
+.rm-table table { width: 100%; border-collapse: collapse; margin: 0; }
+.rm-table thead th {
+  background: var(--rm-sand-dark);
+  padding: 10px 14px;
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--rm-muted);
+  font-weight: 600;
+  text-align: left;
+  border-bottom: 1px solid var(--rm-border);
+}
+.rm-table tbody td {
+  padding: 10px 14px;
+  font-size: .82rem;
+  border-bottom: 1px solid #f0ebe3;
+}
+.rm-table tbody tr:last-child td { border-bottom: none; }
+.rm-table tbody tr:hover { background: rgba(201,168,76,.04); }
+.rm-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: .68rem;
+  font-weight: 600;
+}
+.rm-badge.paid { background: rgba(39,174,96,.1); color: #27ae60; }
+.rm-badge.pending { background: rgba(243,156,18,.1); color: #f39c12; }
+.rm-badge.overdue { background: rgba(192,57,43,.1); color: #c0392b; }
+.rm-badge.confirmed { background: rgba(41,128,185,.1); color: #2980b9; }
+
+/* -- Footer -- */
+.rm-footer {
+  background: var(--rm-primary);
+  color: rgba(255,255,255,.7);
+  padding: 28px 0;
+  margin-top: 40px;
+  font-size: .74rem;
+}
+.rm-footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.rm-footer strong { color: var(--rm-gold); }
+
+/* -- Moroccan ornament (subtle) -- */
+.rm-ornament {
+  text-align: center;
+  margin: 20px 0 10px;
+  color: var(--rm-gold);
+  font-size: .7rem;
+  letter-spacing: .3em;
+  opacity: .5;
+}
+
+/* -- Transition: hotel → reconciliation -- */
+.hotel-wrap {
+  transition: opacity .6s ease, transform .6s ease;
+}
+.hotel-wrap.hide {
+  opacity: 0;
+  transform: scale(1.02);
+  pointer-events: none;
+}
+
+/* -- Loading overlay during decrypt -- */
+.decrypt-overlay {
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(26,74,58,.96);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity .4s;
+}
+.decrypt-overlay.show { opacity: 1; pointer-events: all; }
+.decrypt-spinner {
+  width: 40px; height: 40px;
+  border: 3px solid rgba(255,255,255,.2);
+  border-top-color: var(--rm-gold);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.decrypt-text { color: #fff; font-size: .84rem; margin-top: 14px; }
+
+@media(max-width:768px) {
+  .rm-header-inner { flex-direction: column; text-align: center; }
+  .rm-nav { justify-content: center; }
+  .rm-stat-value { font-size: 1.3rem; }
+  .rm-main { padding: 16px; }
+  .rm-search-box { padding: 18px; }
+  .rm-footer-inner { flex-direction: column; text-align: center; }
+}
+
+/* =============================== */
+/* RECONCILIATION MODE             */
+/* =============================== */
+:root {
+  --bg: #f1f5f9; --surface: #ffffff; --surface2: #e2e8f0;
+  --border: #cbd5e1; --text: #1e293b; --muted: #64748b;
+  --accent: #2563eb; --green: #16a34a; --yellow: #ca8a04; --red: #dc2626;
+  --green-bg: rgba(22,163,74,.10); --yellow-bg: rgba(202,138,4,.10); --red-bg: rgba(220,38,38,.10);
+  --blue-bg: rgba(37,99,235,.10);
+  --header-grad: linear-gradient(135deg,#2563eb,#1e40af);
+}
+body.dark {
+  --bg: #0f172a; --surface: #1e293b; --surface2: #334155;
+  --border: #475569; --text: #e2e8f0; --muted: #94a3b8;
+  --accent: #3b82f6; --green: #22c55e; --yellow: #eab308; --red: #ef4444;
+  --green-bg: rgba(34,197,94,.12); --yellow-bg: rgba(234,179,8,.12); --red-bg: rgba(239,68,68,.12);
+  --blue-bg: rgba(59,130,246,.12);
+  --header-grad: linear-gradient(135deg,#1e3a5f,#0f172a);
+}
+body.reco-mode {
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* BINGA animation */
+.binga-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0}
+.binga-overlay.show{animation:bingaFade 1.8s ease forwards}
+.binga-overlay .binga-bg{position:absolute;inset:0;background:radial-gradient(circle,rgba(59,130,246,.25),rgba(15,23,42,.95));backdrop-filter:blur(6px)}
+.binga-overlay .binga-text{position:relative;font-size:2.4rem;font-weight:900;letter-spacing:.15em;color:#3b82f6;text-shadow:0 0 40px rgba(59,130,246,.6),0 0 80px rgba(59,130,246,.3);text-transform:uppercase}
+.binga-overlay .binga-line{position:absolute;left:50%;transform:translateX(-50%);height:2px;background:linear-gradient(90deg,transparent,#3b82f6,transparent);animation:bingaLine .8s ease .3s forwards;width:0}
+.binga-overlay .binga-line.top{top:-14px} .binga-overlay .binga-line.bot{bottom:-14px}
+@keyframes bingaFade{0%{opacity:0}12%{opacity:1}75%{opacity:1}100%{opacity:0}}
+@keyframes bingaLine{to{width:260px}}
+
+body.reco-mode *{transition:background-color .5s ease,color .3s ease,border-color .4s ease}
+.header{background:var(--header-grad);border-bottom:1px solid var(--border);padding:20px 32px}
+.header h1{font-size:1.4rem;font-weight:700;color:#fff} .header p{color:rgba(255,255,255,.7);font-size:.82rem;margin-top:3px}
+.tabs{display:flex;background:var(--surface);border-bottom:2px solid var(--border);padding:0 32px;flex-wrap:wrap}
+.tab{padding:12px 20px;cursor:pointer;color:var(--muted);font-weight:600;font-size:.82rem;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;user-select:none}
+.tab:hover{color:var(--text);background:var(--surface2)} .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.content{padding:24px 32px;max-width:1400px} .panel{display:none} .panel.active{display:block}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:22px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.card .l{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+.card .v{font-size:1.2rem;font-weight:700}
+.card .v.green{color:var(--green)} .card .v.yellow{color:var(--yellow)} .card .v.red{color:var(--red)} .card .v.blue{color:var(--accent)}
+.s{margin-bottom:26px}
+.st{font-size:.92rem;font-weight:700;color:var(--accent);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.st::before{content:'';width:3px;height:16px;background:var(--accent);border-radius:2px}
+table{width:100%;border-collapse:collapse;background:var(--surface);border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+thead th{background:var(--surface2);padding:9px 12px;text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;white-space:nowrap}
+tbody td{padding:8px 12px;border-top:1px solid var(--border);font-size:.8rem}
+tbody tr:hover{background:rgba(59,130,246,.06)}
+.b{padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:600;display:inline-block;white-space:nowrap}
+.b.ok{background:var(--green-bg);color:var(--green)} .b.w{background:var(--yellow-bg);color:var(--yellow)}
+.b.e{background:var(--red-bg);color:var(--red)} .b.i{background:var(--blue-bg);color:var(--accent)}
+.a{font-variant-numeric:tabular-nums;font-weight:600;text-align:right;white-space:nowrap}
+.n{background:var(--surface);border-left:3px solid var(--yellow);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:.78rem;color:var(--muted);line-height:1.5}
+.n.e{border-left-color:var(--red)} .n.ok{border-left-color:var(--green)}
+.tr td{font-weight:700;background:var(--surface2);border-top:2px solid var(--border)}
+.insight{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;border-left:4px solid var(--accent);margin-bottom:12px}
+.insight.pass{border-left-color:var(--green)} .insight.warn{border-left-color:var(--yellow)} .insight.fail{border-left-color:var(--red)}
+.insight strong{color:var(--text)} .insight .t{font-weight:700;font-size:.88rem;margin-bottom:6px} .insight .d{font-size:.8rem;color:var(--muted);line-height:1.5}
+.year-toggle{display:inline-flex;background:var(--surface2);border-radius:8px;padding:3px;margin-bottom:18px;border:1px solid var(--border)}
+.year-btn{padding:7px 18px;border-radius:6px;cursor:pointer;font-size:.78rem;font-weight:600;color:var(--muted);transition:all .2s;user-select:none}
+.year-btn:hover{color:var(--text)}
+.year-btn.active{background:var(--accent);color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+th[data-sort]{cursor:pointer;user-select:none;white-space:nowrap}
+th[data-sort]:hover{background:rgba(255,255,255,.04)}
+th[data-sort]::after{content:'⇅';opacity:.25;margin-left:4px;font-size:.65em}
+th[data-sort].sort-asc::after{content:'▲';opacity:.7}
+th[data-sort].sort-desc::after{content:'▼';opacity:.7}
+.hero-card{background:var(--surface);border:2px solid var(--accent);border-radius:14px;padding:24px 28px;margin-bottom:20px;text-align:center}
+.hero-card .hero-label{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.hero-card .hero-value{font-size:2.2rem;font-weight:800;line-height:1.1}
+.hero-card .hero-value.green{color:var(--green)} .hero-card .hero-value.yellow{color:var(--yellow)} .hero-card .hero-value.red{color:var(--red)}
+.hero-card .hero-who{font-size:.88rem;font-weight:600;margin-top:8px}
+.hero-card .hero-detail{font-size:.72rem;color:var(--muted);margin-top:6px}
+.section-toggle{cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px}
+.section-toggle::after{content:'▸';font-size:.7rem;color:var(--muted);transition:transform .2s}
+.section-toggle.open::after{transform:rotate(90deg)}
+.section-body{max-height:0;overflow:hidden;transition:max-height .35s ease}
+.section-body.open{max-height:none}
+.summary-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.summary-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px}
+.summary-item .sl{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.summary-item .sv{font-size:1rem;font-weight:700;margin-top:2px}
+.summary-item .sd{font-size:.62rem;color:var(--muted);margin-top:2px}
+
+/* Site wrap hidden by default */
+.site-wrap { display: none; }
+.site-wrap.visible { display: block; }
+
+@media(max-width:768px){.content{padding:14px}.tabs{padding:0 10px}.tab{padding:10px 12px;font-size:.72rem}table{font-size:.72rem}thead th,tbody td{padding:6px 7px}.cards{grid-template-columns:repeat(2,1fr)}.hero-card .hero-value{font-size:1.6rem}.summary-row{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.summary-row{grid-template-columns:1fr}.cards{grid-template-columns:1fr}}
 </style>
 </head>
-<body>
-<!-- GATE: Access code required -->
-<div class="gate-overlay" id="gate">
-  <div class="gate-box">
-    <div class="gate-emoji" id="gateEmoji"></div>
-    <div class="gate-logo">Réconciliation</div>
-    <div class="gate-sub">Facturation 2025–2026</div>
-    <input class="gate-input" id="gateInput" type="password" placeholder="Code d'accès" autocomplete="off" spellcheck="false">
-    <div class="gate-error" id="gateErr"></div>
-    <div class="gate-hint">Demandez votre code d'accès à Amine</div>
+<body class="hotel-mode">
+
+<!-- ============================================ -->
+<!-- HOTEL PORTAL — Riad Mogador (facade)         -->
+<!-- ============================================ -->
+<div class="hotel-wrap" id="hotelWrap">
+
+  <!-- Top bar -->
+  <div class="rm-topbar">
+    <div class="rm-topbar-inner">
+      <div class="rm-contact-info">
+        <span>+212 524 38 91 70</span>
+        <span>·</span>
+        <span>facturation@riadmogador.ma</span>
+      </div>
+      <div>
+        <span style="color:rgba(255,255,255,.5)">Connecté : H. Koraibi</span>
+      </div>
+    </div>
   </div>
+
+  <!-- Header -->
+  <div class="rm-header">
+    <div class="rm-header-inner">
+      <div class="rm-logo">
+        <div class="rm-logo-icon"></div>
+        <div class="rm-logo-text">
+          <h1>Riad Mogador</h1>
+          <p>Portail Facturation &amp; Réservations</p>
+        </div>
+      </div>
+      <nav class="rm-nav">
+        <a href="#" class="active">Tableau de bord</a>
+        <a href="#">Réservations</a>
+        <a href="#">Factures</a>
+        <a href="#">Chambres</a>
+        <a href="#">Rapports</a>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="rm-main">
+
+    <!-- Stats row -->
+    <div class="row g-3 mb-4">
+      <div class="col-lg-3 col-md-6 col-6">
+        <div class="rm-stat-card">
+          <div class="rm-stat-label">Taux d'occupation</div>
+          <div class="rm-stat-value">78%</div>
+          <div class="rm-stat-sub"><span class="rm-stat-up">+4.2%</span> vs mars</div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6 col-6">
+        <div class="rm-stat-card">
+          <div class="rm-stat-label">CA mensuel</div>
+          <div class="rm-stat-value">847 500</div>
+          <div class="rm-stat-sub">MAD · <span class="rm-stat-up">+12%</span></div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6 col-6">
+        <div class="rm-stat-card">
+          <div class="rm-stat-label">Factures en attente</div>
+          <div class="rm-stat-value">12</div>
+          <div class="rm-stat-sub">Montant : 94 200 MAD</div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6 col-6">
+        <div class="rm-stat-card">
+          <div class="rm-stat-label">Clients ce mois</div>
+          <div class="rm-stat-value">156</div>
+          <div class="rm-stat-sub">ADR : 1 420 MAD/nuit</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search reservation (SECRET FIELD) -->
+    <div class="rm-search-box">
+      <div class="rm-search-title">Rechercher une réservation</div>
+      <div class="rm-search-row">
+        <div class="rm-search-field">
+          <label for="resaSearch">N° de réservation</label>
+          <input type="text" id="resaSearch" placeholder="Ex : RM-2026-04187" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="rm-search-field" style="max-width:180px">
+          <label for="resaDate">Date d'arrivée</label>
+          <input type="date" id="resaDate" value="2026-04-02">
+        </div>
+        <button class="rm-search-btn" id="resaBtn" type="button">Rechercher</button>
+      </div>
+      <div class="rm-search-error" id="resaError"></div>
+    </div>
+
+    <!-- Recent reservations -->
+    <div class="mb-4">
+      <div class="rm-section-title">Réservations récentes</div>
+      <div class="rm-table">
+        <table>
+          <thead>
+            <tr>
+              <th>N° Résa</th>
+              <th>Client</th>
+              <th>Chambre</th>
+              <th>Arrivée</th>
+              <th>Départ</th>
+              <th>Montant</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>RM-2026-04182</td>
+              <td>J. Lefèvre</td>
+              <td>Suite Majorelle</td>
+              <td>01/04/2026</td>
+              <td>05/04/2026</td>
+              <td style="font-weight:600">8 400 MAD</td>
+              <td><span class="rm-badge confirmed">Confirmée</span></td>
+            </tr>
+            <tr>
+              <td>RM-2026-04179</td>
+              <td>M. & Mme Berger</td>
+              <td>Chambre Safran</td>
+              <td>31/03/2026</td>
+              <td>03/04/2026</td>
+              <td style="font-weight:600">4 260 MAD</td>
+              <td><span class="rm-badge paid">Payée</span></td>
+            </tr>
+            <tr>
+              <td>RM-2026-04175</td>
+              <td>A. Williams</td>
+              <td>Suite Orangeraie</td>
+              <td>30/03/2026</td>
+              <td>06/04/2026</td>
+              <td style="font-weight:600">14 700 MAD</td>
+              <td><span class="rm-badge paid">Payée</span></td>
+            </tr>
+            <tr>
+              <td>RM-2026-04170</td>
+              <td>S. El Amrani</td>
+              <td>Chambre Zellige</td>
+              <td>29/03/2026</td>
+              <td>01/04/2026</td>
+              <td style="font-weight:600">3 540 MAD</td>
+              <td><span class="rm-badge paid">Payée</span></td>
+            </tr>
+            <tr>
+              <td>RM-2026-04168</td>
+              <td>C. Dupont</td>
+              <td>Suite Mogador</td>
+              <td>28/03/2026</td>
+              <td>02/04/2026</td>
+              <td style="font-weight:600">12 500 MAD</td>
+              <td><span class="rm-badge pending">En attente</span></td>
+            </tr>
+            <tr>
+              <td>RM-2026-04163</td>
+              <td>F. Benkirane</td>
+              <td>Chambre Menthe</td>
+              <td>27/03/2026</td>
+              <td>30/03/2026</td>
+              <td style="font-weight:600">3 390 MAD</td>
+              <td><span class="rm-badge paid">Payée</span></td>
+            </tr>
+            <tr>
+              <td>RM-2026-04158</td>
+              <td>H. Müller</td>
+              <td>Suite Majorelle</td>
+              <td>25/03/2026</td>
+              <td>28/03/2026</td>
+              <td style="font-weight:600">6 300 MAD</td>
+              <td><span class="rm-badge paid">Payée</span></td>
+            </tr>
+            <tr>
+              <td>RM-2026-04151</td>
+              <td>R. Tazi</td>
+              <td>Chambre Atlas</td>
+              <td>24/03/2026</td>
+              <td>27/03/2026</td>
+              <td style="font-weight:600">3 900 MAD</td>
+              <td><span class="rm-badge overdue">Impayée</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Recent invoices summary -->
+    <div class="row g-4 mb-4">
+      <div class="col-lg-6">
+        <div class="rm-section-title">Factures du mois</div>
+        <div class="rm-table">
+          <table>
+            <thead>
+              <tr><th>N° Facture</th><th>Client</th><th>Montant</th><th>Statut</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>FAC-2026-0389</td><td>Agence Voyages Sahara</td><td style="font-weight:600">32 400 MAD</td><td><span class="rm-badge paid">Payée</span></td></tr>
+              <tr><td>FAC-2026-0388</td><td>Booking.com</td><td style="font-weight:600">18 720 MAD</td><td><span class="rm-badge paid">Payée</span></td></tr>
+              <tr><td>FAC-2026-0387</td><td>Entreprise Marjane SA</td><td style="font-weight:600">15 600 MAD</td><td><span class="rm-badge pending">30j</span></td></tr>
+              <tr><td>FAC-2026-0386</td><td>Club Med partenaire</td><td style="font-weight:600">27 300 MAD</td><td><span class="rm-badge pending">15j</span></td></tr>
+              <tr><td>FAC-2026-0385</td><td>OTA Expedia</td><td style="font-weight:600">9 840 MAD</td><td><span class="rm-badge overdue">Retard</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="rm-section-title">Occupation par chambre</div>
+        <div class="rm-table">
+          <table>
+            <thead>
+              <tr><th>Chambre</th><th>Type</th><th>Tarif/nuit</th><th>Occupation</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Suite Mogador</td><td>Suite Premium</td><td>2 500 MAD</td><td style="font-weight:600">92%</td></tr>
+              <tr><td>Suite Majorelle</td><td>Suite Supérieure</td><td>2 100 MAD</td><td style="font-weight:600">88%</td></tr>
+              <tr><td>Suite Orangeraie</td><td>Suite Jardin</td><td>2 100 MAD</td><td style="font-weight:600">85%</td></tr>
+              <tr><td>Chambre Safran</td><td>Standard+</td><td>1 420 MAD</td><td style="font-weight:600">76%</td></tr>
+              <tr><td>Chambre Zellige</td><td>Standard</td><td>1 180 MAD</td><td style="font-weight:600">72%</td></tr>
+              <tr><td>Chambre Menthe</td><td>Standard</td><td>1 130 MAD</td><td style="font-weight:600">68%</td></tr>
+              <tr><td>Chambre Atlas</td><td>Économique</td><td>1 300 MAD</td><td style="font-weight:600">64%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="rm-ornament">◆ ◇ ◆ ◇ ◆</div>
+  </div>
+
+  <!-- Footer -->
+  <div class="rm-footer">
+    <div class="rm-footer-inner">
+      <div>
+        <strong>Riad Mogador</strong> · 14, Derb Sidi Bouloukate, Médina · Essaouira 44000, Maroc<br>
+        Propriétaire : <strong>Hassan Koraibi</strong> · RC Essaouira 8741 · IF 26401783 · ICE 002945617000048
+      </div>
+      <div style="text-align:right">
+        &copy; 2026 Riad Mogador SARL<br>
+        <span style="font-size:.65rem;opacity:.6">Portail v3.2.1</span>
+      </div>
+    </div>
+  </div>
+</div><!-- /hotel-wrap -->
+
+<!-- Decrypt loading overlay -->
+<div class="decrypt-overlay" id="decryptOverlay">
+  <div class="decrypt-spinner"></div>
+  <div class="decrypt-text">Chargement des données...</div>
 </div>
-<!-- Site content (hidden until gate passed) -->
+
+<!-- ============================================ -->
+<!-- RECONCILIATION SITE (hidden until unlocked)  -->
+<!-- ============================================ -->
 <div class="site-wrap" id="siteWrap">
 <div class="header">
   <h1>Réconciliation Facturation 2025–2026</h1>
@@ -160,106 +746,150 @@
   </div>
 </div>
 </div><!-- /site-wrap -->
-<script src="data.js?v=40"></script>
-<script src="data-priv.enc.js?v=40"></script>
-<script src="render-helpers.js?v=40"></script>
-<script src="render-augustin.js?v=40"></script>
-<script src="render-benoit.js?v=40"></script>
-<script src="render-fxp2p.js?v=40"></script>
-<script src="render-gains.js?v=40"></script>
-<script src="render-main.js?v=40"></script>
-<script>
-// ---- ACCESS MODE ----
-window.ACCESS_MODE = null; // 'full' or 'benoit'
 
-// ---- GATE: BRIDGEVALE / COUPA access codes ----
+<!-- Scripts: encrypted data only (no plaintext) -->
+<script src="data-enc.js?v=41"></script>
+<script src="data-priv.enc.js?v=41"></script>
+<script src="render-helpers.js?v=41"></script>
+<script src="render-augustin.js?v=41"></script>
+<script src="render-benoit.js?v=41"></script>
+<script src="render-fxp2p.js?v=41"></script>
+<script src="render-gains.js?v=41"></script>
+<script src="render-main.js?v=41"></script>
+
+<script>
+// ============================================
+// CRYPTO: Decrypt data with Web Crypto API
+// Password is ALWAYS uppercased for case-insensitive matching
+// ============================================
+async function decryptBlob(encB64, password) {
+  const SALT = 'facturation-augustin-2025';
+  const enc = new TextEncoder();
+  const normalizedPwd = password.toUpperCase();
+
+  // Derive key from password using PBKDF2
+  const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(normalizedPwd), 'PBKDF2', false, ['deriveBits']);
+  const derivedBits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt: enc.encode(SALT), iterations: 100000, hash: 'SHA-256' },
+    keyMaterial, 256
+  );
+  const key = await crypto.subtle.importKey('raw', derivedBits, { name: 'AES-GCM' }, false, ['decrypt']);
+
+  // Decode base64
+  const raw = Uint8Array.from(atob(encB64), c => c.charCodeAt(0));
+  const iv = raw.slice(0, 12);
+  const tag = raw.slice(12, 28);
+  const ciphertext = raw.slice(28);
+
+  // AES-GCM expects tag appended to ciphertext
+  const combined = new Uint8Array(ciphertext.length + tag.length);
+  combined.set(ciphertext);
+  combined.set(tag, ciphertext.length);
+
+  const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, combined);
+  return JSON.parse(new TextDecoder().decode(decrypted));
+}
+
+// ============================================
+// ACCESS MODE
+// ============================================
+window.ACCESS_MODE = null;
+window.PRIV = false;
+window.DATA = {};
+
+// ============================================
+// HOTEL → RECONCILIATION TRANSITION
+// ============================================
 (function(){
-  const gate = document.getElementById('gate');
-  const gateInput = document.getElementById('gateInput');
-  const gateErr = document.getElementById('gateErr');
-  const gateEmoji = document.getElementById('gateEmoji');
+  const hotelWrap = document.getElementById('hotelWrap');
   const siteWrap = document.getElementById('siteWrap');
+  const overlay = document.getElementById('decryptOverlay');
+  const searchInput = document.getElementById('resaSearch');
+  const searchBtn = document.getElementById('resaBtn');
+  const searchErr = document.getElementById('resaError');
   let attempts = 0;
 
-  const funnyMessages = [
-    { msg: "Nope. T'es pas sur la liste VIP.", emoji: "🙅", anim: "shake" },
-    { msg: "Mot de passe incorrect... comme ta stratégie.", emoji: "🤔", anim: "nope" },
-    { msg: "Raté ! Essaie 1234... non je rigole.", emoji: "😂", anim: "bounce" },
-    { msg: "Même mon chat aurait trouvé mieux.", emoji: "🐱", anim: "dizzy" },
-    { msg: "Alerte intrusion ! (non je plaisante... ou pas)", emoji: "🚨", anim: "melt" },
-    { msg: "C'est pas open bar ici, cousin.", emoji: "🍸", anim: "shake" },
-    { msg: "Le serveur a ri. Littéralement.", emoji: "🤣", anim: "bounce" },
-    { msg: "Ctrl+Z ta tentative stp.", emoji: "⌨️", anim: "nope" },
-    { msg: "T'as demandé à ChatGPT ? Lui non plus sait pas.", emoji: "🤖", anim: "dizzy" },
-    { msg: "Indice : c'est pas 'password'.", emoji: "💡", anim: "melt" },
-    { msg: "Tu chauffes... non en fait t'es glacé.", emoji: "🥶", anim: "shake" },
-    { msg: "La porte est fermée. Frappe plus fort.", emoji: "🚪", anim: "bounce" },
+  const fakeErrors = [
+    "Aucune réservation trouvée avec ce numéro.",
+    "Référence introuvable. Vérifiez le format (ex : RM-2026-XXXXX).",
+    "Aucun résultat pour cette recherche.",
+    "Réservation non trouvée dans notre système.",
+    "Ce numéro ne correspond à aucune réservation active.",
   ];
 
-  const lockdownMessages = [
-    { msg: "OK c'est fini. Reviens avec le bon code.", emoji: "🔒" },
-    { msg: "5 tentatives... t'es banni du quartier.", emoji: "⛔" },
-  ];
+  async function tryAccess(code) {
+    const upper = code.toUpperCase().trim();
+    if (!upper) return;
 
-  function showGateError(msgObj) {
-    gateEmoji.textContent = msgObj.emoji;
-    gateEmoji.classList.remove('show');
-    void gateEmoji.offsetWidth;
-    gateEmoji.classList.add('show');
-    gateErr.textContent = msgObj.msg;
-    gateErr.classList.add('show');
-    if (msgObj.anim) {
-      gateInput.classList.remove('shake','nope','dizzy','bounce','melt');
-      void gateInput.offsetWidth;
-      gateInput.classList.add(msgObj.anim);
+    // Determine which encrypted blob to try
+    let blob, mode;
+    if (upper === 'BRIDGEVALE') {
+      blob = ENCRYPTED_FULL;
+      mode = 'full';
+    } else if (upper === 'COUPA') {
+      blob = ENCRYPTED_BENOIT;
+      mode = 'benoit';
+    } else {
+      // Wrong code — show fake hotel error
+      attempts++;
+      searchInput.value = '';
+      searchErr.textContent = fakeErrors[attempts % fakeErrors.length];
+      searchErr.classList.add('show');
+      setTimeout(() => searchErr.classList.remove('show'), 3500);
+      return;
     }
-    gateInput.style.borderColor = '#ef4444';
-    setTimeout(() => {
-      gateErr.classList.remove('show');
-      gateEmoji.classList.remove('show');
-      gateInput.style.borderColor = '';
-      gateInput.classList.remove('shake','nope','dizzy','bounce','melt');
-    }, 3000);
-  }
 
-  gateInput.addEventListener('keydown', function(e){
-    if(e.key === 'Enter'){
-      const v = this.value.trim();
-      if(v === 'BRIDGEVALE' || v === 'COUPA'){
-        window.ACCESS_MODE = (v === 'COUPA') ? 'benoit' : 'full';
-        gate.classList.add('hide');
-        setTimeout(()=>{ gate.style.display='none'; }, 700);
+    // Show loading overlay
+    overlay.classList.add('show');
+    searchInput.disabled = true;
+    searchBtn.disabled = true;
+
+    try {
+      // Decrypt main data
+      const data = await decryptBlob(blob, upper);
+      window.DATA = data;
+      window.ACCESS_MODE = mode;
+
+      // Transition: hotel → reconciliation
+      hotelWrap.classList.add('hide');
+      setTimeout(() => {
+        hotelWrap.style.display = 'none';
+        document.body.classList.remove('hotel-mode');
+        document.body.classList.add('reco-mode');
         siteWrap.classList.add('visible');
 
-        if(window.ACCESS_MODE === 'benoit'){
+        if (mode === 'benoit') {
           document.getElementById('dref').parentElement.style.display = 'none';
         }
         buildTabs();
         renderAll();
-      } else {
-        attempts++;
-        this.value = '';
-        if(attempts >= 5){
-          this.disabled = true;
-          const ld = lockdownMessages[Math.floor(Math.random() * lockdownMessages.length)];
-          gateEmoji.textContent = ld.emoji;
-          gateEmoji.classList.add('show');
-          gateErr.textContent = ld.msg;
-          gateErr.classList.add('show');
-          gateInput.style.borderColor = '#ef4444';
-        } else {
-          const pick = funnyMessages[Math.floor(Math.random() * funnyMessages.length)];
-          showGateError(pick);
-        }
-      }
+        overlay.classList.remove('show');
+      }, 600);
+    } catch(e) {
+      console.error('Decryption failed:', e);
+      overlay.classList.remove('show');
+      searchInput.disabled = false;
+      searchBtn.disabled = false;
+      searchErr.textContent = "Erreur de déchiffrement. Code invalide.";
+      searchErr.classList.add('show');
+      setTimeout(() => searchErr.classList.remove('show'), 3500);
     }
+  }
+
+  // Enter key on search input
+  searchInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') tryAccess(this.value);
   });
 
-  // Focus on load
-  gateInput.focus();
+  // Click search button
+  searchBtn.addEventListener('click', function() {
+    tryAccess(searchInput.value);
+  });
 })();
 
-// ---- Year toggle ----
+// ============================================
+// YEAR TOGGLES
+// ============================================
 window.azYear = 2026;
 window.baYear = 2026;
 function switchAzYear(y){
@@ -281,30 +911,36 @@ function switchGainsYear(y){
   document.getElementById('gains').innerHTML = renderMesGains();
 }
 
-// ---- Crypto: Decrypt private data with Web Crypto API ----
-async function decryptPrivData(password) {
-  const SALT = 'facturation-augustin-2025';
-  const enc = new TextEncoder();
+// ============================================
+// BINGA MODE (second layer — "Réf. dossier")
+// ============================================
+document.getElementById('dref').addEventListener('input', async function(){
+  const v = this.value.trim().toUpperCase();
+  if(v === 'BINGA' && !window.PRIV && window.ACCESS_MODE === 'full'){
+    this.value = '';
+    this.placeholder = '...';
 
-  // Derive key from password using PBKDF2 (same params as Node script)
-  const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
-  const derivedBits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: enc.encode(SALT), iterations: 100000, hash: 'SHA-256' }, keyMaterial, 256);
-  const key = await crypto.subtle.importKey('raw', derivedBits, { name: 'AES-GCM' }, false, ['decrypt']);
+    try {
+      const priv = await decryptBlob(ENCRYPTED_PRIV, 'BINGA');
+      injectPrivData(priv);
 
-  // Decode base64
-  const raw = Uint8Array.from(atob(ENCRYPTED_PRIV), c => c.charCodeAt(0));
-  const iv = raw.slice(0, 12);
-  const tag = raw.slice(12, 28);
-  const ciphertext = raw.slice(28);
-
-  // AES-GCM expects tag appended to ciphertext
-  const combined = new Uint8Array(ciphertext.length + tag.length);
-  combined.set(ciphertext);
-  combined.set(tag, ciphertext.length);
-
-  const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, combined);
-  return JSON.parse(new TextDecoder().decode(decrypted));
-}
+      window.PRIV = true;
+      const ovl = document.getElementById('bingaOvl');
+      ovl.classList.add('show');
+      setTimeout(()=>{ document.body.classList.add('dark'); }, 400);
+      setTimeout(()=>{
+        refreshTabVisibility();
+        renderAll();
+        ovl.classList.remove('show');
+        this.placeholder = '✓';
+      }, 1900);
+    } catch(e) {
+      console.error('BINGA decryption failed:', e);
+      this.placeholder = '✗';
+      setTimeout(() => { this.placeholder = '—'; }, 2000);
+    }
+  }
+});
 
 function injectPrivData(priv) {
   // Inject commission rate and taux marché into Benoit 2025
@@ -331,36 +967,6 @@ function injectPrivData(priv) {
   DATA._ycarreCommission = priv.ycarreCommission;
   DATA._ycarreTotal = priv.ycarreTotal;
 }
-
-// ---- Binga (only available in full mode) ----
-document.getElementById('dref').addEventListener('input', async function(){
-  const v = this.value.trim();
-  if(v === 'BINGA' && !window.PRIV && window.ACCESS_MODE === 'full'){
-    this.value = '';
-    this.placeholder = '...';
-
-    try {
-      // Decrypt private data
-      const priv = await decryptPrivData('BINGA');
-      injectPrivData(priv);
-
-      window.PRIV = true;
-      const ovl = document.getElementById('bingaOvl');
-      ovl.classList.add('show');
-      setTimeout(()=>{ document.body.classList.add('dark'); }, 400);
-      setTimeout(()=>{
-        refreshTabVisibility();
-        renderAll();
-        ovl.classList.remove('show');
-        this.placeholder = '✓';
-      }, 1900);
-    } catch(e) {
-      console.error('Decryption failed:', e);
-      this.placeholder = '✗';
-      setTimeout(() => { this.placeholder = 'Réf. dossier'; }, 2000);
-    }
-  }
-});
 </script>
 </body>
 </html>

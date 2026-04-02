@@ -1,19 +1,195 @@
 #!/usr/bin/env node
 // ============================================================
-// ENCRYPT.JS — Build script: chiffre les données privées
+// ENCRYPT.JS — Build script: chiffre TOUTES les données
 // Usage: node encrypt.js
-// Produit: data-priv.enc.js (blob chiffré) + data.js (public only)
+// Produit:
+//   data-enc.js      → ENCRYPTED_FULL (BRIDGEVALE) + ENCRYPTED_BENOIT (COUPA)
+//   data-priv.enc.js → ENCRYPTED_PRIV (BINGA private overlay)
 // ============================================================
 
 const crypto = require('crypto');
 const fs = require('fs');
 
-const PASSWORD = 'BINGA';
 const SALT = 'facturation-augustin-2025'; // fixed salt for reproducibility
 
-// ---- Private data to encrypt ----
+// ============================================================
+// FULL PUBLIC DATA (replaces data.js — now encrypted)
+// ============================================================
+const FULL_DATA = {
+
+  // ==================== AUGUSTIN 2025 ====================
+  augustin2025: {
+    title: "Clôture Augustin 2025 — Réconciliation mois par mois",
+    subtitle: "Basé sur le fichier Excel Augustin v2 (mis à jour). Pour chaque mois : revenus RTL, dépenses déclarées (B+Y+M, Maroc, Divers), virements réels, et commentaires.",
+    tauxMaroc: 10,
+    rtl: [
+      { ref: "INVRTL001", periode: "Jan", jours: 12, montant: 10200, datePaiement: "20/03", recu: 10200 },
+      { ref: "INVRTL002", periode: "Fév", jours: 20, montant: 17000, datePaiement: "17/04", recu: 17000 },
+      { ref: "INVRTL003", periode: "Mar", jours: 20, montant: 17000, datePaiement: "22/05", recu: 17000 },
+      { ref: "INVRTL004+5", periode: "Avr+Mai", jours: 40, montant: 34000, datePaiement: "17/07", recu: 34000 },
+      { ref: "INVRTL006", periode: "Jun", jours: 18, montant: 15300, datePaiement: "07/08", recu: 15300 },
+      { ref: "INVRTL007", periode: "Jul", jours: 11, montant: 9350, datePaiement: "18/09", recu: 9350 },
+      { ref: "INVRTL008", periode: "Aoû", jours: 24, montant: 20400, datePaiement: "23/10", recu: 20400 },
+      { ref: "INVRTL009", periode: "Sep", jours: 13, montant: 11050, datePaiement: "27/11", recu: 11050 },
+      { ref: "INVRTL010+11", periode: "Oct+Nov", jours: 45, montant: 38250, datePaiement: "08/01/26", recu: 38250 },
+      { ref: "INVRTL012", periode: "Déc", jours: 30.5, montant: 25925, datePaiement: "29/01/26", recu: 25925 },
+    ],
+    mois: [
+      { nom: "Janvier", actuals: 18700, bym: 0, maroc: 0, divers: 0, commentaire: "Actuals comptabilisés (facture RTL Janvier) mais aucune dépense dans l'Excel. Pas de virement Maroc ce mois-ci. Excédent reporté.", badge: "i", badgeText: "ℹ" },
+      { nom: "Février", actuals: 17000, bym: 16000, maroc: 1000, divers: 400, commentaire: "Maroc 1 000€ ✓ (10 000 DH envoyés, confirmé). B+Y+M = 16 000 (Baraka 10k+6k EBS). <strong>Divers 400€ = vol pour Augustin ✓</strong>.", badge: "ok", badgeText: "✓ OK", diversVerifie: true },
+      { nom: "Mars", actuals: 17850, bym: 17600, maroc: 1000, divers: 0, commentaire: "B+Y+M = 17 600 (Baraka 17.6k EBS). Maroc = 1 000€ ✓ (mère L'Hajja → Augustin 10k DH le 28/03). Mois légèrement déficitaire.", badge: "ok", badgeText: "✓ OK" },
+      { nom: "Avril", actuals: 16150, bym: 39200, maroc: 1000, divers: 0, commentaire: "B+Y+M = 39 200 (Baraka 16.8k+3.2k+19.2k EBS). C'est un rattrapage de plusieurs factures Baraka payées en même temps. Maroc ✓ (mère 10k DH le 14/04). Gros déficit mensuel compensé par Jan+Mai.", badge: "i", badgeText: "⚡ Gros mois", bymHighlight: true },
+      { nom: "Mai", actuals: 16150, bym: 5400, maroc: 1000, divers: 0, commentaire: "B+Y+M = 5 400 (Ycarré 5.4k EBS). Maroc ✓ (mère 10k DH le 20/05). Mois excédentaire, compense Avril.", badge: "ok", badgeText: "✓ OK" },
+      { nom: "Juin", actuals: 16150, bym: 10800, maroc: 1000, divers: 1240, commentaire: "B+Y+M = 10 800 (Ycarré 5.4k+5.4k EBS remboursé en 2 paiements). Maroc ✓ (mère 10k DH le 13/06). <strong>Divers 1 240€ = vol pour Augustin ✓</strong>.", badge: "ok", badgeText: "✓ OK", diversVerifie: true },
+      { nom: "Juillet", actuals: 12750, bym: 12000, maroc: 1000, divers: 0, commentaire: "B+Y+M = 12 000 (Ycarré 12k EBS). Maroc ✓ (perso 10k DH le 03/07). Léger déficit.", badge: "ok", badgeText: "✓ OK" },
+      { nom: "Août", actuals: 11050, bym: 11250, maroc: 3000, divers: 0, commentaire: "Augustin a corrigé Maroc de 1k→3k. Matche les 30k DH (10k le 01/08 + 20k le 15/08). B+Y+M = 11 250 (Councils 5.625k×2 EBS).", badge: "ok", badgeText: "✓ Corrigé v2", marocCorrige: true },
+      { nom: "Septembre", actuals: 18700, bym: 5313, maroc: 1000, divers: 1130, commentaire: "Augustin a corrigé Maroc de 3k→1k. Matche les 10k DH (05/09). B+Y+M = 5 312.5 (Councils 5.3125k EBS). <strong>Divers 1 130€ = iPhone 1 305,41 USD (09/10 EBS) au taux 0,8648 ✓</strong>. Gros excédent.", badge: "ok", badgeText: "✓ Corrigé v2", marocCorrige: true, diversVerifie: true },
+      { nom: "Octobre", actuals: 19550, bym: 11900, maroc: 6000, divers: 0, commentaire: "Augustin a reclassé les 2×5k Divers → Maroc (1k→6k). Matche les 60k DH (10k le 03/10 + 50k le 15/10). B+Y+M = 11 900 (Councils 5k + Ycarré 6.9k EBS).", badge: "ok", badgeText: "✓ Corrigé v2", marocCorrige: true },
+      { nom: "Novembre", actuals: 17000, bym: 14600, maroc: 1000, divers: 300, commentaire: "B+Y+M = 14 600 (Councils 5k + Ycarré 9.6k EBS). Maroc ✓ (10k DH le 03/11). <strong>Divers net 300€ = 1 800€ (3 virements EBS 09/11+12/11+18/11) − 1 500€ (Prêt EBS 15/12) ✓</strong>.", badge: "ok", badgeText: "✓ OK", diversVerifie: true },
+      { nom: "Décembre", actuals: 17425, bym: 13225, maroc: 6000, divers: -1900, commentaire: "Augustin a corrigé Maroc 1k→6k et B+Y+M 12 725→13 225 (+500€ Councils). Matche les 60k DH (10k le 03/12 + 50k le 19/12). <strong>Divers net −1 900€ = 600€ (virement EBS 08/12) − 2 500€ (Prêt EBS 04/12) ✓</strong>.", badge: "ok", badgeText: "✓ Corrigé v2", marocCorrige: true, diversVerifie: true },
+    ],
+    ycarre: [
+      { date: "02/06/2025", montant: 5400 },
+      { date: "18/06/2025", montant: 10800 },
+      { date: "06/08/2025", montant: 12000 },
+      { date: "11/11/2025", montant: 6900 },
+      { date: "04/12/2025", montant: 9600 },
+      { date: "31/12/2025", montant: 9600 },
+    ],
+    councils: [
+      { date: "18/08/2025", excelHT: 5625, ebsHT: 5625 },
+      { date: "12/09/2025", excelHT: 5625, ebsHT: 5625 },
+      { date: "29/09/2025", excelHT: 5313, ebsHT: 5313 },
+      { date: "13/11/2025", excelHT: 5000, ebsHT: 5000 },
+      { date: "11/12/2025", excelHT: 5000, ebsHT: 5000 },
+      { date: "31/12/2025", excelHT: 3625, ebsHT: 3625, note: "corrigé v2" },
+    ],
+    baraka: [
+      { date: "14/03/2025", montant: 10000 },
+      { date: "27/03/2025", montant: 6000 },
+      { date: "30/03/2025", montant: 17600 },
+      { date: "04/05/2025", montant: 16800 },
+      { date: "12/05/2025", montant: 3200 },
+      { date: "19/05/2025", montant: 19200 },
+    ],
+    virementsMaroc: [
+      { mois: "Février", excelEUR: 1000, detail: "Confirmé (hors historique)", totalDH: 10000 },
+      { mois: "Mars", excelEUR: 1000, detail: "28/03 — Mère (L'Hajja) → Augustin", totalDH: 10000 },
+      { mois: "Avril", excelEUR: 1000, detail: "14/04 — Mère (L'Hajja) → Augustin", totalDH: 10000 },
+      { mois: "Mai", excelEUR: 1000, detail: "20/05 — Mère (L'Hajja) → Augustin", totalDH: 10000 },
+      { mois: "Juin", excelEUR: 1000, detail: "13/06 — Mère (L'Hajja) → Augustin", totalDH: 10000 },
+      { mois: "Juillet", excelEUR: 1000, detail: "03/07 → Augustin", totalDH: 10000 },
+      { mois: "Août", excelEUR: 3000, detail: "01/08 → 10k + 15/08 → 20k", totalDH: 30000, corrige: true },
+      { mois: "Septembre", excelEUR: 1000, detail: "05/09 → Augustin", totalDH: 10000, corrige: true },
+      { mois: "Octobre", excelEUR: 6000, detail: "03/10 → 10k + 15/10 → 50k", totalDH: 60000, corrige: true },
+      { mois: "Novembre", excelEUR: 1000, detail: "03/11 → Augustin", totalDH: 10000 },
+      { mois: "Décembre", excelEUR: 6000, detail: "03/12 → 10k + 19/12 → 50k", totalDH: 60000, corrige: true },
+    ],
+    divers: [
+      { mois: "Février", date: "—", montant: 400, label: "Vol pour Augustin", preuve: "ok", preuveText: "✓ EBS" },
+      { mois: "Juin", date: "—", montant: 1240, label: "Vol pour Augustin", preuve: "ok", preuveText: "✓ EBS" },
+      { mois: "Septembre", date: "09/10/2025", montant: 1130, label: "iPhone 1 305,41 USD", preuve: "ok", preuveText: "✓ EBS" },
+      { mois: "Novembre", date: "12/11/2025", montant: 700, label: "Virement instantané", preuve: "ok", preuveText: "✓ EBS" },
+      { mois: "Novembre", date: "18/11/2025", montant: 500, label: "Virement instantané", preuve: "ok", preuveText: "✓ EBS" },
+      { mois: "Novembre", date: "09/11/2025", montant: 600, label: "Virement instantané (Seq.1229)", preuve: "ok", preuveText: "✓ EBS" },
+      { mois: "Novembre", date: "15/12/2025", montant: -1500, label: "Prêt (Seq.1404)", preuve: "ok", preuveText: "✓ EBS" },
+      { mois: "Décembre", date: "08/12/2025", montant: 600, label: "Virement instantané (Seq.1373)", preuve: "ok", preuveText: "✓ EBS" },
+      { mois: "Décembre", date: "04/12/2025", montant: -2500, label: "Prêt (Seq.1362)", preuve: "ok", preuveText: "✓ EBS" },
+    ],
+    diversVerifie: 9170,
+    diversNonVerifie: 0,
+    insights: [
+      { type: "pass", titre: "✅ Augustin a corrigé 4 erreurs MAD entre v1 et v2", desc: "Août (1k→3k ✓), Septembre (3k→1k ✓), Octobre (1k→6k + suppression 2×5k Divers ✓), Décembre (1k→6k ✓). Cela montre qu'Augustin reconnaît les écarts quand confronté aux preuves bancaires. Le Maroc passe de 13 000€ → 23 000€, match parfait avec les virements réels (23 000€ Fév-Déc)." },
+      { type: "pass", titre: "✅ Councils HT : écart de 500€ corrigé (v1 → v2)", desc: "Augustin a corrigé le B+Y+M de Décembre de 12 725€ → 13 225€, intégrant les 500€ Councils HT manquants du 31/12. Les 6 paiements Councils matchent désormais 100% l'EBS." },
+      { type: "pass", titre: "✅ Virements Maroc : 23 000€ — match parfait Excel = Réel", desc: "Tous les virements Maroc Fév-Déc matchent parfaitement l'Excel (23 000€). Pas de virement en Janvier. 11 mois sur 11 vérifiés, 0€ d'écart." },
+      { type: "pass", titre: "✅ Divers : 100% vérifiés EBS — 9 170€ de transactions (9 opérations)", desc: "<strong>Fév 400€</strong> = vol ✓. <strong>Juin 1 240€</strong> = vol ✓. <strong>Sep 1 130€</strong> = iPhone ✓. <strong>Nov 1 800€</strong> = 3 virements EBS ✓. <strong>Nov −1 500€</strong> = Prêt EBS ✓. <strong>Déc 600€</strong> = virement EBS ✓. <strong>Déc −2 500€</strong> = Prêt EBS ✓. Net total : 1 170€. Zéro reste sans preuve." },
+      { type: "neutral", titre: "💸 Flux cash direct 2025 : Amine 2 400€ → Augustin / Augustin 4 000€ → Amine", desc: "<strong>Amine → Augustin :</strong> 600€ (09/11) + 700€ (12/11) + 500€ (18/11) + 600€ (08/12) = <strong>2 400€</strong>.<br><strong>Augustin → Amine (prêts) :</strong> 2 500€ (04/12) + 1 500€ (15/12) = <strong>4 000€</strong>.<br>Solde cash : <strong>−1 600€</strong> (Augustin a envoyé 1 600€ de plus).<br><em>À part — achats pour Augustin :</em> vols 400€ (Fév) + 1 240€ (Jun) + iPhone 1 130€ (Sep) = <strong>2 770€</strong>." },
+      { type: "neutral", titre: "📊 Ycarré + Baraka + Councils : 157 288€ — 100% vérifié EBS", desc: "Les 3 catégories avec preuves EBS (18 paiements au total) matchent parfaitement. Ycarré 54 300€ (6/6), Baraka 72 800€ (6/6), Councils HT 30 188€ (6/6 après correction v2)." },
+      { type: "pass", titre: "✅ Factures RTL 2025 : 198 475€ — 12/12 rapprochées, 0€ d'écart", desc: "Les 12 factures RTL (INVRTL001 à INVRTL012) sont toutes confirmées dans le CSV IFX. Les paiements combinés (INVRTL004+005 en Juillet, INVRTL010+011 en Janvier 2026) sont correctement identifiés. Aucun revenu manquant." },
+    ],
+  },
+
+  // ==================== AUGUSTIN 2026 ====================
+  augustin2026: {
+    title: "Augustin 2026 — En cours",
+    report2025: -1683,
+    tauxMaroc: 10,
+    virementsMaroc: [
+      { date: "02/01/2026", beneficiaire: "Jean Augustin", dh: 10000 },
+      { date: "03/02/2026", beneficiaire: "Jean Augustin", dh: 10000 },
+      { date: "03/03/2026", beneficiaire: "Jean Augustin", dh: 30000 },
+    ],
+    rtl: [
+      { ref: "INVRTL013", periode: "Janvier", jours: 11, montant: 9350, dateFacture: "31/12/2025", dateDue: "01/03/2026", statut: "ok", statutText: "Paid" },
+      { ref: "INVRTL014", periode: "Février", jours: 20, montant: 17000, dateFacture: "01/03/2026", dateDue: "01/04/2026", statut: "ok", statutText: "Paid 01/04" },
+      { ref: "—", periode: "Mars", jours: 20, montant: 17000, statut: "i", statutText: "À facturer" },
+    ],
+    divers: [
+      { label: "Amine → Azarkan (via Nezha → Hanane) — remboursement cash (prêts 2025 + Zak/Oumaima 2026)", montant: 2000 },
+      { label: "Amine → Azarkan (via Nezha → Hanane) — avec commission 5%", montant: 4000, commissionRate: 0.05 },
+    ],
+    insights: [
+      { type: "neutral", titre: "💸 Flux cash 2026 : Amine 6 000€ net → Azarkan (via Nezha → Hanane)", desc: "<strong>Amine → Azarkan :</strong> 6 000€ via Nezha → Hanane (2 virements).<br><em>Ventilation :</em> 2 000€ = remboursement cash (prêts 2025 + Zak/Oumaima 2026 inclus), 4 000€ = avec commission 5% (brut = 4 211€, commission Amine = 211€).<br>Note : Zak (-1 200€) et Oumaima (+800€) sont <strong>inclus</strong> dans le remboursement de 2 000€, pas comptés séparément.<br>Dette cash personnelle <strong>soldée</strong>." },
+      { type: "pass", titre: "📄 Factures RTL 2026 : 2 payées, 1 à facturer", desc: "INVRTL013 (Jan, 11j, 9 350€ HT) payée. INVRTL014 (Fév, 20j, 17 000€ HT) payée le 01/04/2026 (payment advice CLT-UFA 26 350€ couvrant les 2 factures). Mars (20j, 17 000€ HT) à facturer. <strong>Toutes les factures RTL sont HT (TVA 0% — Bairok LLC est basée aux EAU).</strong>" },
+    ],
+  },
+
+  // ==================== BENOIT 2025 ====================
+  benoit2025: {
+    title: "Clôture Benoit 2025 — Tracking en DH",
+    subtitle: "Tout est comptabilisé en DH. Les paiements Councils (en EUR) sont convertis en DH au taux EUR/MAD du jour de chaque transaction. Azarkan reçoit les paiements TTC en Belgique (21% TVA), mais on comptabilise en HT.",
+    commissionRate: 0.10,
+    tvaRate: 0.21,
+    councils: [
+      { date: "18/08/2025", htEUR: 5625, tauxApplique: 10.500 },
+      { date: "12/09/2025", htEUR: 5625, tauxApplique: 10.500 },
+      { date: "29/09/2025", htEUR: 5313, tauxApplique: 10.500 },
+      { date: "13/11/2025", htEUR: 5000, tauxApplique: 10.600 },
+      { date: "11/12/2025", htEUR: 5000, tauxApplique: 10.600 },
+      { date: "31/12/2025", htEUR: 3625, tauxApplique: 10.600 },
+    ],
+    virements: [
+      { date: "28/07/2025", beneficiaire: "Benoit Chevalier", dh: 50000, motif: "Prêt personnel" },
+      { date: "28/07/2025", beneficiaire: "Benoit Chevalier", dh: 50000, motif: "Prêt perso 2" },
+      { date: "30/07/2025", beneficiaire: "Benoit Chevalier", dh: 50000, motif: "Prêt familial" },
+      { date: "26/11/2025", beneficiaire: "Benoit Chevalier", dh: 50000, motif: "Remboursement prêt" },
+      { date: "21/12/2025", beneficiaire: "Benoit Chevalier", dh: 50000, motif: "Remboursement" },
+      { date: "06/03/2026", beneficiaire: "Benoit Chevalier", dh: 31750, motif: "Clôture 2025" },
+    ],
+  },
+
+  // ==================== BENOIT 2026 ====================
+  benoit2026: {
+    title: "Benoit 2026 — En cours (tracking en DH)",
+    commissionRate: 0.10,
+    tvaRate: 0.21,
+    tjm: 625,
+    councils: [
+      { ref: "AZCS0001", mois: "Janvier 2026", jours: 8, htEUR: 5000, dateFacture: "30/01/2026", dateDue: "16/03/2026", tauxApplique: 10.600, statut: "ok", statutText: "Paid 11/02" },
+      { ref: "AZCS0002", mois: "Février 2026", jours: 8, htEUR: 5000, dateFacture: "27/02/2026", dateDue: "13/04/2026", tauxApplique: 10.600, statut: "w", statutText: "Invoiced" },
+      { ref: "AZCS0003", mois: "Octobre 2025", jours: 9, htEUR: 5625, dateFacture: "27/03/2026", dateDue: "11/05/2026", tauxApplique: 10.600, statut: "ok", statutText: "Paid 27/03", backlog: true },
+      { ref: "AZCS0004", mois: "Novembre 2025", jours: 10, htEUR: 6250, dateFacture: "27/03/2026", dateDue: "11/05/2026", tauxApplique: 10.600, statut: "ok", statutText: "Paid 27/03", backlog: true },
+      { ref: "AZCS0005", mois: "Décembre 2025", jours: 13, htEUR: 8125, dateFacture: "27/03/2026", dateDue: "11/05/2026", tauxApplique: 10.600, statut: "ok", statutText: "Paid 27/03", backlog: true },
+      { ref: "AZCS0006", mois: "Mars 2026", jours: 9, htEUR: 5625, dateFacture: "27/03/2026", dateDue: "11/05/2026", tauxApplique: 10.600, statut: "ok", statutText: "Paid 27/03" },
+    ],
+    virements: [
+      { date: "09/03/2026", beneficiaire: "Benoit Chevalier", dh: 50000, motif: "Remboursement" },
+    ],
+    notes: [
+      "Le virement du 06/03/2026 (31 750 DH) a été comptabilisé dans la clôture 2025. La réconciliation ne prend en compte que les Councils effectivement payés.",
+      "Factures AZCS0003/0004/0005 = backlog 2025 (Oct/Nov/Déc) facturées et payées en mars 2026.",
+    ],
+  },
+};
+
+// ---- BENOIT-ONLY data (for COUPA mode) ----
+const BENOIT_DATA = {
+  benoit2025: FULL_DATA.benoit2025,
+  benoit2026: FULL_DATA.benoit2026,
+};
+
+// ---- Private data (BINGA overlay) ----
 const PRIV_DATA = {
-  // Benoit commission & taux details
   benoit2025: {
     commissionRate: 0.10,
     councilsTaux: [
@@ -33,8 +209,6 @@ const PRIV_DATA = {
       { mois: "Février", tauxMarche: null },
     ],
   },
-
-  // FX P2P full pipeline data
   fxP2P: {
     title: "Analyse FX — Spreads par étape (EUR → AED → USDT → MAD)",
     subtitle: "Chaque conversion a un spread par rapport au taux marché. L'analyse isole le coût/gain de chaque étape pour quantifier l'avantage du P2P crypto.",
@@ -146,18 +320,21 @@ const PRIV_DATA = {
     },
     usdtRemaining: 319.71,
   },
-
-  // Ycarré commission info (for Mes Gains)
   ycarreCommission: 0.08,
   ycarreTotal: 54300,
 };
 
-// ---- Encrypt with AES-256-GCM ----
-async function encrypt() {
-  const plaintext = JSON.stringify(PRIV_DATA);
 
-  // Derive key from password using PBKDF2
-  const keyMaterial = crypto.pbkdf2Sync(PASSWORD, SALT, 100000, 32, 'sha256');
+// ============================================================
+// Encryption helper — AES-256-GCM, PBKDF2
+// Password is ALWAYS uppercased for case-insensitive matching
+// ============================================================
+function encryptData(data, password) {
+  const plaintext = JSON.stringify(data);
+  const normalizedPwd = password.toUpperCase();
+
+  // Derive key
+  const keyMaterial = crypto.pbkdf2Sync(normalizedPwd, SALT, 100000, 32, 'sha256');
 
   // Random IV
   const iv = crypto.randomBytes(12);
@@ -170,14 +347,45 @@ async function encrypt() {
 
   // Combine: iv (12) + tag (16) + ciphertext
   const combined = Buffer.concat([iv, tag, encrypted]);
-  const b64 = combined.toString('base64');
-
-  // Write encrypted data file
-  const output = `// Auto-generated — DO NOT EDIT\n// Encrypted private data (AES-256-GCM, PBKDF2)\nconst ENCRYPTED_PRIV = "${b64}";\n`;
-  fs.writeFileSync('data-priv.enc.js', output);
-
-  console.log(`Encrypted ${plaintext.length} bytes → ${b64.length} base64 chars`);
-  console.log('Written to data-priv.enc.js');
+  return combined.toString('base64');
 }
 
-encrypt();
+// ============================================================
+// Main — Generate encrypted data files
+// ============================================================
+async function main() {
+  console.log('Encrypting all data...\n');
+
+  // 1) Full data → BRIDGEVALE
+  const fullB64 = encryptData(FULL_DATA, 'BRIDGEVALE');
+  console.log(`FULL (BRIDGEVALE): ${JSON.stringify(FULL_DATA).length} bytes → ${fullB64.length} base64 chars`);
+
+  // 2) Benoit-only → COUPA
+  const benoitB64 = encryptData(BENOIT_DATA, 'COUPA');
+  console.log(`BENOIT (COUPA): ${JSON.stringify(BENOIT_DATA).length} bytes → ${benoitB64.length} base64 chars`);
+
+  // 3) Private overlay → BINGA
+  const privB64 = encryptData(PRIV_DATA, 'BINGA');
+  console.log(`PRIV (BINGA): ${JSON.stringify(PRIV_DATA).length} bytes → ${privB64.length} base64 chars`);
+
+  // Write data-enc.js (main encrypted blobs)
+  const encOutput = `// Auto-generated — DO NOT EDIT
+// Encrypted main data (AES-256-GCM, PBKDF2, password uppercased)
+const ENCRYPTED_FULL = "${fullB64}";
+const ENCRYPTED_BENOIT = "${benoitB64}";
+`;
+  fs.writeFileSync('data-enc.js', encOutput);
+  console.log('\n→ Written to data-enc.js');
+
+  // Write data-priv.enc.js (private overlay)
+  const privOutput = `// Auto-generated — DO NOT EDIT
+// Encrypted private data (AES-256-GCM, PBKDF2, password uppercased)
+const ENCRYPTED_PRIV = "${privB64}";
+`;
+  fs.writeFileSync('data-priv.enc.js', privOutput);
+  console.log('→ Written to data-priv.enc.js');
+
+  console.log('\nDone. Remember to remove data.js from the repo (data is now encrypted).');
+}
+
+main();
