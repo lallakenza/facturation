@@ -97,13 +97,13 @@ function renderAmine() {
   html += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
     <div class="hero-card" style="border-color:${azColor}">
       <div class="hero-label">Si je paye en Pro</div>
-      <div class="hero-value ${azCls}" style="font-size:1.2rem">${fmtSigned(Math.round(-posNetPro))} €</div>
+      <div class="hero-value ${azCls}" style="font-size:1.2rem">${fmtSigned(Math.round(-posNetPro))}</div>
       <div class="hero-who" style="color:${azColor}">${azLabel}</div>
       <div class="hero-detail">Commission 5% incluse</div>
     </div>
     <div class="hero-card" style="border-color:${azColor}">
       <div class="hero-label">Si je paye en Perso</div>
-      <div class="hero-value ${azCls}" style="font-size:1.2rem">${fmtSigned(Math.round(-posNetPerso))} €</div>
+      <div class="hero-value ${azCls}" style="font-size:1.2rem">${fmtSigned(Math.round(-posNetPerso))}</div>
       <div class="hero-who" style="color:${azColor}">${azLabel}</div>
       <div class="hero-detail">Cash réel · sans commission</div>
     </div>
@@ -169,16 +169,16 @@ function renderAmine() {
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:center">
       <div style="text-align:center">
         <div style="font-size:.72rem;color:var(--muted)">vs Azarkan (perso)</div>
-        <div style="font-size:1.1rem;font-weight:700;color:${azColor}">${fmtSigned(Math.round(azOwedPerso))} €</div>
+        <div style="font-size:1.1rem;font-weight:700;color:${azColor}">${fmtSigned(Math.round(azOwedPerso))}</div>
       </div>
       <div style="text-align:center">
         <div style="font-size:.72rem;color:var(--muted)">vs Badre (≈EUR)</div>
-        <div style="font-size:1.1rem;font-weight:700;color:${baColor}">${fmtSigned(Math.round(baOwedEUR))} €</div>
+        <div style="font-size:1.1rem;font-weight:700;color:${baColor}">${fmtSigned(Math.round(baOwedEUR))}</div>
         <div style="font-size:.65rem;color:var(--muted)">${fmtSigned(-soldeBadre, 'DH')} ÷ ${az.tauxMaroc}</div>
       </div>
       <div style="text-align:center;padding:10px;border-radius:8px;background:${combSign ? 'rgba(34,197,94,.08)' : 'rgba(239,68,68,.08)'}">
         <div style="font-size:.72rem;color:var(--muted)">${combLabel}</div>
-        <div style="font-size:1.3rem;font-weight:900;color:${combColor}">${fmtSigned(Math.round(combinedEUR))} €</div>
+        <div style="font-size:1.3rem;font-weight:900;color:${combColor}">${fmtSigned(Math.round(combinedEUR))}</div>
       </div>
     </div>
     <div style="font-size:.65rem;color:var(--muted);margin-top:8px;text-align:center">Estimation : position Badre convertie en EUR au taux fixe ${az.tauxMaroc}. Position Azarkan en base perso (cash).</div>
