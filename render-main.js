@@ -34,9 +34,17 @@ function renderPanel(id) {
   }
 }
 
-// ---- Render all visible panels ----
+// ---- Render all visible panels (skip hidden ones to avoid missing-data crashes) ----
 function renderAll() {
-  TAB_CONFIG.forEach(t => renderPanel(t.id));
+  const mode = window.ACCESS_MODE;
+  const priv = window.PRIV;
+  TAB_CONFIG.forEach(t => {
+    const visible =
+      t.access === 'all' ||
+      (t.access === 'full' && mode === 'full') ||
+      (t.access === 'priv' && priv);
+    if (visible) renderPanel(t.id);
+  });
 }
 
 // ---- Build tabs + panels from TAB_CONFIG ----
