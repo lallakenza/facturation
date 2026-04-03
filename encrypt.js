@@ -5,6 +5,29 @@
 // Produit:
 //   data-enc.js      → ENCRYPTED_FULL (BRIDGEVALE) + ENCRYPTED_BENOIT (COUPA)
 //   data-priv.enc.js → ENCRYPTED_PRIV (BINGA private overlay)
+//
+// ARCHITECTURE & CONVENTIONS:
+// ---------------------------
+// Azarkan (Augustin) 2026:
+//   - tauxMaroc = 10.26 (= PERSO_FACTOR × 10.8 = 0.95 × 10.8)
+//   - PERSO_FACTOR = 0.95 → 1000€ pro = 950€ perso = 10 260 MAD
+//   - Positions: Pro → Perso = Pro × 0.95 → MAD = Pro × 10.26
+//   - report2025 = -1683 (carryforward clôture 2025)
+//   - Divers: montant = PERSO (cash réel). Pro = montant ÷ 0.95
+//     Si proOrigin: true → montant = PRO, Perso = montant × 0.95
+//     (actuellement aucun item n'a proOrigin)
+//
+// Benoit (Badre) 2026:
+//   - commissionRate = 0.10 (10% Amine), tvaRate = 0.21
+//   - Tracking en DH. Taux appliqué = 10.6 (fixe 2026)
+//   - Position = report2025 + netPaid26 - totalPaye26
+//   - Fonction partagée: computeBenoitSolde() dans render-helpers.js
+//
+// Divers 2026 (3 transactions perso):
+//   1. Oumaima → Azarkan: +800€ (remboursement reçu)
+//   2. Azarkan → Amine (via Zakaria): -1200€ (avance)
+//   3. Amine → Azarkan (via Nezha → Hanane): +6000€ (virement perso)
+//   Net = 5 600€ perso
 // ============================================================
 
 const crypto = require('crypto');

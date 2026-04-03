@@ -1,6 +1,18 @@
 // ============================================================
 // RENDER-AMINE.JS — Tableau de bord personnel Amine
 // Vue consolidée : combien je dois à chacun / on me doit
+//
+// SECTIONS:
+//   1. Augustin (Azarkan) — 3 hero cards: Pro / Perso / MAD
+//      Calcul local: posNetPro = posEntreprise − virementsEUR − diversPro
+//   2. Benoit (Badre) — 1 hero card: DH
+//      Utilise computeBenoitSolde() (render-helpers.js) — même calcul que tab Benoit
+//   3. Position globale — 4 colonnes: vs Augustin, vs Benoit, Total EUR, Total MAD
+//      MAD combiné = Azarkan MAD + Badre DH (somme directe)
+//
+// CONVENTIONS:
+//   azOwedPro/Perso/MAD = -posNet (positif = Augustin me doit)
+//   baOwedDH = -soldeBadre (positif = Benoit me doit)
 // ============================================================
 
 function renderAmine() {

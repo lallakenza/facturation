@@ -1,5 +1,24 @@
 // ============================================================
-// RENDER-AUGUSTIN.JS — Rendering functions for Augustin reconciliation (2025 and 2026)
+// RENDER-AUGUSTIN.JS — Rendering for Augustin (Azarkan) reconciliation
+//
+// 2025: Clôture (month-by-month: RTL, B+Y+M, Maroc, Divers)
+// 2026: En cours — Reco table with signed additive display
+//
+// RECO TABLE STRUCTURE (2026):
+//   ① Position Entreprise = RTL paid − Majalis AZCS + Report 2025
+//   ② Position Net = Pos.Ent. + Virements Maroc + Divers (all signed)
+//
+// SIGN DISPLAY: All values signed additively (sum = total)
+//   RTL: positive (+26 350, money in)
+//   Majalis: negative (−30 625, money out)
+//   Virements Maroc: negative (money sent to Augustin)
+//   Divers: negated for display (data positive = cost → display negative)
+//
+// PILL BADGES: pill(val, type)
+//   'pro' = indigo (invoiced amounts), 'eur' = emerald (perso EUR),
+//   'mad' = amber (native MAD amounts)
+//
+// TAUX 2026: tauxMaroc = 10.26, PERSO_FACTOR = 0.95
 // ============================================================
 
 // ---- AUGUSTIN 2025 ----

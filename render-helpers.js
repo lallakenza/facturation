@@ -1,5 +1,31 @@
 // ============================================================
 // RENDER-HELPERS.JS — Utility functions for formatting and DOM manipulation
+//
+// SHARED FUNCTIONS:
+//   computeBenoitSolde() — Single source of truth for Benoit position
+//     Called by render-amine.js (dashboard) AND render-benoit.js (tab).
+//     Returns { report25, netPaid26, totalPaye26, solde, paidCount }
+//
+// FORMATTING:
+//   fmtSigned(n, suffix='€')  — "+1 234 €" ou "−1 234 €"
+//   fmtPlain(n)               — "1 234" (absolute value, no sign)
+//   fmtRate(r)                — "10,500"
+//   fmtDelta(d)               — "+0,300" ou "−0,100"
+//
+// DISPLAY:
+//   badge(type, text)         — Status badge HTML
+//   nick(name)                — Real name → nickname (Azarkan → Augustin)
+//   nickText(text)            — Replace all real names in free text
+//   collapsible(title, html)  — Collapsible section
+//   yearToggle3(section, y)   — Year toggle (Tout/2025/2026)
+//
+// Pill badge helper (in render-augustin.js):
+//   pill(val, type) — Colored inline badge: 'pro'=indigo, 'eur'=emerald, 'mad'=amber
+//
+// SIGN CONVENTION in reco table:
+//   All amounts are ADDITIVE — sum all rows to get the total.
+//   + = money received, − = money paid out.
+//   Divers: data positive = money to Azarkan = display NEGATIVE (negate for display)
 // ============================================================
 
 // ---- MODE ----
