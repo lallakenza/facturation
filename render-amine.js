@@ -145,7 +145,7 @@ function renderAmine() {
   b26.virements.forEach(v => {
     html += `<tr><td>${v.date}</td><td>${nick(v.beneficiaire)}</td><td class="a" style="color:var(--green)">${fmtPlain(v.dh)}</td><td style="font-size:.72rem">${v.motif}</td></tr>`;
   });
-  html += `<tr class="tr"><td colspan="2"><strong>Total</strong></td><td class="a"><strong>${fmtPlain(totalPaye26)} DH</strong></td><td></td></tr></tbody></table>`;
+  html += `<tr class="tr"><td colspan="2"><strong>Total</strong></td><td class="a"><strong>${fmtPlain(badrePos.totalPaye26)} DH</strong></td><td></td></tr></tbody></table>`;
 
   // ---- COMBINED POSITION ----
   // Convert Badre DH to EUR — taux fixe Badre = 10.6 (différent d'Azarkan)
