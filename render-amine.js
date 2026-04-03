@@ -97,7 +97,7 @@ function renderAmine() {
   // ---- AZARKAN SECTION ----
   html += `<div style="margin-bottom:20px">`;
   html += `<div style="font-size:.82rem;font-weight:700;margin-bottom:8px;color:var(--text)">Augustin</div>`;
-  html += `<div style="font-size:.7rem;color:var(--muted);margin-bottom:8px">Pro → EUR perso = Pro × 0.95 (−5% commission Amine) · Pro → MAD = Pro × 10 (taux fixe)</div>`;
+  html += `<div style="font-size:.7rem;color:var(--muted);margin-bottom:8px">Pro → EUR perso = Pro × 0.95 (−5% commission Amine) · Pro → MAD = Pro × ${az.tauxMaroc} (taux fixe)</div>`;
 
   html += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
     <div class="hero-card" style="border-color:${azColor}">
@@ -162,32 +162,39 @@ function renderAmine() {
   html += `<tr class="tr"><td colspan="2"><strong>Total</strong></td><td class="a"><strong>${fmtPlain(totalPaye26)} DH</strong></td><td></td></tr></tbody></table>`;
 
   // ---- COMBINED POSITION ----
-  // Convert Badre DH to EUR — taux fixe Badre = 10.6 (différent d'Azarkan 10)
+  // Convert Badre DH to EUR — taux fixe Badre = 10.6 (différent d'Azarkan)
   const tauxBadre = 10.6;
   const baOwedEUR = baOwedDH / tauxBadre;
   const combinedEUR = azOwedPerso + baOwedEUR;
+  // Combined in MAD: Azarkan MAD + Badre DH (already in DH)
+  const azOwedMADval = -posNetMAD;
+  const combinedMAD = azOwedMADval + baOwedDH;
   const combSign = combinedEUR >= 0;
   const combColor = combSign ? 'var(--green)' : 'var(--red)';
   const combLabel = combSign ? 'On me doit au total' : 'Je dois au total';
 
   html += `<div style="margin-top:24px;padding:16px;background:var(--surface2);border-radius:12px;border:1px solid var(--border)">
-    <div style="font-size:.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Position globale estimée (EUR)</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:center">
+    <div style="font-size:.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Position globale estimée</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;align-items:center">
       <div style="text-align:center">
         <div style="font-size:.72rem;color:var(--muted)">vs Augustin (perso)</div>
         <div style="font-size:1.1rem;font-weight:700;color:${azColor}">${fmtSigned(Math.round(azOwedPerso))}</div>
       </div>
       <div style="text-align:center">
-        <div style="font-size:.72rem;color:var(--muted)">vs Benoit (≈EUR)</div>
-        <div style="font-size:1.1rem;font-weight:700;color:${baColor}">${fmtSigned(Math.round(baOwedEUR))}</div>
-        <div style="font-size:.65rem;color:var(--muted)">${fmtSigned(-soldeBadre, 'DH')} ÷ ${tauxBadre}</div>
+        <div style="font-size:.72rem;color:var(--muted)">vs Benoit (DH)</div>
+        <div style="font-size:1.1rem;font-weight:700;color:${baColor}">${fmtSigned(-soldeBadre, 'DH')}</div>
+        <div style="font-size:.65rem;color:var(--muted)">≈ ${fmtSigned(Math.round(baOwedEUR))} (÷ ${tauxBadre})</div>
       </div>
       <div style="text-align:center;padding:10px;border-radius:8px;background:${combSign ? 'rgba(34,197,94,.08)' : 'rgba(239,68,68,.08)'}">
-        <div style="font-size:.72rem;color:var(--muted)">${combLabel}</div>
+        <div style="font-size:.72rem;color:var(--muted)">${combLabel} (EUR)</div>
         <div style="font-size:1.3rem;font-weight:900;color:${combColor}">${fmtSigned(Math.round(combinedEUR))}</div>
       </div>
+      <div style="text-align:center;padding:10px;border-radius:8px;background:${combSign ? 'rgba(34,197,94,.08)' : 'rgba(239,68,68,.08)'}">
+        <div style="font-size:.72rem;color:var(--muted)">${combLabel} (MAD)</div>
+        <div style="font-size:1.3rem;font-weight:900;color:${combColor}">${fmtSigned(Math.round(combinedMAD), 'MAD')}</div>
+      </div>
     </div>
-    <div style="font-size:.65rem;color:var(--muted);margin-top:8px;text-align:center">Estimation : position Benoit convertie en EUR au taux fixe ${tauxBadre}. Position Augustin en base perso (cash).</div>
+    <div style="font-size:.65rem;color:var(--muted);margin-top:8px;text-align:center">Position Augustin : taux ${az.tauxMaroc} · Position Benoit : taux ${tauxBadre}. EUR = base perso (cash).</div>
   </div>`;
 
   return html;
