@@ -100,8 +100,8 @@ const totalRTL26 = sum(az26.rtl.filter(r => r.ref !== '—'), 'montant');
 check('Total RTL facturé 2026', totalRTL26, 26350);
 
 const diversNet26 = az26.divers.reduce((s, x) => s + x.montant, 0);
-check('Divers net montant 2026', diversNet26, 5600); // -1200 + 800 + 2000 + 4000
-check('Divers count 2026 (Zak + Oum + remb + cash)', az26.divers.length, 4);
+check('Divers net montant 2026', diversNet26, 5600); // +800 - 1200 + 6000
+check('Divers count 2026 (Oum + Zak + Nezha)', az26.divers.length, 3);
 
 // AZCS via Majalis (from benoit2026)
 const azcsAll26 = DATA.benoit2026.councils;
@@ -123,9 +123,9 @@ const diversPro26 = az26.divers.reduce((s, x) => {
   if (x.proOrigin) return s + x.montant; // proOrigin: montant IS pro
   return s + Math.round(x.montant / PERSO_FACTOR * 100) / 100;
 }, 0);
-// All items are perso: Zak -1200 + Oum +800 + Remb 2000 + Cash 4000 = 5600 perso
+// All items are perso: Oum +800 + Zak -1200 + Nezha 6000 = 5600 perso
 // Pro = each montant / 0.95
-const expectedDiversPro = Math.round(-1200/0.95*100)/100 + Math.round(800/0.95*100)/100 + Math.round(2000/0.95*100)/100 + Math.round(4000/0.95*100)/100;
+const expectedDiversPro = Math.round(800/0.95*100)/100 + Math.round(-1200/0.95*100)/100 + Math.round(6000/0.95*100)/100;
 check('Divers Pro 2026', Math.round(diversPro26 * 100), Math.round(expectedDiversPro * 100));
 
 const diversPerso26 = az26.divers.reduce((s, x) => {

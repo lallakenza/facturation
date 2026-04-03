@@ -125,13 +125,12 @@ const FULL_DATA = {
       { ref: "—", periode: "Mars", jours: 20, montant: 17000, statut: "i", statutText: "À facturer" },
     ],
     divers: [
-      { label: "Azarkan → Amine (via Zakaria — avance 2026)", montant: -1200 },
       { label: "Oumaima → Azarkan (remboursement reçu 2026)", montant: 800 },
-      { label: "Amine → Azarkan (via Nezha → Hanane) — remboursement prêts 2025 + Zak/Oumaima", montant: 2000 },
-      { label: "Amine → Azarkan (via Nezha → Hanane) — cash perso", montant: 4000 },
+      { label: "Azarkan → Amine (via Zakaria — avance 2026)", montant: -1200 },
+      { label: "Amine → Azarkan (via Nezha → Hanane) — virement perso", montant: 6000 },
     ],
     insights: [
-      { type: "neutral", titre: "💸 Flux cash 2026 : 4 transactions Amine ↔ Azarkan", desc: "<strong>Reçu d'Azarkan :</strong> Zakaria −1 200€ perso + Oumaima +800€ perso = <strong>−400€ net perso</strong>.<br><strong>Envoyé à Azarkan :</strong> 6 000€ via Nezha → Hanane = 2 000€ remboursement (pro) + 4 000€ cash (perso).<br><strong>Net perso :</strong> −1 200 + 800 + 2 000 + 4 000 = <strong>5 600€</strong>." },
+      { type: "neutral", titre: "💸 Flux cash 2026 : 3 transactions Amine ↔ Azarkan", desc: "<strong>Reçu d'Azarkan :</strong> Oumaima +800€ · Zakaria −1 200€ = <strong>−400€ net</strong>.<br><strong>Envoyé à Azarkan :</strong> 6 000€ via Nezha → Hanane (virement perso).<br><strong>Net perso :</strong> +800 − 1 200 + 6 000 = <strong>5 600€</strong>." },
       { type: "pass", titre: "📄 Factures RTL 2026 : 2 payées, 1 à facturer", desc: "INVRTL013 (Jan, 11j, 9 350€ HT) payée. INVRTL014 (Fév, 20j, 17 000€ HT) payée le 01/04/2026 (payment advice CLT-UFA 26 350€ couvrant les 2 factures). Mars (20j, 17 000€ HT) à facturer. <strong>Toutes les factures RTL sont HT (TVA 0% — Bairok LLC est basée aux EAU).</strong>" },
     ],
   },
