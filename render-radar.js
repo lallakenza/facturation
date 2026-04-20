@@ -679,6 +679,65 @@ window.radarUpdateUsdMad = function(raw) {
   radarRestoreFocus(mount, 'input:nth-of-type(2)', String(raw));
 };
 
+// ---- KNOWN MERCHANTS (RIB already validated) -----------------------
+// Amine peut faire une transaction rapide UNIQUEMENT avec un marchand
+// dont le RIB est déjà enregistré côté banque (sinon : ajouter le RIB
+// puis attendre ~4h de validation). On tracke ces marchands :
+//   1. SEED depuis PRIV_DATA.fxP2P.knownMerchantsAED/MAD (canonique,
+//      modifié via encrypt.js → re-chiffré → commit)
+//   2. UI LIVE via localStorage (clic sur ⭐ à côté d'un marchand pour
+//      l'ajouter/retirer à la volée, sans toucher au repo)
+// Les deux listes sont fusionnées à la lecture. Match = case-insensitive.
+function radarLoadKnownMerchants(side) {
+  const fiat = side === 'BUY' ? 'AED' : 'MAD';
+  const encSeed = (DATA.fxP2P && DATA.fxP2P['knownMerchants' + fiat]) || [];
+  let lsList = [];
+  try {
+    const raw = localStorage.getItem('radar_known_merchants');
+    if (raw) {
+      const obj = JSON.parse(raw);
+      lsList = (obj && obj[fiat]) || [];
+    }
+  } catch (e) { /* localStorage blocked/corrupt — silently fallback */ }
+  const all = [...encSeed, ...lsList].map(n => String(n || '').trim().toLowerCase()).filter(Boolean);
+  return new Set(all);
+}
+function radarToggleKnownMerchant(side, nickname) {
+  const fiat = side === 'BUY' ? 'AED' : 'MAD';
+  const key = String(nickname || '').trim();
+  if (!key) return;
+  let obj = {};
+  try { obj = JSON.parse(localStorage.getItem('radar_known_merchants') || '{}'); } catch (e) {}
+  if (!obj[fiat]) obj[fiat] = [];
+  const idx = obj[fiat].findIndex(n => String(n).toLowerCase() === key.toLowerCase());
+  if (idx >= 0) obj[fiat].splice(idx, 1); else obj[fiat].push(key);
+  try { localStorage.setItem('radar_known_merchants', JSON.stringify(obj)); } catch (e) {}
+  // Re-render the affected offers table so the ⭐ badges update.
+  const s = window._radarState;
+  const body = document.getElementById('radarBody');
+  if (!body) return;
+  const buyOffers  = s.buyData  ? radarOffersTable(s.buyData,  'BUY',  s.peg)    : '';
+  const sellOffers = (s.sellData && s.usdMad) ? radarOffersTable(s.sellData, 'SELL', s.usdMad) : '';
+  // Only re-render the offers tables (keep the cards untouched so no focus loss)
+  const allTables = body.querySelectorAll('.s');
+  // Find the offers table sections (they have "Top 10 offres" in their .st)
+  allTables.forEach(sec => {
+    const st = sec.querySelector('.st');
+    if (!st) return;
+    const label = st.textContent || '';
+    if (label.includes('Top 10 offres Binance P2P — Achat AED') && buyOffers) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = buyOffers;
+      sec.replaceWith(tmp.firstElementChild);
+    } else if (label.includes('Top 10 offres Binance P2P — Vente USDT') && sellOffers) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = sellOffers;
+      sec.replaceWith(tmp.firstElementChild);
+    }
+  });
+}
+window.radarToggleKnownMerchant = radarToggleKnownMerchant;
+
 // innerHTML destroys focus; re-find the target input and re-seat caret.
 function radarRestoreFocus(container, selector, displayValue) {
   if (!container) return;
@@ -797,18 +856,38 @@ function radarOffersTable(data, tradeType, refRate) {
   const priceLabel = tradeType === 'BUY' ? 'Prix AED/USDT' : 'Prix MAD/USDT';
   const refLabel   = tradeType === 'BUY' ? 'Spread vs peg' : 'Spread vs marché';
 
+  // Charger la liste des marchands "connus" (RIB déjà validé côté banque)
+  // pour pouvoir distinguer ceux avec qui on peut tradé immédiatement.
+  const knownSet = radarLoadKnownMerchants(tradeType);
+
   let rows = '';
   data.offers.forEach((o, i) => {
     const spread = ((o.price - refRate) / refRate) * 100;
     const isGood = tradeType === 'BUY' ? (spread <= 0.35) : (spread >= 3.0);
     const isBad  = tradeType === 'BUY' ? (spread >  0.70) : (spread <  1.0);
     const color  = isGood ? 'var(--green)' : isBad ? 'var(--red)' : 'var(--yellow)';
+    const merchantName = o.merchant || '—';
+    const isKnown = knownSet.has(merchantName.toLowerCase().trim());
     const merchantType = o.userType === 'merchant' ? ' <span class="b i" style="font-size:.6rem">Merchant</span>' : '';
+    // Escape quotes in merchant name for the onclick attribute — nicknames
+    // can contain apostrophes. Base64 via btoa sidesteps HTML attribute
+    // escaping issues without needing a lookup table.
+    const safeArg = 'atob(\'' + btoa(unescape(encodeURIComponent(merchantName))) + '\')';
+    const decodedCall = `radarToggleKnownMerchant('${tradeType}', decodeURIComponent(escape(${safeArg})))`;
+    const toggleBtn = isKnown
+      ? `<button type="button" onclick="${decodedCall}" title="Cliquer pour retirer de ta liste" style="background:none;border:none;color:var(--green);cursor:pointer;padding:0 2px;font-size:.85rem;line-height:1">⭐</button>`
+      : `<button type="button" onclick="${decodedCall}" title="Cliquer pour marquer comme 'RIB validé' — tu peux trader immédiatement" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:0 2px;font-size:.85rem;line-height:1;opacity:.5">☆</button>`;
+    const knownBadge = isKnown
+      ? `<span class="b ok" style="font-size:.6rem;margin-left:4px">⭐ Connu</span>`
+      : `<span class="b w" style="font-size:.6rem;margin-left:4px;opacity:.7" title="RIB à ajouter — 4h de validation avant de pouvoir trader">🆕 Nouveau</span>`;
     const payShort = (o.payMethods || []).slice(0, 3).join(', ') + (o.payMethods.length > 3 ? ` +${o.payMethods.length - 3}` : '');
     const decimals = tradeType === 'BUY' ? 4 : 3;
-    rows += `<tr>
+    // Surbrillance discrète verte pour les marchands connus — rend la
+    // ligne visuellement "exécutable" en un coup d'œil.
+    const rowStyle = isKnown ? ' style="background:rgba(34,197,94,.06)"' : '';
+    rows += `<tr${rowStyle}>
       <td>${i+1}</td>
-      <td>${(o.merchant || '—').substring(0, 24)}${merchantType}</td>
+      <td style="white-space:nowrap">${toggleBtn} <strong>${merchantName.substring(0, 24)}</strong>${merchantType}${knownBadge}</td>
       <td class="a" style="font-weight:700">${o.price.toFixed(decimals).replace('.', ',')}</td>
       <td class="a" style="color:${color}">${spread >= 0 ? '+' : ''}${spread.toFixed(2)}%</td>
       <td class="a">${fmtPlain(Math.round(o.minSingleTransAmount))}–${fmtPlain(Math.round(o.maxSingleTransAmount))}</td>
@@ -817,7 +896,13 @@ function radarOffersTable(data, tradeType, refRate) {
     </tr>`;
   });
 
-  return `<div class="s"><div class="st">${title}</div><table>
+  // Nombre de "connus" sur 10 pour afficher un résumé rapide dans le titre.
+  const knownCount = data.offers.filter(o => knownSet.has((o.merchant || '').toLowerCase().trim())).length;
+  const knownSummary = ` <span style="font-size:.65rem;font-weight:500;color:${knownCount > 0 ? 'var(--green)' : 'var(--muted)'};text-transform:none;letter-spacing:0">· ${knownCount}/10 connus</span>`;
+
+  const helperNote = `<div style="font-size:.7rem;color:var(--muted);margin-top:6px;margin-bottom:8px;line-height:1.5"><strong>⭐ Connu</strong> = RIB validé côté banque → transaction rapide possible. <strong>🆕 Nouveau</strong> = il faut d'abord ajouter le RIB et attendre ~4h de validation. Clique sur ☆/⭐ à côté d'un marchand pour le marquer/démarquer.</div>`;
+
+  return `<div class="s"><div class="st">${title}${knownSummary}</div>${helperNote}<table>
     <thead><tr>
       <th>#</th>
       <th>Marchand</th>

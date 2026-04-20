@@ -345,6 +345,22 @@ const PRIV_DATA = {
       ],
     },
     usdtRemaining: 319.71,
+    // ---- Marchands P2P dont le RIB est déjà validé (Binance AED / MAD) ----
+    // Liste à maintenir à la main : chaque fois que tu termines une
+    // transaction P2P AED ou MAD, ajoute le nickname du marchand ici.
+    // Un marchand "connu" = RIB déjà enregistré côté banque UAE/Maroc,
+    // donc transaction rapide possible. Sinon, il faut ajouter le RIB
+    // et attendre ~4h de validation avant de pouvoir trader.
+    // Match = exact, case-insensitive. Nicknames sensibles à la casse
+    // Binance (ex. "FastTrade24-7" doit être saisi tel quel).
+    knownMerchantsAED: [
+      // Exemples à remplir par Amine au fil des transactions :
+      // "FastTrade24-7", "RMK LTD", "UAE-Digital-Exchange",
+    ],
+    knownMerchantsMAD: [
+      // Exemples à remplir par Amine au fil des transactions :
+      // "ELAOUNI-P2P", "Zack-Crypto", "Hero_buy_sell",
+    ],
   },
   ycarreCommission: 0.08,
   ycarreTotal: 54300,
