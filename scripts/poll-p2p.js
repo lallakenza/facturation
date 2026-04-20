@@ -247,7 +247,12 @@ function buildAlertContent(sell, fx, sellSpread) {
       ).join('\n')
     : '_Aucune offre n\'a un spread > seuil — c\'est juste la **moyenne** top 3 qui dépasse._';
 
-  const body = `**Moyenne top 3 (max ∈ 5k–50k MAD) : ${sign(sellSpread)}** au-dessus du marché.
+  // Mention @lallakenza en haut pour garantir la notification email
+  // (GitHub n'envoie pas toujours un mail aux owners pour les issues
+  // créées par leurs propres bots — le @mention force le trigger).
+  const body = `@lallakenza — opportunité P2P détectée 👇
+
+**Moyenne top 3 (max ∈ 5k–50k MAD) : ${sign(sellSpread)}** au-dessus du marché.
 
 - Cours USD/MAD live : **${fmt(fx.usdMad, 4)}** ${fx.date ? `(${fx.date})` : ''}
 - Seuil d'alerte : ${ALERT_SELL_THRESHOLD_PCT}%
