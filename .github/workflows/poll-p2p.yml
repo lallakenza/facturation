@@ -52,7 +52,8 @@ jobs:
           gh issue create \
             --title "$TITLE" \
             --body-file /tmp/issue-body.md \
-            --label "alert,p2p"
+            --label "alert,p2p" \
+            --assignee lallakenza
           rm -f ALERT.md /tmp/issue-body.md
 
       - name: Commit + push if data-history changed
