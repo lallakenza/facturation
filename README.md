@@ -27,7 +27,7 @@ chiffrées AES-256-GCM côté repo.
 ### Lire le site
 1. https://lallakenza.github.io/2048/
 2. Saisir le pseudo :
-   - `BRIDGEVALE` → vue complète (Augustin + Benoit)
+   - `TIGRE` → vue complète (Augustin + Benoit)
    - `COUPA` → vue Benoit uniquement (à partager avec Benoit)
    - `BINGA` → mode pro (+ taux marché, FX P2P, Mes Gains, Radar USDT, dark theme)
 
@@ -64,7 +64,7 @@ Procédures détaillées → [`UPDATE_GUIDE.md`](./UPDATE_GUIDE.md).
 ├── game-2048.js            — Jeu 2048 (façade de camouflage sur la cover)
 │
 ├── encrypt.js              — ⭐ SOURCE DE VÉRITÉ des données (à éditer)
-├── data-enc.js             — Auto-généré par encrypt.js (BRIDGEVALE + COUPA)
+├── data-enc.js             — Auto-généré par encrypt.js (TIGRE + COUPA)
 ├── data-priv.enc.js        — Auto-généré par encrypt.js (BINGA)
 │
 ├── render-main.js          — TAB_CONFIG, buildTabs, showTab, renderPanel
@@ -103,7 +103,7 @@ manuellement — ils sont régénérés par `node encrypt.js`.
 ### 2. Trois niveaux d'accès via 3 mots de passe
 | Pseudo | Déchiffre quoi | Usage |
 |---|---|---|
-| `BRIDGEVALE` | `ENCRYPTED_FULL` | Vue Amine (tous les onglets publics) |
+| `TIGRE` | `ENCRYPTED_FULL` | Vue Amine (tous les onglets publics) |
 | `COUPA` | `ENCRYPTED_BENOIT` | Vue Benoit (à lui partager) |
 | `BINGA` | `ENCRYPTED_FULL` + `ENCRYPTED_PRIV` | Mode pro (+ taux marché, commissions, FX P2P, Radar) |
 

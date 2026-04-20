@@ -183,7 +183,7 @@ Chaque entrée suit ce format :
 - **Fix** : Dans `tryAccess`, si `mode === 'benoit'`, on cache l'élément
   parent du `#dref` : `drefEl.parentElement.style.display = 'none'`.
 - **Régression** : Se connecter avec COUPA, scroller tout en bas → aucun
-  champ "Réf. dossier" visible. Avec BRIDGEVALE ou BINGA, le champ est
+  champ "Réf. dossier" visible. Avec TIGRE ou BINGA, le champ est
   visible (même si masqué après login BINGA).
 
 ## BUG-002 — `computeBenoitSolde` dupliqué entre renders
@@ -211,7 +211,7 @@ Chaque entrée suit ce format :
   taux marché, commissions, pipeline FX P2P — accessible via view-source.
 - **Root cause** : Pas de séparation public / privé au début.
 - **Fix** : Commits initiaux — chiffrement AES-256-GCM avec 3 couches
-  (BRIDGEVALE, COUPA, BINGA). `data.js` supprimé du repo. Les données
+  (TIGRE, COUPA, BINGA). `data.js` supprimé du repo. Les données
   sensibles vivent dans `PRIV_DATA` → `ENCRYPTED_PRIV` dans
   `data-priv.enc.js`, déchiffrées côté client seulement avec BINGA.
 - **Régression** :

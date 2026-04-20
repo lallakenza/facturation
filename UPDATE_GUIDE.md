@@ -18,7 +18,7 @@ vim encrypt.js
 # 3. Re-chiffrer
 node encrypt.js
 # Output attendu :
-#   FULL (BRIDGEVALE): N bytes → M base64 chars
+#   FULL (TIGRE): N bytes → M base64 chars
 #   BENOIT (COUPA): N bytes → M base64 chars
 #   PRIV (BINGA): N bytes → M base64 chars
 #   → Written to data-enc.js
@@ -372,7 +372,7 @@ osascript -l JavaScript -e "
    générer `data-enc.js` + `data-priv.enc.js`.
 
 3. **Local preview** — ouvrir `index.html` dans le navigateur et tester les
-   3 pseudos (BRIDGEVALE, COUPA, BINGA). Les montants doivent matcher ton
+   3 pseudos (TIGRE, COUPA, BINGA). Les montants doivent matcher ton
    calcul manuel.
 
 4. **Position Amine cohérente** — ouvrir le tab "Ma Position" et vérifier

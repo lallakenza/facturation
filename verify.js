@@ -1,6 +1,6 @@
 // Verification script - run with Node.js to check all amounts
 // Usage: node verify.js
-// Decrypts data from data-enc.js using BRIDGEVALE, then runs all checks.
+// Decrypts data from data-enc.js using TIGRE, then runs all checks.
 
 const crypto = require('crypto');
 const fs = require('fs');
@@ -25,7 +25,7 @@ function decrypt(b64, password) {
 const encFile = fs.readFileSync('data-enc.js', 'utf8');
 const fullMatch = encFile.match(/ENCRYPTED_FULL = "([^"]+)"/);
 if (!fullMatch) { console.error('Cannot find ENCRYPTED_FULL in data-enc.js'); process.exit(1); }
-const DATA = decrypt(fullMatch[1], 'BRIDGEVALE');
+const DATA = decrypt(fullMatch[1], 'TIGRE');
 
 let errors = 0;
 function check(label, actual, expected) {

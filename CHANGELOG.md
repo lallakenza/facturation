@@ -9,6 +9,33 @@ Le site a démarré sans versionnage ; l'introduction du système s'est faite en
 
 ---
 
+## `v6` — 2026-04-20
+
+### Login
+- **Mot de passe `TIGRE` remplace `BRIDGEVALE`** pour la vue full Amine.
+  Même comportement, juste un nouveau mdp. Re-chiffrement complet du
+  `ENCRYPTED_FULL` blob — l'ancien mdp ne marche plus.
+- **Mode radar-only pour `BINANCE`** : auth identique à BINGA (full data +
+  PRIV décrypté) MAIS l'UI est restreinte au seul tab Radar USDT — les
+  autres tabs (Ma Position, Augustin, Benoit, FX P2P, Mes Gains) sont
+  cachés. Le champ "Réf. dossier" est aussi masqué. Pour avoir l'accès
+  complet, taper BINGA à la place. Implémenté via `window.RADAR_ONLY`
+  consommé par `isTabVisible()` dans `render-main.js`.
+
+### Refactor
+- `render-main.js` : extraction de `isTabVisible(t)` comme single source
+  of truth pour la visibilité des tabs (utilisée par `buildTabs`,
+  `refreshTabVisibility`, `renderAll`).
+
+### Docs
+- Toutes les références BRIDGEVALE → TIGRE (8 fichiers : README,
+  Architecture, DATA_MODEL, UPDATE_GUIDE, BUG_TRACKER, CHANGELOG,
+  encrypt.js, index.html, verify.js, game-2048.js).
+
+Bump : v5 → v6 (2026-04-20)
+
+---
+
 ## Rename repo `facturation` → `2048` — 2026-04-20
 
 - Repo GitHub renommé `lallakenza/facturation` → `lallakenza/2048`
@@ -179,7 +206,7 @@ entre dashboard et onglet Benoit (BUG-002).
 
 ### Initial encryption (commits plus anciens)
 Passage de `data.js` en clair à `data-enc.js` + `data-priv.enc.js` chiffrés
-AES-256-GCM avec 3 couches (BRIDGEVALE / COUPA / BINGA). Suppression de
+AES-256-GCM avec 3 couches (TIGRE / COUPA / BINGA). Suppression de
 `data.js` du repo.
 
 ---

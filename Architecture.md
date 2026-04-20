@@ -24,7 +24,7 @@ déchiffrement client-side AES-256-GCM, auto-deploy branche `main`.
 │  ⇩ Dynamic loader (cache-bust auto ?t=Date.now())    │
 │                                                      │
 │  game-2048.js          — Jeu façade                  │
-│  data-enc.js           — Chiffré BRIDGEVALE + COUPA  │
+│  data-enc.js           — Chiffré TIGRE + COUPA  │
 │  data-priv.enc.js      — Chiffré BINGA               │
 │  render-helpers.js     — fmt*, badge, sum, nick,     │
 │                          computeBenoitSolde (shared) │
@@ -53,7 +53,7 @@ Tools:
 
 | Pseudo | Variable runtime | Déchiffre | Tab initial | Accès |
 |---|---|---|---|---|
-| `BRIDGEVALE` | `ACCESS_MODE='full'` | `ENCRYPTED_FULL` | Ma Position | Full (public tabs) |
+| `TIGRE` | `ACCESS_MODE='full'` | `ENCRYPTED_FULL` | Ma Position | Full (public tabs) |
 | `COUPA` | `ACCESS_MODE='benoit'` | `ENCRYPTED_BENOIT` | Benoit | Vue Benoit only |
 | `BINGA` | `PRIV=true`, `ACCESS_MODE='full'` | `ENCRYPTED_FULL` + `ENCRYPTED_PRIV` | Ma Position | Full + FX P2P + Mes Gains + Radar + dark |
 | `BINANCE` | `PRIV=true`, `gotoTab='radar'` | `ENCRYPTED_FULL` + `ENCRYPTED_PRIV` | **Radar USDT** | Même que BINGA, va directement au Radar |
@@ -110,7 +110,7 @@ const TAB_CONFIG = [
 | `access` | Condition de visibilité |
 |---|---|
 | `'all'` | Toujours visible (même en COUPA) |
-| `'full'` | `ACCESS_MODE === 'full'` (BRIDGEVALE ou BINGA ou BINANCE) |
+| `'full'` | `ACCESS_MODE === 'full'` (TIGRE ou BINGA ou BINANCE) |
 | `'priv'` | `window.PRIV === true` (BINGA ou BINANCE) |
 
 Fonctions clés :
@@ -325,12 +325,12 @@ Procédures détaillées : [`UPDATE_GUIDE.md`](./UPDATE_GUIDE.md).
 ### Pourquoi 3 blobs chiffrés distincts (au lieu d'un seul) ?
 
 Parce que chaque pseudo correspond à une **audience différente** :
-- `BRIDGEVALE` = Amine, vue complète publique
+- `TIGRE` = Amine, vue complète publique
 - `COUPA` = Benoit, ne doit PAS voir les counterparts Augustin
 - `BINGA` = Amine, mode pro avec taux marché + FX P2P + Radar
 
 Un seul blob forcerait à partager le mdp Benoit → il pourrait décrypter
-BRIDGEVALE. Isolation = 3 blobs séparés chiffrés avec 3 mdp différents.
+TIGRE. Isolation = 3 blobs séparés chiffrés avec 3 mdp différents.
 
 ### Pourquoi `encrypt.js` est la source de vérité, pas `data-enc.js` ?
 

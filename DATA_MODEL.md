@@ -8,7 +8,7 @@ Toutes les données du site vivent dans **`encrypt.js`** — le seul fichier sou
 
 ```
 encrypt.js
-├── FULL_DATA       ← chiffré avec BRIDGEVALE → ENCRYPTED_FULL (dans data-enc.js)
+├── FULL_DATA       ← chiffré avec TIGRE → ENCRYPTED_FULL (dans data-enc.js)
 │   ├── augustin2025, augustin2026
 │   └── benoit2025, benoit2026
 │
@@ -27,7 +27,7 @@ Au runtime, quand l'utilisateur s'authentifie :
 
 | Pseudo | Déchiffre | Effet |
 |---|---|---|
-| `BRIDGEVALE` | `ENCRYPTED_FULL` | `window.DATA = FULL_DATA` |
+| `TIGRE` | `ENCRYPTED_FULL` | `window.DATA = FULL_DATA` |
 | `COUPA` | `ENCRYPTED_BENOIT` | `window.DATA = BENOIT_DATA` (uniquement `benoit2025` + `benoit2026`) |
 | `BINGA` | `ENCRYPTED_FULL` + `ENCRYPTED_PRIV` | `window.DATA = FULL_DATA` + overlay PRIV injecté champ par champ |
 

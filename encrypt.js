@@ -3,7 +3,7 @@
 // ENCRYPT.JS — Build script: chiffre TOUTES les données
 // Usage: node encrypt.js
 // Produit:
-//   data-enc.js      → ENCRYPTED_FULL (BRIDGEVALE) + ENCRYPTED_BENOIT (COUPA)
+//   data-enc.js      → ENCRYPTED_FULL (TIGRE) + ENCRYPTED_BENOIT (COUPA)
 //   data-priv.enc.js → ENCRYPTED_PRIV (BINGA private overlay)
 //
 // ARCHITECTURE & CONVENTIONS:
@@ -441,9 +441,9 @@ function encryptData(data, password) {
 async function main() {
   console.log('Encrypting all data...\n');
 
-  // 1) Full data → BRIDGEVALE
-  const fullB64 = encryptData(FULL_DATA, 'BRIDGEVALE');
-  console.log(`FULL (BRIDGEVALE): ${JSON.stringify(FULL_DATA).length} bytes → ${fullB64.length} base64 chars`);
+  // 1) Full data → TIGRE
+  const fullB64 = encryptData(FULL_DATA, 'TIGRE');
+  console.log(`FULL (TIGRE): ${JSON.stringify(FULL_DATA).length} bytes → ${fullB64.length} base64 chars`);
 
   // 2) Benoit-only → COUPA
   const benoitB64 = encryptData(BENOIT_DATA, 'COUPA');

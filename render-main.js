@@ -42,24 +42,27 @@ function renderPanel(id) {
   }
 }
 
-// ---- Render all visible panels (skip hidden ones to avoid missing-data crashes) ----
-function renderAll() {
+// ---- Visibility: single source of truth ----
+// Honors window.RADAR_ONLY (set when the user typed BINANCE) to restrict
+// the UI to the Radar tab only. Standard access-level rules otherwise.
+function isTabVisible(t) {
+  if (window.RADAR_ONLY) return t.id === 'radar';
   const mode = window.ACCESS_MODE;
   const priv = window.PRIV;
+  return t.access === 'all' ||
+    (t.access === 'full' && mode === 'full') ||
+    (t.access === 'priv' && priv);
+}
+
+// ---- Render all visible panels (skip hidden ones to avoid missing-data crashes) ----
+function renderAll() {
   TAB_CONFIG.forEach(t => {
-    const visible =
-      t.access === 'all' ||
-      (t.access === 'full' && mode === 'full') ||
-      (t.access === 'priv' && priv);
-    if (visible) renderPanel(t.id);
+    if (isTabVisible(t)) renderPanel(t.id);
   });
 }
 
 // ---- Build tabs + panels from TAB_CONFIG ----
 function buildTabs() {
-  const mode = window.ACCESS_MODE; // 'full' or 'benoit'
-  const priv = window.PRIV;
-
   const tabBar = document.getElementById('tabBar');
   const content = document.getElementById('content');
   if (!tabBar || !content) return;
@@ -70,11 +73,7 @@ function buildTabs() {
   let firstVisible = null;
 
   TAB_CONFIG.forEach(t => {
-    // Visibility rules
-    const visible =
-      t.access === 'all' ||
-      (t.access === 'full' && mode === 'full') ||
-      (t.access === 'priv' && priv);
+    const visible = isTabVisible(t);
 
     // Create tab button
     const tab = document.createElement('div');
@@ -113,14 +112,8 @@ function showTab(id) {
 
 // ---- Refresh tab visibility (called when PRIV changes) ----
 function refreshTabVisibility() {
-  const mode = window.ACCESS_MODE;
-  const priv = window.PRIV;
   TAB_CONFIG.forEach(t => {
-    const visible =
-      t.access === 'all' ||
-      (t.access === 'full' && mode === 'full') ||
-      (t.access === 'priv' && priv);
     const tab = document.querySelector(`.tab[data-tab="${t.id}"]`);
-    if (tab) tab.style.display = visible ? '' : 'none';
+    if (tab) tab.style.display = isTabVisible(t) ? '' : 'none';
   });
 }

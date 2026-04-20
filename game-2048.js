@@ -5,7 +5,7 @@
 // for the facturation portal. When a wrong "name" is entered
 // in the auth gate, this game is unlocked so the page looks
 // like a real game site. The real reconciliation UI is only
-// reached by submitting one of the AES passwords (BRIDGEVALE
+// reached by submitting one of the AES passwords (TIGRE
 // / COUPA / BINGA).
 //
 // Difficulty:
