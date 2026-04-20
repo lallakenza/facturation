@@ -9,6 +9,72 @@ Le site a démarré sans versionnage ; l'introduction du système s'est faite en
 
 ---
 
+## `v7.2` — 2026-04-20
+
+### Refonte sémantique SELL (Maroc)
+**Avant** : on regardait les BUY ads (gens voulant acheter notre USDT) et
+on calculait "à quel prix ils nous payaient" (sort DESC, médiane top 10).
+**Maintenant** : on suppose que tu PUBLIES TA PROPRE ANNONCE de vente.
+Tes vrais concurrents sont les autres SELL ads, donc :
+- Query Binance avec `tradeType='BUY'` (qui renvoie les SELL ads)
+- Filtres : max ∈ [5k, 50k] MAD + **banque Attijari obligatoire**
+- Sort ASC (cheapest first = floor des concurrents)
+- Moyenne top 3 cheapest = prix max où tu peux poster ton ad et capter
+  des clients
+
+**Validation live** au moment du commit :
+- Ancienne méthode : spread +3,27%
+- Nouvelle méthode : spread **+4,03%** → gain **+0,76%** par tx
+- L'alerte se déclenche immédiatement (4,03% > seuil 4%)
+
+### Alerte email > 4%
+Le poller (cron 6h) génère `ALERT.md` dès que la moyenne SELL > 4%.
+Le workflow lit ce fichier et crée une GitHub Issue → notification email
+auto à `amine.koraibi@gmail.com` (config notif GitHub).
+
+Contenu de l'alerte :
+- Spread moyen + cours USD/MAD live
+- Tableau top 3 utilisées pour le calcul
+- Tableau de TOUTES les offres avec spread > 4% (jusqu'à 20)
+- Lien direct vers le Radar
+
+Anti-spam : cooldown 6h entre alertes (stocké dans `data-history.enc.js`).
+
+Mode test : `FORCE_ALERT=1` (env) ou input `force_alert: true` dans
+workflow_dispatch UI → simule une alerte avec données fictives.
+
+### Historique
+- Old data-history.enc.js (calculé en ancienne méthode) reset.
+- Nouvelle entrée bootstrap générée en live (réelle, méthode v2).
+
+### Cadence
+- **Cron passé de 6h → 1h** (`'0 * * * *'`) : check toutes les heures.
+- Cooldown alerte reste à **6h** pour ne pas spammer même si check 1/h.
+- HISTORY_CAP bumped 1500 → 8760 (≈ 1 an de polling à 1/h).
+
+### Setup user requis
+1. Créer secret GitHub `BINGA_PASSWORD = BINGA`
+2. Activer write permissions Actions (`contents: write` + `issues: write`)
+3. Créer le fichier workflow `.github/workflows/poll-p2p.yml` via UI
+   (PAT actuel n'a pas le scope `workflow`)
+4. Trigger manuel via UI Actions pour valider
+
+Bump : v7.1 → v7.2 (2026-04-20)
+
+---
+
+## `v7.1` — 2026-04-20
+
+### Radar USDT
+- Tooltip "Mes stats" au hover des gauges (BUY + SELL).
+  Affiche : dernière tx, moyenne 30j, moyenne globale.
+- Stats calculées depuis `DATA.fxP2P.leg2/leg3.transactions` (tes tx
+  historiques).
+
+Bump : v7 → v7.1
+
+---
+
 ## `v7` — 2026-04-20
 
 ### Background polling P2P (GitHub Actions, cron 6h)

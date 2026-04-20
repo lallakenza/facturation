@@ -118,8 +118,8 @@ async function radarLoad(manual) {
 
   try {
     const [buyRes, sellRes, fxRes] = await Promise.allSettled([
-      radarFetchBinanceP2P('AED', 'BUY',  RADAR_MIN_AMOUNT.AED),
-      radarFetchBinanceP2P('MAD', 'SELL', RADAR_MIN_AMOUNT.MAD),
+      radarFetchBinanceP2P('AED', 'BUY',  RADAR_CFG.BUY),
+      radarFetchBinanceP2P('MAD', 'SELL', RADAR_CFG.SELL),
       radarFetchUsdMad(),
     ]);
 
@@ -218,13 +218,23 @@ function radarStartFreshnessTick() {
 // Tried: corsproxy.io ✓, allorigins ✗ (POST body dropped),
 //        thingproxy ✗ (unreliable). Direct-fetch fallback kept for cases
 // where the page is opened from a permissive origin (e.g. localhost).
-async function radarFetchBinanceP2P(fiat, tradeType, transAmount) {
-  // transAmount = volume minimum souhaité dans la fiat. Filtre les offres
-  // "parasites" à très faible montant qui affichent un meilleur prix mais
-  // ne permettent pas de trader des sommes utiles. Binance applique le
-  // filtre côté serveur et ne renvoie que les offres qui acceptent ce
-  // volume — donc topPrice / medianPrice reflètent un prix réellement
-  // exécutable.
+async function radarFetchBinanceP2P(fiat, userSide, cfg) {
+  // userSide: 'BUY' (user achète USDT, ex: AED) | 'SELL' (user vend USDT, ex: MAD)
+  //
+  // ⚠️ Note importante sur la sémantique des SELL ads pour MAD :
+  // Le user ne CHERCHE pas une annonce où acheter — il publie SA PROPRE ANNONCE
+  // de vente. Donc ses concurrents sont les AUTRES SELL ads. Pour les obtenir,
+  // on query Binance avec tradeType='BUY' (qui renvoie les SELL ads). Pour AED
+  // c'est pareil (le user achète, donc regarde les SELL ads = ses sources).
+  // → DANS LES DEUX CAS : Binance tradeType='BUY', sort ASC (cheapest first).
+  //
+  // cfg = { transAmount, minMax, maxMax, takeTop, agg, label, payMethodFilter }
+  //   payMethodFilter : substring case-insensitive (ex: 'attijari') pour
+  //   filtrer client-side sur tradeMethods. null = pas de filtre.
+  const c = cfg || {};
+  const { transAmount = 0, minMax = 0, maxMax = Infinity,
+          takeTop = 10, agg = 'median', label = '', payMethodFilter = null } = c;
+
   const body = {
     proMerchantAds: false,
     page: 1,
@@ -233,7 +243,7 @@ async function radarFetchBinanceP2P(fiat, tradeType, transAmount) {
     countries: [],
     publisherType: null,
     fiat: fiat,
-    tradeType: tradeType,
+    tradeType: 'BUY',  // ← always BUY: returns SELL ads (sources for buyer / competitors for seller)
     asset: 'USDT',
     merchantCheck: false,
   };
@@ -275,39 +285,88 @@ async function radarFetchBinanceP2P(fiat, tradeType, transAmount) {
     userType: a.advertiser.userType || '',
   })).filter(o => isFinite(o.price) && o.price > 0);
 
-  // Belt-and-suspenders: even when we pass transAmount to Binance, the
-  // API still returns offers whose displayed max < transAmount (probably
-  // counts the offer as "available at any volume the merchant accepts"
-  // rather than "covers transAmount"). Reject any offer that can't
-  // actually accommodate our threshold — these are the "parasitic" tiny
-  // offers (e.g., max 101 AED) that show artificially great prices but
-  // are useless for real volume. This filter is what makes medianPrice
-  // / topPrice reflect a price you can really execute at.
-  if (transAmount) {
+  // Filtre client-side sur maxSingleTransAmount. Toujours appliqué.
+  // - minMax : rejette les offres parasites (max < seuil bas)
+  // - maxMax : rejette les très gros marchands (max > seuil haut)
+  //   utilisé pour SELL où on veut éviter les whales hors marché perso.
+  offers = offers.filter(o =>
+    isFinite(o.maxSingleTransAmount) &&
+    o.maxSingleTransAmount >= minMax &&
+    o.maxSingleTransAmount <= maxMax
+  );
+  if (!offers.length) throw new Error(`Binance P2P ${fiat} ${userSide}: no offers in range [${minMax}, ${maxMax}]`);
+
+  // Filtre par moyen de paiement (substring case-insensitive sur tradeMethods).
+  // Ex: 'attijari' matche 'Attijariwafa National Bank'. Pour MAD c'est crucial
+  // car on ne tradera qu'avec des marchands qui acceptent ta banque.
+  if (payMethodFilter) {
+    const needle = String(payMethodFilter).toLowerCase();
     offers = offers.filter(o =>
-      isFinite(o.maxSingleTransAmount) && o.maxSingleTransAmount >= transAmount &&
-      (!isFinite(o.minSingleTransAmount) || o.minSingleTransAmount <= transAmount)
+      (o.payMethods || []).some(pm => String(pm).toLowerCase().includes(needle))
     );
-    if (!offers.length) throw new Error(`Binance P2P ${fiat} ${tradeType}: no offers ≥ ${transAmount}`);
+    if (!offers.length) throw new Error(`Binance P2P ${fiat} ${userSide}: no offers with payment method "${payMethodFilter}"`);
   }
 
-  offers.sort((a, b) => tradeType === 'BUY' ? a.price - b.price : b.price - a.price);
+  // Sort ASC : cheapest first.
+  // - userSide=BUY : on cherche le moins cher (ce qu'on achète au minimum)
+  // - userSide=SELL : on cherche le floor des concurrents (ce qu'on doit
+  //   matcher / undercut pour capter des clients en publiant son ad)
+  offers.sort((a, b) => a.price - b.price);
 
-  const prices = offers.map(o => o.price);
-  const topPrice = prices[0];
-  // Median of top 10 — avoids outlier noise from stale ads.
-  const top10 = prices.slice(0, 10);
-  const sorted = [...top10].sort((a,b) => a-b);
-  const mid = Math.floor(sorted.length/2);
-  const medianPrice = sorted.length % 2 ? sorted[mid] : (sorted[mid-1] + sorted[mid]) / 2;
-  const avgPrice = top10.reduce((s,x) => s+x, 0) / top10.length;
+  // Pour le verdict on agrège les top N — le reste reste affiché dans le table.
+  const topN = offers.slice(0, takeTop);
+  const topPrices = topN.map(o => o.price);
+  const topPrice = topPrices[0];
+  let medianPrice;
+  if (agg === 'avg') {
+    medianPrice = topPrices.reduce((s,x) => s+x, 0) / topPrices.length;
+  } else {
+    const sorted = [...topPrices].sort((a,b) => a-b);
+    const mid = Math.floor(sorted.length/2);
+    medianPrice = sorted.length % 2 ? sorted[mid] : (sorted[mid-1] + sorted[mid]) / 2;
+  }
+  const avgPrice = topPrices.reduce((s,x) => s+x, 0) / topPrices.length;
 
-  return { fiat, tradeType, transAmount, topPrice, medianPrice, avgPrice, offers: offers.slice(0, 10) };
+  return {
+    fiat,
+    userSide,
+    tradeType: userSide,  // backward-compat: certaines fonctions lisent encore data.tradeType
+    transAmount,
+    topPrice, medianPrice, avgPrice,
+    medianBasisLabel: label,
+    aggregator: agg,
+    takeTop,
+    offers: offers.slice(0, 10),       // table display (full filtered set)
+    offersForMedian: topN,             // les N que la médiane utilise
+  };
 }
 
-// Volume minimum considéré pour l'évaluation P2P — au-dessous, ce sont
-// souvent des offres parasites avec un prix attractif mais inactionnables.
-const RADAR_MIN_AMOUNT = { AED: 10000, MAD: 20000 };
+// Filtres par côté — single source of truth (matche scripts/poll-p2p.js).
+//
+// BUY  AED → USDT (Dubai) : le user achète l'USDT à des SELL ads.
+//   - max ≥ 10k AED (rejette les parasites)
+//   - médiane des top 10 cheapest = prix typique d'achat
+//
+// SELL USDT → MAD (Maroc) : le user PUBLIE SA PROPRE ANNONCE de vente.
+//   Donc ses concurrents = autres SELL ads. Pour les obtenir, query Binance
+//   avec tradeType='BUY' (c'est fait dans la fonction). On filtre :
+//   - max ∈ [5k, 50k] MAD (mid-volume — pas les whales, pas les parasites)
+//   - banque Attijari obligatoire (= clients potentiels payent par Attijari)
+//   - moyenne des 3 cheapest = floor des concurrents = prix max où on peut
+//     poster son ad et rester compétitif
+const RADAR_CFG = {
+  BUY:  { transAmount: 10000, minMax: 10000, maxMax: Infinity,
+          takeTop: 10, agg: 'median',
+          payMethodFilter: null,
+          label: 'max ≥ 10\u202fk AED' },
+  SELL: { transAmount: 5000,  minMax: 5000,  maxMax: 50000,
+          takeTop: 3,  agg: 'avg',
+          payMethodFilter: 'attijari',
+          label: 'max ∈ 5\u202fk–50\u202fk MAD · banque Attijari · moyenne top 3' },
+};
+
+// Compat ancien code (encore référencé par certains labels)
+const RADAR_MIN_AMOUNT = { AED: 10000, MAD: 5000 };
 
 // ---- USD/MAD LIVE -------------------------------------------------
 async function radarFetchUsdMad() {
@@ -629,8 +688,9 @@ function radarBuyCardHTML() {
   const v = radarBuyVerdict(spread);
   const gauge = radarGaugeHTML('buy', spread, { price: price, refRate: peg });
 
+  const buyLabel = s.buyData?.medianBasisLabel || `max ≥ 10\u202fk AED`;
   const binanceLine = s.buyData
-    ? `<span style="color:var(--muted)">Marché Binance <span style="font-size:.65rem;opacity:.7">(offres ≥ ${RADAR_MIN_AMOUNT.AED.toLocaleString('fr-FR')} AED)</span> : </span><button type="button" onclick="radarUpdateBuy(${s.buyData.medianPrice})" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:0;font-weight:700;font-variant-numeric:tabular-nums;font-family:inherit;text-decoration:underline dotted" title="Cliquer pour synchroniser">${s.buyData.medianPrice.toFixed(4).replace('.', ',')}</button> <span style="color:var(--muted)">· meilleure ${s.buyData.topPrice.toFixed(4).replace('.', ',')}</span> ${radarLiveBadge('buy', s.lastLoadAt)}`
+    ? `<span style="color:var(--muted)">Marché Binance <span style="font-size:.65rem;opacity:.7">(${buyLabel})</span> : </span><button type="button" onclick="radarUpdateBuy(${s.buyData.medianPrice})" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:0;font-weight:700;font-variant-numeric:tabular-nums;font-family:inherit;text-decoration:underline dotted" title="Cliquer pour synchroniser">${s.buyData.medianPrice.toFixed(4).replace('.', ',')}</button> <span style="color:var(--muted)">· meilleure ${s.buyData.topPrice.toFixed(4).replace('.', ',')}</span> ${radarLiveBadge('buy', s.lastLoadAt)}`
     : `<span style="color:var(--yellow)">⚠ Binance indisponible — saisis le prix observé</span>`;
 
   const priceStr = price.toFixed(4).replace('.', ',');
@@ -673,8 +733,9 @@ function radarSellCardHTML() {
   const v = radarSellVerdict(spread);
   const gauge = radarGaugeHTML('sell', spread, { price: price, refRate: usdMad });
 
+  const sellLabel = s.sellData?.medianBasisLabel || `max ∈ 5\u202fk–50\u202fk MAD · moyenne top 3`;
   const binanceLine = s.sellData
-    ? `<span style="color:var(--muted)">Marché Binance <span style="font-size:.65rem;opacity:.7">(offres ≥ ${RADAR_MIN_AMOUNT.MAD.toLocaleString('fr-FR')} MAD)</span> : </span><button type="button" onclick="radarUpdateSell(${s.sellData.medianPrice})" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:0;font-weight:700;font-variant-numeric:tabular-nums;font-family:inherit;text-decoration:underline dotted" title="Cliquer pour synchroniser">${s.sellData.medianPrice.toFixed(3).replace('.', ',')}</button> <span style="color:var(--muted)">· meilleure ${s.sellData.topPrice.toFixed(3).replace('.', ',')}</span> ${radarLiveBadge('sell', s.lastLoadAt)}`
+    ? `<span style="color:var(--muted)">Marché Binance <span style="font-size:.65rem;opacity:.7">(${sellLabel})</span> : </span><button type="button" onclick="radarUpdateSell(${s.sellData.medianPrice})" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:0;font-weight:700;font-variant-numeric:tabular-nums;font-family:inherit;text-decoration:underline dotted" title="Cliquer pour synchroniser">${s.sellData.medianPrice.toFixed(3).replace('.', ',')}</button> <span style="color:var(--muted)">· meilleure ${s.sellData.topPrice.toFixed(3).replace('.', ',')}</span> ${radarLiveBadge('sell', s.lastLoadAt)}`
     : `<span style="color:var(--yellow)">⚠ Binance indisponible — saisis le prix observé</span>`;
 
   const fxStatus = s.usdMadIsLive
@@ -1135,8 +1196,8 @@ function radarHistoricalContext(buy, sell, fx, peg) {
 
 // ---- OFFERS TABLE --------------------------------------------------
 function radarOffersTable(data, tradeType, refRate) {
-  const minLabel = data.transAmount
-    ? ` <span style="font-size:.65rem;font-weight:500;color:var(--muted);text-transform:none;letter-spacing:0">(filtré ≥ ${data.transAmount.toLocaleString('fr-FR')} ${data.fiat})</span>`
+  const minLabel = data.medianBasisLabel
+    ? ` <span style="font-size:.65rem;font-weight:500;color:var(--muted);text-transform:none;letter-spacing:0">(${data.medianBasisLabel})</span>`
     : '';
   const title = tradeType === 'BUY'
     ? `🇦🇪 Top 10 offres Binance P2P — Achat AED → USDT${minLabel}`
