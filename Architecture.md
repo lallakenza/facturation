@@ -1,370 +1,370 @@
 # Architecture — Réconciliation Facturation
 
+Site statique sur GitHub Pages (`lallakenza/facturation`). Zéro backend,
+déchiffrement client-side AES-256-GCM, auto-deploy branche `main`.
+
+**Version actuelle** : `v5` (voir [`CHANGELOG.md`](./CHANGELOG.md)).
+
+> Autres docs : [`README.md`](./README.md) • [`DATA_MODEL.md`](./DATA_MODEL.md)
+> • [`UPDATE_GUIDE.md`](./UPDATE_GUIDE.md) • [`BUG_TRACKER.md`](./BUG_TRACKER.md)
+
+---
+
 ## Vue d'ensemble
 
-Site statique déployé sur GitHub Pages (`lallakenza/facturation`).
-Architecture modulaire avec 8 fichiers JS + 1 fichier chiffré :
+```
+┌──────────────────────────────────────────────────────┐
+│  index.html                                          │
+│  ├─ Structure HTML + CSS                             │
+│  ├─ Cover 2048 (façade)                              │
+│  ├─ Login gate (3 pseudos) + AES-256-GCM decrypt     │
+│  ├─ APP_VERSION, APP_VERSION_DATE (version badge)    │
+│  └─ Event wiring (tabs, year toggles, BINGA overlay) │
+│                                                      │
+│  ⇩ Dynamic loader (cache-bust auto ?t=Date.now())    │
+│                                                      │
+│  game-2048.js          — Jeu façade                  │
+│  data-enc.js           — Chiffré BRIDGEVALE + COUPA  │
+│  data-priv.enc.js      — Chiffré BINGA               │
+│  render-helpers.js     — fmt*, badge, sum, nick,     │
+│                          computeBenoitSolde (shared) │
+│  render-amine.js       — Dashboard + bridge networth │
+│  render-augustin.js    — Onglet Augustin 25/26/All   │
+│  render-benoit.js      — Onglet Benoit générique     │
+│  render-radar.js       — Onglet Radar USDT live P2P  │ ← v1+
+│  render-fxp2p.js       — Onglet FX P2P (3 legs)      │
+│  render-gains.js       — Onglet Mes Gains consolidés │
+│  render-main.js        — TAB_CONFIG, buildTabs,      │
+│                          renderPanel, showTab        │
+└──────────────────────────────────────────────────────┘
 
+Build-time (Node):
+  encrypt.js     — source de vérité des données → (data-enc.js + data-priv.enc.js)
+
+Tools:
+  verify.js      — Script de vérification data (optionnel)
 ```
-index.html            → UI (gate, crypto, events, year toggles)
-data.js               → Données publiques (counterparts, transactions)
-data-priv.enc.js      → Données privées chiffrées (AES-256-GCM)
-render-helpers.js     → Utilitaires (formatage, badges, sum, yearToggle)
-render-augustin.js    → Rendu Augustin 2025/2026
-render-benoit.js      → Rendu Benoit générique (2025/2026 via renderBenoitYear)
-render-fxp2p.js       → Pipeline FX P2P (3 legs EUR→AED→USDT→MAD)
-render-gains.js       → Consolidation gains (commissions, spread, FX)
-render-main.js        → TAB_CONFIG, buildTabs(), renderAll(), showTab()
-encrypt.js            → Script Node pour (re)chiffrer les données privées
-verify.js             → Script de vérification des données
-```
+
+---
 
 ## Accès & sécurité
 
-### 3 niveaux d'accès
+### 4 niveaux d'accès (v5)
 
-| Code        | Variable              | Accès                                                    |
-|-------------|----------------------|----------------------------------------------------------|
-| `BRIDGEVALE`| `ACCESS_MODE='full'` | Tous les onglets (Augustin + Benoit)                     |
-| `COUPA`     | `ACCESS_MODE='benoit'`| Onglet Benoit uniquement (vue client)                    |
-| `BINGA`     | `window.PRIV=true`   | Mode pro : dark theme + FX P2P + Mes Gains + taux marché |
+| Pseudo | Variable runtime | Déchiffre | Tab initial | Accès |
+|---|---|---|---|---|
+| `BRIDGEVALE` | `ACCESS_MODE='full'` | `ENCRYPTED_FULL` | Ma Position | Full (public tabs) |
+| `COUPA` | `ACCESS_MODE='benoit'` | `ENCRYPTED_BENOIT` | Benoit | Vue Benoit only |
+| `BINGA` | `PRIV=true`, `ACCESS_MODE='full'` | `ENCRYPTED_FULL` + `ENCRYPTED_PRIV` | Ma Position | Full + FX P2P + Mes Gains + Radar + dark |
+| `BINANCE` | `PRIV=true`, `gotoTab='radar'` | `ENCRYPTED_FULL` + `ENCRYPTED_PRIV` | **Radar USDT** | Même que BINGA, va directement au Radar |
+
+Tout autre pseudo → **cover 2048** (façade de camouflage, silencieuse).
 
 ### Chiffrement
 
-Les données sensibles (taux marché, commissions PRIV, FX P2P) sont chiffrées dans `data-priv.enc.js` via AES-256-GCM (PBKDF2, 100k itérations, sel `facturation-augustin-2025`). Le déchiffrement se fait côté navigateur quand on tape `BINGA` dans le champ "Réf. dossier".
+- **Algo** : AES-256-GCM
+- **Key derivation** : PBKDF2, 100 000 itérations, SHA-256
+- **Salt** : `facturation-augustin-2025` (fixe, partagé)
+- **IV** : aléatoire par chiffrement (12 bytes)
+- **Auth tag** : 16 bytes, authentification intégrée au ciphertext
+- **Password normalization** : UPPERCASE avant dérivation (le user peut
+  taper `binga`, `Binga`, `BINGA` — même résultat)
+
+```
+Format base64 du blob stocké :
+┌────────┬──────────┬─────────────────────────────┐
+│ IV(12) │ TAG(16)  │ ciphertext (N bytes)        │
+└────────┴──────────┴─────────────────────────────┘
+```
+
+Déchiffrement côté navigateur via Web Crypto API dans `index.html`
+(`decryptBlob`). Aucune clé n'est stockée.
+
+### Binance P2P & CORS
+
+L'endpoint Binance P2P public (`/bapi/c2c/v2/friendly/c2c/adv/search`) ne
+renvoie pas de CORS headers. Pour contourner depuis `github.io` :
+
+1. **Requête via corsproxy.io** (testé OK en v2)
+2. **Fallback direct** (pour localhost dev)
+3. **Si tout échoue** : les gauges restent fonctionnelles (inputs manuels),
+   le Binance market reference ne s'affiche juste pas.
+
+Voir `render-radar.js::radarFetchBinanceP2P`.
+
+---
 
 ## Dynamic Tab System (`render-main.js`)
 
-Les onglets sont générés dynamiquement depuis `TAB_CONFIG` :
-
-```javascript
+```js
 const TAB_CONFIG = [
-  { id: 'augustin', label: 'Augustin', access: 'full' },
-  { id: 'benoit',   label: 'Benoit',   access: 'all' },
-  { id: 'fxp2p',    label: 'FX P2P',   access: 'priv' },
-  { id: 'gains',    label: 'Mes Gains', access: 'priv' },
+  { id: 'amine',    label: 'Ma Position', access: 'full' },
+  { id: 'augustin', label: 'Augustin',    access: 'full' },
+  { id: 'benoit',   label: 'Benoit',      access: 'all'  },
+  { id: 'radar',    label: 'Radar USDT',  access: 'priv' },
+  { id: 'fxp2p',    label: 'FX P2P',      access: 'priv' },
+  { id: 'gains',    label: 'Mes Gains',   access: 'priv' },
 ];
 ```
 
-| access | Visibilité |
-|--------|-----------|
-| `'all'` | Toujours visible |
-| `'full'` | `ACCESS_MODE === 'full'` uniquement |
-| `'priv'` | `window.PRIV === true` uniquement |
+| `access` | Condition de visibilité |
+|---|---|
+| `'all'` | Toujours visible (même en COUPA) |
+| `'full'` | `ACCESS_MODE === 'full'` (BRIDGEVALE ou BINGA ou BINANCE) |
+| `'priv'` | `window.PRIV === true` (BINGA ou BINANCE) |
 
 Fonctions clés :
-- `buildTabs()` — Génère les onglets/panels après authentification
-- `refreshTabVisibility()` — Met à jour la visibilité quand PRIV change
-- `showTab(id)` — Active un onglet
-- `renderPanel(id)` — Rend un seul panel
-- `renderAll()` — Rend tous les panels
 
-## Structure des données (`data.js`)
+| Fonction | Rôle |
+|---|---|
+| `buildTabs()` | Génère les tabs + panels après auth réussie |
+| `refreshTabVisibility()` | Re-calcule la visibilité quand `PRIV` change |
+| `showTab(id)` | Active un tab + son panel |
+| `renderPanel(id)` | Délègue à `render<Name>()` selon l'id |
+| `renderAll()` | Itère `TAB_CONFIG`, renderPanel chaque tab visible |
 
-### Objet global `DATA`
-
-```javascript
-const DATA = {
-  augustin2025: { ... },   // Counterpart Augustin — année clôturée
-  augustin2026: { ... },   // Counterpart Augustin — année en cours
-  benoit2025:   { ... },   // Counterpart Benoit — année clôturée
-  benoit2026:   { ... },   // Counterpart Benoit — année en cours
-  // fxP2P: ENCRYPTED      // Pipeline FX (BINGA only)
-};
-```
-
-### Convention de nommage
-
-Les clés suivent le format `{counterpart}{année}` (ex: `benoit2025`, `augustin2026`).
-
----
-
-## Modèle Augustin (EUR → DH via virements Maroc)
-
-Augustin est un counterpart de type **gestion de revenus** : Amine reçoit des revenus (RTL), paie des sous-traitants (Ycarré, Baraka, Councils), et envoie de l'argent au Maroc.
-
-### Données clé d'une année Augustin
-
-```javascript
-augustin2025: {
-  title: "...",
-  subtitle: "...",
-  tauxMaroc: 10,                    // Taux fixe EUR/MAD (10 000 DH = 1 000€)
-  report2025: -1683,                // (2026 only) Report de l'année précédente
-
-  // Revenus
-  rtl: [
-    { ref: "INVRTL001", periode: "Jan", jours: 12, montant: 10200,
-      datePaiement: "20/03", recu: 10200,
-      statut: "ok"|"w"|"i", statutText: "..." }   // (2026: statut au lieu de recu)
-  ],
-
-  // Dépenses mensuelles (CLÔTURE ONLY — pas dans les années en cours)
-  mois: [
-    { nom: "Janvier", actuals: 18700, bym: 0, maroc: 0, divers: 0,
-      commentaire: "...", badge: "ok"|"i"|"e", badgeText: "...",
-      bymHighlight: false, marocCorrige: false, diversVerifie: false }
-  ],
-
-  // Sous-catégories de paiements (CLÔTURE ONLY)
-  ycarre: [{ date: "02/06/2025", montant: 5400 }],
-  councils: [{ date: "18/08/2025", excelHT: 5625, ebsHT: 5625 }],
-  baraka: [{ date: "14/03/2025", montant: 10000 }],
-
-  // Virements Maroc
-  virementsMaroc: [
-    // Clôture format:
-    { mois: "Février", excelEUR: 1000, detail: "...", totalDH: 10000, corrige: false },
-    // En cours format:
-    { date: "02/01/2026", beneficiaire: "Jean Augustin", dh: 10000 }
-  ],
-
-  // Cash direct / divers
-  divers: [
-    // Clôture format:
-    { mois: "Février", date: "—", montant: 400, label: "Vol pour Augustin",
-      preuve: "ok", preuveText: "✓ EBS" },
-    // En cours format:
-    { label: "Augustin → Amine (via Zakaria)", montant: -1200 }
-  ],
-  diversVerifie: 9170,              // (CLÔTURE ONLY) Total vérifications en valeur absolue
-  diversNonVerifie: 0,
-
-  // Insights (analyses clés affichées en bas)
-  insights: [
-    { type: "pass"|"warn"|"fail"|"neutral",
-      titre: "✅ Titre de l'insight",
-      desc: "Description HTML avec <strong> etc." }
-  ]
-}
-```
-
-### Calculs Augustin
-
-| Calcul | Formule |
-|--------|---------|
-| Total actuals | `Σ mois[].actuals` |
-| Total dépenses | `Σ mois[].bym + mois[].maroc + mois[].divers` |
-| Solde Excel | `actuals(Fév-Déc) − dépenses(Fév-Déc)` (exclut Janvier) |
-| Delta 2026 | `Amine reçu(RTL payé) − Augustin reçu(virements÷taux) + report2025` |
-
----
-
-## Modèle Benoit (Councils EUR → DH avec commission)
-
-Benoit est un counterpart de type **sous-traitance** : il facture des Councils en EUR, Amine les convertit en DH au taux appliqué, retient une commission, et paie le net en DH.
-
-### Rendu générique — `renderBenoitYear(dataKey, opts)`
-
-Les deux années partagent un seul renderer générique :
-
-```javascript
-function renderBenoitYear(dataKey, opts = {}) {
-  const { embedded = false, year = 2025, report = 0 } = opts;
-  const d = DATA[dataKey];
-  const rate = d.commissionRate || 0;
-  const isClotured = !d.councils[0]?.statut;  // Détection auto
-  // ...
-}
-```
-
-Les wrappers `renderBenoit2025()` et `renderBenoit2026()` appellent `renderBenoitYear()` avec les bons paramètres. Le rendu s'adapte automatiquement : colonnes, notes, statuts, gains FX.
-
-### Données clé d'une année Benoit
-
-```javascript
-benoit2025: {
-  title: "...",
-  subtitle: "...",
-  commissionRate: 0.10,             // Taux de commission (dynamique, pas hardcodé)
-
-  councils: [
-    { date: "18/08/2025",           // ou mois: "Janvier" (2026)
-      htEUR: 5625,                  // Montant HT en EUR
-      tauxApplique: 10.500,         // Taux EUR/MAD par transaction
-      // tauxMarche: ENCRYPTED      // Taux marché (injecté par BINGA)
-      statut: "ok"|"w",             // (2026 only) Statut du paiement
-      statutText: "Paid 11/02"      // (2026 only)
-    }
-  ],
-
-  virements: [
-    { date: "28/07/2025", beneficiaire: "Benoit Chevalier",
-      dh: 50000, motif: "Prêt personnel" }
-  ],
-
-  notes: [                          // (optional) Notes affichées en footer
-    "Le virement du 06/03/2026 (31 750 DH) a été comptabilisé..."
-  ]
-}
-```
-
-### Calculs Benoit
-
-| Calcul | Formule |
-|--------|---------|
-| DH brut par transaction | `Math.round(htEUR × tauxApplique)` |
-| Commission par transaction | `Math.round(DH brut × commissionRate)` |
-| Net Benoit par transaction | `DH brut − commission` |
-| Total net dû | `Σ netBenoit` |
-| Total payé | `Σ virements[].dh` |
-| Solde / Carryforward | `total net dû − total payé` |
-| Report N+1 (2026) | `solde 2025` (calculé dynamiquement depuis `benoit2025`) |
-
-#### Carryforward automatique
-
-Le report 2025→2026 n'est **pas stocké dans les données**. Il est **calculé dynamiquement** dans `renderBenoit2026()` :
-
-```javascript
-const b25 = DATA.benoit2025;
-const rate25 = b25.commissionRate || 0;
-const net25 = b25.councils.reduce((s, m) => {
-  const dh = Math.round(m.htEUR * m.tauxApplique);
-  return s + dh - Math.round(dh * rate25);
-}, 0);
-const paye25 = sum(b25.virements, 'dh');
-const report = net25 - paye25;  // Carryforward automatique
-```
-
-#### Détection clôture vs en-cours
-
-```javascript
-const isClotured = !d.councils[0]?.statut;
-// 2025 (clôture): pas de champ statut → date field = "Date EBS"
-// 2026 (en-cours): statut: "ok"|"w" → date field = "Mois"
-```
-
----
-
-## Mode PRIV (BINGA) — Données supplémentaires
-
-Quand `window.PRIV = true`, les données privées sont déchiffrées et injectées :
-
-| Donnée | Description |
-|--------|-------------|
-| `benoit2025.commissionRate` | Écrasé par la valeur encryptée (backup) |
-| `benoit2025.councils[].tauxMarche` | Taux marché EUR/MAD par transaction |
-| `benoit2026.tauxApplique` | Taux appliqué 2026 (écrasé) |
-| `benoit2026.commissionRate` | Commission 2026 (écrasé) |
-| `benoit2026.councils[].tauxMarche` | Taux marché par transaction |
-| `DATA.fxP2P` | Pipeline FX complète (3 legs) |
-| `DATA._ycarreCommission` | Commissions Ycarré |
-
-### Colonnes additionnelles en PRIV
-
-- **Benoit** : Taux marché, Δ taux, Gain FX, Consolidation gains Amine
-- **FX P2P** : 3 legs (EUR→AED→USDT→MAD), spreads, taux effectif
-- **Mes Gains** : Consolidation de tous les gains + DH/% toggle
+Un rendu via `innerHTML` : les scripts inline ne s'exécutent pas. Pour les
+handlers dynamiques (ex: `radarLoad`), on expose `window.radarXxx` et on
+utilise des inline `onclick`/`oninput`.
 
 ---
 
 ## Modules de rendu
 
-### render-helpers.js — Utilitaires partagés
+### `render-helpers.js` — utilitaires partagés
 
-| Fonction | Usage |
-|----------|-------|
-| `fmtPlain(n)` | Nombre formaté FR sans signe (ex: `198 475`) |
-| `fmtSigned(n, suffix)` | Nombre avec signe (ex: `+4 754 DH`) |
-| `fmtRate(r)` | Taux avec 3 décimales (ex: `10,600`) |
-| `fmtDelta(d)` | Delta taux avec signe (ex: `−0,100`) |
-| `badge(type, text)` | Badge coloré (ok/w/e/i) |
-| `sum(arr, key)` | Somme avec key string ou function |
-| `yearToggle3(section, activeYear)` | Toggle Tout/2025/2026 |
+```js
+fmt(n, suffix='€')             // "1 234 €" ou "—"
+fmtSigned(n, suffix='€')       // "+1 234 €" ou "−1 234 €"
+fmtPlain(n)                    // "1 234" (absolu, sans signe)
+fmtRate(r)                     // "10,500"
+fmtDelta(d)                    // "+0,300" ou "−0,100"
+badge(type, text)              // '<span class="b ok">✓ OK</span>'
+sum(arr, key)                  // Σ arr[].key (ou key(x) si function)
+nick(name)                     // "Jean Augustin" → "Augustin"
+nickText(text)                 // Replace all vrai-noms dans un texte libre
+yearToggle3(section, active)   // Toggle 3-way Tout/2025/2026
+computeBenoitSolde()           // ⭐ Source de vérité du solde Benoit
+toggleSection(id, btn)         // Expand/collapse d'une section
+collapsible(title, html, opts) // Wrapper collapsible
+```
 
-### render-augustin.js
+`computeBenoitSolde()` est partagée entre `render-amine.js` (dashboard) et
+`render-benoit.js` (tab) pour garantir la cohérence des chiffres (voir
+BUG-002 dans BUG_TRACKER).
 
-| Fonction | Description |
-|----------|-------------|
-| `renderAugustin2025(embedded)` | Clôture complète (12 mois, 5 catégories) |
-| `renderAugustin2026(embedded)` | En cours (factures RTL, virements) |
-| `renderAugustinAll()` | Vue combinée (2026 + 2025 stacked) |
+### `render-amine.js` — dashboard personnel
 
-### render-benoit.js
+Vue consolidée "Ma Position". Calcule :
+1. **Azarkan (Augustin) 2026** : 3 hero cards (Pro, Perso, MAD)
+   - `posEntreprise = Σ RTL payées − Σ AZCS payés + report2025`
+   - `posNetPro     = posEntreprise − virementsEUR − diversPro`
+   - `PERSO_FACTOR  = 0.95` → `posNetPerso = posNetPro × 0.95`
+   - `posNetMAD     = posNetPro × tauxMaroc`
+2. **Benoit (Badre) 2026** : 1 hero card en DH (via `computeBenoitSolde`)
+3. **Position globale** : 4 colonnes (Augustin, Benoit, Total EUR, Total MAD)
 
-| Fonction | Description |
-|----------|-------------|
-| `renderBenoitYear(dataKey, opts)` | Renderer générique (détecte clôture/en-cours) |
-| `renderBenoit2025(embedded)` | Wrapper → `renderBenoitYear('benoit2025', ...)` |
-| `renderBenoit2026(embedded)` | Wrapper avec report calculé dynamiquement |
-| `renderBenoitAll()` | Vue combinée |
+**Bridge localStorage** : écrit `facturation_positions` à chaque render pour
+que `networth` récupère les valeurs en live (voir DATA_MODEL §Bridge).
 
-### render-fxp2p.js
+### `render-augustin.js`
 
-Pipeline FX P2P (EUR→AED→USDT→MAD). Rendu conditionnel `window.PRIV`.
+Onglet Augustin avec 3 vues toggle :
+- `renderAugustin2025()` — clôture complète (12 mois, 5 catégories preuves)
+- `renderAugustin2026()` — en cours (RTL, virements, divers)
+- `renderAugustinAll()` — les deux stackés
 
-### render-gains.js
+### `render-benoit.js` — renderer générique
 
-Consolidation gains avec 5 sources : Virements Augustin, Commission Ycarré, Commission Benoit, Écart taux Benoit, Spread P2P Benoit. Inclut un toggle DH/% via `window.gainsShowPct`.
+Une seule fonction `renderBenoitYear(dataKey, opts)` détecte automatiquement
+si c'est une clôture ou une année en cours via `!d.councils[0]?.statut`.
+Wrappers `renderBenoit2025()` / `renderBenoit2026()` / `renderBenoitAll()`
+appellent juste cette fonction avec les bons paramètres.
 
-### render-main.js
+Le carryforward 2025→2026 est calculé dynamiquement (pas stocké) via
+`computeBenoitSolde()` — voir DATA_MODEL §Formules.
 
-Orchestration : `TAB_CONFIG`, `buildTabs()`, `refreshTabVisibility()`, `showTab()`, `renderPanel()`, `renderAll()`.
+### `render-radar.js` — Radar USDT (v1+, enrichi v2-v5)
+
+Page live d'évaluation du marché P2P Binance. Architecture :
+
+```
+renderRadar()                    — Skeleton + kickoff
+ └─ radarLoad(manual)            — Promise.allSettled 3 fetches
+     ├─ radarFetchBinanceP2P(AED, BUY, transAmount=10k)
+     ├─ radarFetchBinanceP2P(MAD, SELL, transAmount=20k)
+     └─ radarFetchUsdMad()       — fawazahmed0 via jsdelivr
+ └─ radarRenderContent(buy, sell, fx)
+     ├─ radarBuyCardHTML()       — Input + gauge + verdict
+     ├─ radarSellCardHTML()      — Input + gauge + verdict + USD/MAD editable
+     ├─ radarHistoricalContext() — Meilleur/moyen/pire de tes tx
+     ├─ radarOffersTable('BUY')  — Top 10 + marchands classifiés
+     └─ radarOffersTable('SELL') — Top 10 + marchands classifiés
+ └─ radarStartAutoRefresh()      — setInterval 60s (paused si tab caché)
+ └─ radarStartFreshnessTick()    — setInterval 5s (badges seulement)
+
+Handlers inline (exposés via window) :
+  window.radarLoad(manual)
+  window.radarUpdateBuy(val)
+  window.radarUpdateSell(val)
+  window.radarUpdateUsdMad(val)
+  window.radarToggleKnownMerchant(side, nickname)
+```
+
+**État runtime** (`window._radarState`, voir DATA_MODEL §runtime).
+
+**Marchands 3 niveaux** (v5) : voir `radarClassifyMerchant()` — fusionne
+`PRIV_DATA.fxP2P.{merchants,confirmedMerchants}{AED,MAD}` avec les updates
+live de `localStorage.radar_known_merchants`.
+
+### `render-fxp2p.js`
+
+Onglet FX P2P (BINGA only). Pipeline 3 legs :
+- **Leg 1** : EUR → AED (IFX)
+- **Leg 2** : AED → USDT (Binance P2P buy)
+- **Leg 3** : USDT → MAD (Binance P2P sell)
+
+Pour chaque leg : spread vs marché, volumes pondérés, impact par 10k€.
+Synthèse globale + 3-months window + 8 insights.
+
+### `render-gains.js`
+
+Onglet Mes Gains (BINGA only). Consolidation des 5 sources de gain Amine :
+1. Virements Augustin (marge sur tauxMaroc)
+2. Commission Ycarré (8%)
+3. Commission Benoit (10%)
+4. Écart taux appliqué vs marché Benoit
+5. Spread P2P (extrait de `render-fxp2p`)
+
+Toggle DH ↔ % via `window.gainsShowPct`.
+
+### `render-main.js`
+
+Orchestration. 123 lignes. Single source of truth pour le TAB_CONFIG.
 
 ---
 
-## Guide de mise à jour
+## Cover 2048 (façade)
 
-### Ajouter un nouveau paiement Councils (Benoit)
+Le jeu 2048 n'est pas un easter egg — c'est une gate silencieuse :
+- Pas de "Pseudo refusé" ni d'erreur visible (BUG-007)
+- Pas de hint "Retour à l'écran de pseudo" (BUG-006)
+- Score qui s'actualise en temps réel (BUG-005)
+- Best score sauvegardé par taille de grille
+- Design inspiré direct du 2048 original (Gabriele Cirulli)
 
-1. Ouvrir `data.js`
-2. Trouver `benoit2026.councils`
-3. Ajouter une ligne :
-```javascript
-{ mois: "Mars", htEUR: 5000, tauxApplique: 10.600, statut: "w", statutText: "Invoiced" },
+Un visiteur non-autorisé qui tape son prénom se retrouve avec un jeu
+pleinement fonctionnel, sans aucun signal que quelque chose d'autre existe.
+
+Source : `game-2048.js`. Mounted par `index.html::showGame()` dans
+`#gameHost` avec les refs du score box du header passées via opts.
+
+---
+
+## Site versioning (v1+)
+
+Single source of truth dans `index.html` :
+```html
+<script>
+  window.APP_VERSION = 'v5';
+  window.APP_VERSION_DATE = '2026-04-20';
+</script>
 ```
-4. Quand le paiement est confirmé, changer `statut: "ok"` et `statutText: "Paid DD/MM"`
 
-### Ajouter un virement DH (Benoit)
-
-1. Ouvrir `data.js`
-2. Trouver `benoit2026.virements`
-3. Ajouter :
-```javascript
-{ date: "15/04/2026", beneficiaire: "Benoit Chevalier", dh: 50000, motif: "Remboursement" },
+Affiché dans le header après login via le badge `#versionBadge` :
+```
+┌───────────────────────────────────────────┐
+│ Réconciliation Facturation 2025–2026      │
+│                        [● v5 · 2026-04-20] │ ← injecté par tryAccess
+└───────────────────────────────────────────┘
 ```
 
-### Passer à une nouvelle année (ex: Benoit 2027)
+Bump à chaque commit substantiel. Historique : [`CHANGELOG.md`](./CHANGELOG.md).
 
-1. Dans `data.js`, ajouter `benoit2027: { ... }` avec la même structure que `benoit2026`
-2. Le `renderBenoitYear()` fonctionnera automatiquement (détecte clôture vs en-cours)
-3. Ajouter un wrapper `renderBenoit2027()` dans `render-benoit.js`
-4. Le report 2026→2027 se calculera automatiquement
-5. Mettre à jour le yearToggle pour inclure 2027
+---
 
-### Ajouter un nouveau counterpart
+## Bridge networth
 
-1. Dans `data.js`, ajouter `nouveauClient2026: { ... }`
-2. Créer un fichier `render-nouveauClient.js` avec la logique de rendu
-3. Dans `render-main.js`, ajouter à `TAB_CONFIG` :
-```javascript
-{ id: 'nouveauClient', label: 'Nouveau Client', access: 'full' },
-```
-4. Ajouter un `case` dans `renderPanel()` pour le nouveau panel
-5. Charger le script dans `index.html` et bumper le cache version
+Les deux sites (`facturation` + `networth`) partagent l'origine
+`lallakenza.github.io` → `localStorage` commun.
+
+`render-amine.js` écrit `localStorage.facturation_positions` à chaque render.
+`networth/js/engine.js` lit cette clé pour override les créances/dettes
+Augustin/Benoit au lieu des valeurs hardcoded.
+
+Voir DATA_MODEL §Bridge pour le schéma exact.
 
 ---
 
 ## Déploiement
 
 ```bash
-# Depuis /site
-git add -A
-git commit -m "Description du changement"
+# Éditer encrypt.js → re-encrypter
+vim encrypt.js
+node encrypt.js                    # Produit data-enc.js + data-priv.enc.js
+
+# Bumper version
+sed -i '' "s/v5/v6/" index.html    # ou édition manuelle
+
+# Commit + push
+git add encrypt.js data-enc.js data-priv.enc.js index.html
+git -c user.name="Amine" -c user.email="amine.koraibi@gmail.com" \
+  commit -m "v6: Description"
 git push origin main
-
-# Cache bust (IMPORTANT — GitHub Pages CDN)
-# Incrémenter le ?v=N dans index.html pour tous les scripts
-sed -i 's/v=26/v=27/g' index.html
 ```
 
-Le site se met à jour en ~30 secondes après le push. Si l'ancienne version persiste, ajouter un query param unique à l'URL (ex: `?deploy=v27`).
+GitHub Pages auto-deploy en 30–90 s. Cache-busting par `?t=Date.now()` dans
+le dynamic loader → toujours fresh à chaque reload.
 
-## Chiffrement des données privées
+Procédures détaillées : [`UPDATE_GUIDE.md`](./UPDATE_GUIDE.md).
 
-```bash
-# Générer/mettre à jour data-priv.enc.js
-node encrypt.js
-# Le mot de passe est BINGA
-# Le fichier de sortie est data-priv.enc.js
-```
+---
+
+## Évolutions passées et décisions
+
+### Pourquoi 3 blobs chiffrés distincts (au lieu d'un seul) ?
+
+Parce que chaque pseudo correspond à une **audience différente** :
+- `BRIDGEVALE` = Amine, vue complète publique
+- `COUPA` = Benoit, ne doit PAS voir les counterparts Augustin
+- `BINGA` = Amine, mode pro avec taux marché + FX P2P + Radar
+
+Un seul blob forcerait à partager le mdp Benoit → il pourrait décrypter
+BRIDGEVALE. Isolation = 3 blobs séparés chiffrés avec 3 mdp différents.
+
+### Pourquoi `encrypt.js` est la source de vérité, pas `data-enc.js` ?
+
+Parce que `data-enc.js` est juste du base64 opaque. Toutes les modifs
+passent par `encrypt.js` (éditable, commenté, versionnable en diff). Le
+script lui-même régénère les blobs. Règle absolue : ne jamais éditer
+`data-enc.js` ou `data-priv.enc.js` à la main.
+
+### Pourquoi `corsproxy.io` et pas un serveur Cloudflare ?
+
+Zero-infra : pas de serveur à maintenir, pas de clé API. Downside : si
+`corsproxy.io` tombe, le fetch Binance échoue — mais grâce à v2, les
+gauges restent fonctionnelles avec saisie manuelle.
+
+Migration possible vers un Cloudflare Worker gratuit si corsproxy devient
+unreliable : 10 lignes de code Worker, fetch vers Binance, renvoie avec
+CORS headers.
+
+### Pourquoi pas un framework ?
+
+- Site 6 pages, ~9 modules, ~140kb total
+- Un dev (Amine)
+- Zero dependency → zero supply chain risk
+- Chaque fichier est un module auto-contenu lisible en 30 secondes
+- Pas de build step → edit + commit + push = deploy
+
+Le jour où ça devient ingérable, migration vers un static site generator
+(Astro, 11ty) serait le meilleur upgrade — pas React.
+
+### Pourquoi un filesystem case-insensitive pose problème
+
+macOS default HFS+ / APFS est case-insensitive. Si on a à la fois
+`ARCHITECTURE.md` (créé un jour) et `Architecture.md` (utilisé dans les
+liens), git les traite comme le même fichier mais expose les deux noms.
+Pour éviter : staging sélectif (`git add Architecture.md` jamais
+`ARCHITECTURE.md`), ou nettoyage one-shot (supprimer le nom non-canonique
+via `git mv`).
