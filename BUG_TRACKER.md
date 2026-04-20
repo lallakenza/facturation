@@ -77,7 +77,7 @@ Chaque entrée suit ce format :
   `corsproxy.io` (testé : 200 OK + body JSON valide + CORS headers
   corrects). Fallback direct gardé pour localhost. Endpoints tentés dans
   l'ordre puis renvoyer le premier qui passe.
-- **Régression** : Depuis `https://lallakenza.github.io/facturation/`, en mode
+- **Régression** : Depuis `https://lallakenza.github.io/2048/`, en mode
   BINGA, onglet Radar USDT : les 3 badges en haut à droite doivent être verts
   (`USD/MAD ✓ · Binance AED ✓ · Binance MAD ✓`). Si un seul n'est pas vert,
   tester `corsproxy.io` sur https://corsproxy.io manuellement.
@@ -215,7 +215,7 @@ Chaque entrée suit ce format :
   sensibles vivent dans `PRIV_DATA` → `ENCRYPTED_PRIV` dans
   `data-priv.enc.js`, déchiffrées côté client seulement avec BINGA.
 - **Régression** :
-  1. `curl https://lallakenza.github.io/facturation/data-priv.enc.js | head -5`
+  1. `curl https://lallakenza.github.io/2048/data-priv.enc.js | head -5`
   2. Vérifier que c'est juste du base64 opaque (`const ENCRYPTED_PRIV =
      "..."`) — aucun nom clair, aucun montant, aucun taux.
   3. `git log --all -p -- data.js` ne doit rien retourner (ou seulement

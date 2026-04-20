@@ -8,8 +8,8 @@ terminent par un `node encrypt.js` + commit + push.
 
 ```bash
 # 1. Cloner / pull
-git clone git@github.com:lallakenza/facturation.git    # une seule fois
-cd facturation
+git clone git@github.com:lallakenza/2048.git           # une seule fois
+cd 2048
 git pull origin main                                   # à chaque session
 
 # 2. Éditer encrypt.js (modifier les données)
@@ -34,7 +34,7 @@ git -c user.name="Amine" -c user.email="amine.koraibi@gmail.com" \
 git push origin main
 
 # 6. Vérifier le déploiement (~60s)
-open "https://lallakenza.github.io/facturation/?t=$(date +%s)"
+open "https://lallakenza.github.io/2048/?t=$(date +%s)"
 ```
 
 **NE JAMAIS** éditer manuellement `data-enc.js` ou `data-priv.enc.js` — ils
@@ -213,7 +213,7 @@ La source canonique de ces listes : **`encrypt.js` → `PRIV_DATA.fxP2P`** :
 
 2. **Extraire les marchands avec Python**
    ```bash
-   # Depuis le repo facturation/
+   # Depuis le repo 2048/
    python3 <<'PY'
    import openpyxl
    from collections import defaultdict
@@ -409,7 +409,7 @@ est automatiquement contourné à chaque chargement. MAIS le CDN GitHub Pages
 
 ```bash
 # URL avec query unique
-open "https://lallakenza.github.io/facturation/?t=$(date +%s)"
+open "https://lallakenza.github.io/2048/?t=$(date +%s)"
 
 # Hard refresh dans le navigateur
 # Mac : Cmd+Shift+R
@@ -419,7 +419,7 @@ open "https://lallakenza.github.io/facturation/?t=$(date +%s)"
 ### Vérifier qu'une nouvelle version est bien déployée
 
 ```bash
-curl -sI "https://lallakenza.github.io/facturation/render-radar.js" | grep last-modified
+curl -sI "https://lallakenza.github.io/2048/render-radar.js" | grep last-modified
 ```
 
 Si `last-modified` est ancien, attendre 1 min puis refaire. GitHub Pages est

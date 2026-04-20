@@ -9,6 +9,21 @@ Le site a démarré sans versionnage ; l'introduction du système s'est faite en
 
 ---
 
+## Rename repo `facturation` → `2048` — 2026-04-20
+
+- Repo GitHub renommé `lallakenza/facturation` → `lallakenza/2048`
+- URL live: `https://lallakenza.github.io/facturation/` → `https://lallakenza.github.io/2048/`
+- Motivation : cohérence avec la façade 2048 côté cover — l'URL elle-même
+  ne trahit plus l'usage réel du site.
+- `localStorage.facturation_positions` (bridge vers networth) **inchangé** —
+  c'est une clé de localStorage partagée par origine (`lallakenza.github.io`),
+  le path ne joue pas. Pas de migration nécessaire côté networth.
+- GitHub auto-redirige l'ancienne URL vers la nouvelle pendant ~30 jours.
+- Toutes les docs mises à jour (README, Architecture, UPDATE_GUIDE,
+  BUG_TRACKER) avec la nouvelle URL + nouveaux clones.
+
+---
+
 ## `v5` — 2026-04-20
 
 ### Radar USDT

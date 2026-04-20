@@ -1,6 +1,6 @@
 # Architecture — Réconciliation Facturation
 
-Site statique sur GitHub Pages (`lallakenza/facturation`). Zéro backend,
+Site statique sur GitHub Pages (`lallakenza/2048`). Zéro backend,
 déchiffrement client-side AES-256-GCM, auto-deploy branche `main`.
 
 **Version actuelle** : `v5` (voir [`CHANGELOG.md`](./CHANGELOG.md)).
@@ -285,7 +285,7 @@ Bump à chaque commit substantiel. Historique : [`CHANGELOG.md`](./CHANGELOG.md)
 
 ## Bridge networth
 
-Les deux sites (`facturation` + `networth`) partagent l'origine
+Les deux sites (repo `2048` + repo `networth`) partagent l'origine
 `lallakenza.github.io` → `localStorage` commun.
 
 `render-amine.js` écrit `localStorage.facturation_positions` à chaque render.

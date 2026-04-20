@@ -4,8 +4,8 @@ Site statique de réconciliation bancaire et de suivi des flux multi-devises
 (EUR, MAD, AED, USDT). Déployé sur GitHub Pages, **zéro backend**, données
 chiffrées AES-256-GCM côté repo.
 
-**URL live** : https://lallakenza.github.io/facturation/
-**Repo** : `lallakenza/facturation` (branche `main` déploie automatiquement)
+**URL live** : https://lallakenza.github.io/2048/
+**Repo** : `lallakenza/2048` (branche `main` déploie automatiquement)
 **Version actuelle** : `v3` (voir badge dans le header après login)
 
 ---
@@ -25,7 +25,7 @@ chiffrées AES-256-GCM côté repo.
 ## 🚀 Quick start
 
 ### Lire le site
-1. https://lallakenza.github.io/facturation/
+1. https://lallakenza.github.io/2048/
 2. Saisir le pseudo :
    - `BRIDGEVALE` → vue complète (Augustin + Benoit)
    - `COUPA` → vue Benoit uniquement (à partager avec Benoit)
@@ -33,8 +33,8 @@ chiffrées AES-256-GCM côté repo.
 
 ### Modifier les données
 ```bash
-git clone git@github.com:lallakenza/facturation.git
-cd facturation
+git clone git@github.com:lallakenza/2048.git
+cd 2048
 
 # 1. Éditer encrypt.js (c'est là que vivent TOUTES les données en clair)
 vim encrypt.js
@@ -59,7 +59,7 @@ Procédures détaillées → [`UPDATE_GUIDE.md`](./UPDATE_GUIDE.md).
 ## 🗂 Structure du repo
 
 ```
-facturation/
+2048/                       # repo local, clone de lallakenza/2048
 ├── index.html              — UI, CSS, login gate, crypto, event wiring
 ├── game-2048.js            — Jeu 2048 (façade de camouflage sur la cover)
 │
