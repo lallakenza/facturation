@@ -1,0 +1,66 @@
+name: Poll P2P rates (every hour)
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    inputs:
+      force_alert:
+        description: 'Force une alerte test (donnees fictives)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run poll script
+        env:
+          BINGA_PASSWORD: ${{ secrets.BINGA_PASSWORD }}
+          INPUT_FORCE_ALERT: ${{ inputs.force_alert }}
+        run: |
+          if [ "$INPUT_FORCE_ALERT" = "true" ]; then
+            echo "FORCE_ALERT mode (test avec donnees fictives)"
+            node scripts/poll-p2p.js --force-alert
+          else
+            node scripts/poll-p2p.js
+          fi
+
+      - name: Create alert issue if ALERT.md exists
+        if: hashFiles('ALERT.md') != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE=$(head -1 ALERT.md)
+          BODY=$(awk 'BEGIN{p=0} /^---$/{if(!p){p=1;next}} p==1{print}' ALERT.md)
+          echo "$BODY" > /tmp/issue-body.md
+          gh issue create \
+            --title "$TITLE" \
+            --body-file /tmp/issue-body.md \
+            --label "alert,p2p"
+          rm -f ALERT.md /tmp/issue-body.md
+
+      - name: Commit + push if data-history changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data-history.enc.js
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "auto: poll P2P $(date -u +%Y-%m-%dT%H:%MZ)"
+            git push
+          fi
