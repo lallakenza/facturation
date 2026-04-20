@@ -18,7 +18,11 @@ Le site a démarré sans versionnage ; l'introduction du système s'est faite en
 - `localStorage.facturation_positions` (bridge vers networth) **inchangé** —
   c'est une clé de localStorage partagée par origine (`lallakenza.github.io`),
   le path ne joue pas. Pas de migration nécessaire côté networth.
-- GitHub auto-redirige l'ancienne URL vers la nouvelle pendant ~30 jours.
+- ⚠️ **GitHub Pages NE redirige PAS** : `https://lallakenza.github.io/facturation/`
+  renvoie désormais 404. Seul le repo (`github.com/lallakenza/facturation`)
+  redirige automatiquement vers `lallakenza/2048`. Si tu as bookmarké
+  l'ancienne URL, à updater. (Le `git remote` continue à fonctionner aussi
+  via redirect — mais bonne pratique de l'updater.)
 - Toutes les docs mises à jour (README, Architecture, UPDATE_GUIDE,
   BUG_TRACKER) avec la nouvelle URL + nouveaux clones.
 
