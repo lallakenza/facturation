@@ -80,12 +80,13 @@ function renderRadar() {
   `;
 
   // Kick off the first load as soon as the DOM is parsed, and
-  // start the 60s auto-refresh. renderRadar() is called by
-  // renderAll() which injects via innerHTML — scripts inside
-  // innerHTML don't execute, so we hook via setTimeout outside
+  // start the 60s auto-refresh + 5s freshness ticker. renderRadar()
+  // is called by renderAll() which injects via innerHTML — scripts
+  // inside innerHTML don't execute, so we hook via setTimeout outside
   // the returned string.
   setTimeout(function(){ radarLoad(false); }, 20);
   radarStartAutoRefresh();
+  radarStartFreshnessTick();
 
   return skeleton;
 }
@@ -117,8 +118,8 @@ async function radarLoad(manual) {
 
   try {
     const [buyRes, sellRes, fxRes] = await Promise.allSettled([
-      radarFetchBinanceP2P('AED', 'BUY'),
-      radarFetchBinanceP2P('MAD', 'SELL'),
+      radarFetchBinanceP2P('AED', 'BUY',  RADAR_MIN_AMOUNT.AED),
+      radarFetchBinanceP2P('MAD', 'SELL', RADAR_MIN_AMOUNT.MAD),
       radarFetchUsdMad(),
     ]);
 
@@ -163,6 +164,53 @@ function radarFmtTime(d) {
   return `${h}:${m}:${s}`;
 }
 
+// Small colored "● live HH:MM:SS" badge to make it instantly clear that
+// the Binance price next to it is fresh (just fetched). Goes yellow if
+// older than the auto-refresh window (60s + 15s slack) — that signals
+// either a failed refresh, a hidden tab pause, or a network hiccup.
+// Returns '' when we have no timestamp yet.
+// Pure inner content of the badge (no wrapping span). The wrapper has
+// a stable id so radarTickFreshness() can update only this DOM node
+// every few seconds without re-rendering the whole card (which would
+// destroy the focus of any active input).
+function radarLiveBadgeInner(loadedAt) {
+  if (!loadedAt) return '';
+  const ageMs = Date.now() - loadedAt;
+  const fresh = ageMs <= 75000;
+  const color = fresh ? 'var(--green)' : 'var(--yellow)';
+  const label = fresh ? 'live' : 'stale';
+  let when;
+  if (fresh) {
+    when = radarFmtTime(new Date(loadedAt));
+  } else {
+    const mins = Math.floor(ageMs / 60000);
+    when = mins >= 1 ? `il y a ${mins}\u202fmin` : `il y a ${Math.floor(ageMs/1000)}\u202fs`;
+  }
+  return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:.65rem;color:${color};font-weight:600;white-space:nowrap"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${color};box-shadow:0 0 5px ${color}"></span>${label} · ${when}</span>`;
+}
+
+// Wrapper with stable id, used by both initial render and the ticker.
+function radarLiveBadge(side, loadedAt) {
+  return `<span id="radarBadge-${side}" style="margin-left:4px">${radarLiveBadgeInner(loadedAt)}</span>`;
+}
+
+// Tick every 5s to keep "live · HH:MM:SS" → "stale · il y a 2 min"
+// transition responsive. Skipped when the Radar panel isn't visible.
+function radarStartFreshnessTick() {
+  if (window._radarState.tickTimer) return;
+  window._radarState.tickTimer = setInterval(function(){
+    const panel = document.getElementById('radar');
+    if (!panel || panel.offsetParent === null) return;
+    const t = window._radarState.lastLoadAt;
+    if (!t) return;
+    const sides = ['buy', 'sell'];
+    sides.forEach(function(side) {
+      const el = document.getElementById('radarBadge-' + side);
+      if (el) el.innerHTML = radarLiveBadgeInner(t);
+    });
+  }, 5000);
+}
+
 // ---- BINANCE P2P FETCH --------------------------------------------
 // CORS workaround: Binance P2P's /bapi endpoint doesn't set CORS headers,
 // so direct fetch from github.io fails with "TypeError: Failed to fetch".
@@ -170,7 +218,13 @@ function radarFmtTime(d) {
 // Tried: corsproxy.io ✓, allorigins ✗ (POST body dropped),
 //        thingproxy ✗ (unreliable). Direct-fetch fallback kept for cases
 // where the page is opened from a permissive origin (e.g. localhost).
-async function radarFetchBinanceP2P(fiat, tradeType) {
+async function radarFetchBinanceP2P(fiat, tradeType, transAmount) {
+  // transAmount = volume minimum souhaité dans la fiat. Filtre les offres
+  // "parasites" à très faible montant qui affichent un meilleur prix mais
+  // ne permettent pas de trader des sommes utiles. Binance applique le
+  // filtre côté serveur et ne renvoie que les offres qui acceptent ce
+  // volume — donc topPrice / medianPrice reflètent un prix réellement
+  // exécutable.
   const body = {
     proMerchantAds: false,
     page: 1,
@@ -183,6 +237,7 @@ async function radarFetchBinanceP2P(fiat, tradeType) {
     asset: 'USDT',
     merchantCheck: false,
   };
+  if (transAmount) body.transAmount = String(transAmount);
   const target = 'https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search';
   const endpoints = [
     'https://corsproxy.io/?' + encodeURIComponent(target),
@@ -209,7 +264,7 @@ async function radarFetchBinanceP2P(fiat, tradeType) {
   const ads = (j.data || []).filter(a => a && a.adv && a.advertiser);
   if (!ads.length) throw new Error(`Binance P2P ${fiat} ${tradeType}: no ads`);
 
-  const offers = ads.map(a => ({
+  let offers = ads.map(a => ({
     merchant: a.advertiser.nickName || '—',
     price: parseFloat(a.adv.price),
     minSingleTransAmount: parseFloat(a.adv.minSingleTransAmount),
@@ -219,6 +274,22 @@ async function radarFetchBinanceP2P(fiat, tradeType) {
     monthOrderCount: a.advertiser.monthOrderCount != null ? parseInt(a.advertiser.monthOrderCount, 10) : null,
     userType: a.advertiser.userType || '',
   })).filter(o => isFinite(o.price) && o.price > 0);
+
+  // Belt-and-suspenders: even when we pass transAmount to Binance, the
+  // API still returns offers whose displayed max < transAmount (probably
+  // counts the offer as "available at any volume the merchant accepts"
+  // rather than "covers transAmount"). Reject any offer that can't
+  // actually accommodate our threshold — these are the "parasitic" tiny
+  // offers (e.g., max 101 AED) that show artificially great prices but
+  // are useless for real volume. This filter is what makes medianPrice
+  // / topPrice reflect a price you can really execute at.
+  if (transAmount) {
+    offers = offers.filter(o =>
+      isFinite(o.maxSingleTransAmount) && o.maxSingleTransAmount >= transAmount &&
+      (!isFinite(o.minSingleTransAmount) || o.minSingleTransAmount <= transAmount)
+    );
+    if (!offers.length) throw new Error(`Binance P2P ${fiat} ${tradeType}: no offers ≥ ${transAmount}`);
+  }
 
   offers.sort((a, b) => tradeType === 'BUY' ? a.price - b.price : b.price - a.price);
 
@@ -231,8 +302,12 @@ async function radarFetchBinanceP2P(fiat, tradeType) {
   const medianPrice = sorted.length % 2 ? sorted[mid] : (sorted[mid-1] + sorted[mid]) / 2;
   const avgPrice = top10.reduce((s,x) => s+x, 0) / top10.length;
 
-  return { fiat, tradeType, topPrice, medianPrice, avgPrice, offers: offers.slice(0, 10) };
+  return { fiat, tradeType, transAmount, topPrice, medianPrice, avgPrice, offers: offers.slice(0, 10) };
 }
+
+// Volume minimum considéré pour l'évaluation P2P — au-dessous, ce sont
+// souvent des offres parasites avec un prix attractif mais inactionnables.
+const RADAR_MIN_AMOUNT = { AED: 10000, MAD: 20000 };
 
 // ---- USD/MAD LIVE -------------------------------------------------
 async function radarFetchUsdMad() {
@@ -438,14 +513,27 @@ function radarRenderContent(buy, sell, fx) {
   const defaultSellPrice = sell ? sell.medianPrice : (histSellAvg || defaultUsdMad * 1.035);
 
   // ---- Seed state so the update handlers can read it --------
-  window._radarState.peg          = peg;
-  window._radarState.usdMad       = defaultUsdMad;
-  window._radarState.usdMadDate   = fx && fx.date || null;
-  window._radarState.usdMadIsLive = !!fx;
-  window._radarState.buyPrice     = defaultBuyPrice;
-  window._radarState.sellPrice    = defaultSellPrice;
-  window._radarState.buyData      = buy;
-  window._radarState.sellData     = sell;
+  // PRESERVE USER OVERRIDES: once the user types in an input or clicks
+  // "Marché Binance live" to sync, that field becomes "user-set" and
+  // subsequent auto-refreshes won't clobber it. The live market value
+  // still updates in the "Marché Binance" link so the user can re-sync
+  // by clicking it. Without this, typing 3.69 would get overwritten 60s
+  // later when the auto-refresh fires.
+  const s = window._radarState;
+  s.peg          = peg;
+  s.usdMadDate   = fx && fx.date || null;
+  s.buyData      = buy;   // always update — this is the "live market" line
+  s.sellData     = sell;
+  if (!s.buyPriceUserSet)  s.buyPrice  = defaultBuyPrice;
+  if (!s.sellPriceUserSet) s.sellPrice = defaultSellPrice;
+  if (!s.usdMadUserSet) {
+    s.usdMad       = defaultUsdMad;
+    s.usdMadIsLive = !!fx;
+  }
+  // lastLoadAt is set by radarLoad() right before calling us, but if
+  // we were called from the offline branch before any successful load,
+  // fall back to "now" so the freshness badge shows current time.
+  if (!s.lastLoadAt) s.lastLoadAt = Date.now();
 
   const body = document.getElementById('radarBody');
   if (!body) return;
@@ -470,7 +558,7 @@ function radarBuyCardHTML() {
   const gauge = radarGaugeHTML('buy', spread, { price: price, refRate: peg });
 
   const binanceLine = s.buyData
-    ? `<span style="color:var(--muted)">Marché Binance live : </span><button type="button" onclick="radarUpdateBuy(${s.buyData.medianPrice})" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:0;font-weight:700;font-variant-numeric:tabular-nums;font-family:inherit;text-decoration:underline dotted" title="Cliquer pour synchroniser">${s.buyData.medianPrice.toFixed(4).replace('.', ',')}</button> <span style="color:var(--muted)">· meilleure ${s.buyData.topPrice.toFixed(4).replace('.', ',')}</span>`
+    ? `<span style="color:var(--muted)">Marché Binance <span style="font-size:.65rem;opacity:.7">(offres ≥ ${RADAR_MIN_AMOUNT.AED.toLocaleString('fr-FR')} AED)</span> : </span><button type="button" onclick="radarUpdateBuy(${s.buyData.medianPrice})" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:0;font-weight:700;font-variant-numeric:tabular-nums;font-family:inherit;text-decoration:underline dotted" title="Cliquer pour synchroniser">${s.buyData.medianPrice.toFixed(4).replace('.', ',')}</button> <span style="color:var(--muted)">· meilleure ${s.buyData.topPrice.toFixed(4).replace('.', ',')}</span> ${radarLiveBadge('buy', s.lastLoadAt)}`
     : `<span style="color:var(--yellow)">⚠ Binance indisponible — saisis le prix observé</span>`;
 
   const priceStr = price.toFixed(4).replace('.', ',');
@@ -511,7 +599,7 @@ function radarSellCardHTML() {
   const gauge = radarGaugeHTML('sell', spread, { price: price, refRate: usdMad });
 
   const binanceLine = s.sellData
-    ? `<span style="color:var(--muted)">Marché Binance live : </span><button type="button" onclick="radarUpdateSell(${s.sellData.medianPrice})" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:0;font-weight:700;font-variant-numeric:tabular-nums;font-family:inherit;text-decoration:underline dotted" title="Cliquer pour synchroniser">${s.sellData.medianPrice.toFixed(3).replace('.', ',')}</button> <span style="color:var(--muted)">· meilleure ${s.sellData.topPrice.toFixed(3).replace('.', ',')}</span>`
+    ? `<span style="color:var(--muted)">Marché Binance <span style="font-size:.65rem;opacity:.7">(offres ≥ ${RADAR_MIN_AMOUNT.MAD.toLocaleString('fr-FR')} MAD)</span> : </span><button type="button" onclick="radarUpdateSell(${s.sellData.medianPrice})" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:0;font-weight:700;font-variant-numeric:tabular-nums;font-family:inherit;text-decoration:underline dotted" title="Cliquer pour synchroniser">${s.sellData.medianPrice.toFixed(3).replace('.', ',')}</button> <span style="color:var(--muted)">· meilleure ${s.sellData.topPrice.toFixed(3).replace('.', ',')}</span> ${radarLiveBadge('sell', s.lastLoadAt)}`
     : `<span style="color:var(--yellow)">⚠ Binance indisponible — saisis le prix observé</span>`;
 
   const fxStatus = s.usdMadIsLive
@@ -700,7 +788,12 @@ function radarHistoricalContext(buy, sell, fx, peg) {
 
 // ---- OFFERS TABLE --------------------------------------------------
 function radarOffersTable(data, tradeType, refRate) {
-  const title = tradeType === 'BUY' ? `🇦🇪 Top 10 offres Binance P2P — Achat AED → USDT` : `🇲🇦 Top 10 offres Binance P2P — Vente USDT → MAD`;
+  const minLabel = data.transAmount
+    ? ` <span style="font-size:.65rem;font-weight:500;color:var(--muted);text-transform:none;letter-spacing:0">(filtré ≥ ${data.transAmount.toLocaleString('fr-FR')} ${data.fiat})</span>`
+    : '';
+  const title = tradeType === 'BUY'
+    ? `🇦🇪 Top 10 offres Binance P2P — Achat AED → USDT${minLabel}`
+    : `🇲🇦 Top 10 offres Binance P2P — Vente USDT → MAD${minLabel}`;
   const priceLabel = tradeType === 'BUY' ? 'Prix AED/USDT' : 'Prix MAD/USDT';
   const refLabel   = tradeType === 'BUY' ? 'Spread vs peg' : 'Spread vs marché';
 
