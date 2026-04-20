@@ -542,6 +542,7 @@ function radarRenderContent(buy, sell, fx) {
       <div id="buyCardMount">${radarBuyCardHTML()}</div>
       <div id="sellCardMount">${radarSellCardHTML()}</div>
     </div>
+    ${radarSpreadHistorySection()}
     ${radarHistoricalContext(buy, sell, fx, peg)}
     ${buy  ? radarOffersTable(buy,  'BUY',  peg) : ''}
     ${sell && fx ? radarOffersTable(sell, 'SELL', fx.usdMad) : ''}
@@ -820,6 +821,170 @@ function radarCardOffline(title, msg) {
       </div>
     </div>
   `;
+}
+
+// ---- SPREAD HISTORY (poller GitHub Actions, toutes les 6h) --------
+// Sparklines SVG inline (pas de Chart.js). Affiche l'évolution sur
+// 7j / 30j / 90j (sélectionnable) du spread BUY (vs peg) et SELL
+// (vs USD/MAD), plus quelques stats (min, max, avg, dernier vs avg).
+//
+// Source: window.DATA.fxP2P.history = [{ts, spreads:{buy,sell}, ...}]
+// Rempli par scripts/poll-p2p.js → .github/workflows/poll-p2p.yml.
+//
+// Si pas d'historique (déploiement initial), affiche un placeholder.
+function radarSpreadHistorySection() {
+  const hist = (DATA.fxP2P && DATA.fxP2P.history) || [];
+  if (!hist.length) {
+    return `<div class="s">
+      <div class="st">Historique du spread P2P</div>
+      <div class="n">Aucun historique encore disponible. Le poller GitHub Actions tourne toutes les 6h et accumulera les entrées au fil du temps. Reviens dans quelques heures !</div>
+    </div>`;
+  }
+
+  // État de la sélection de période (in-memory, pas persisté)
+  if (!window._radarHistRange) window._radarHistRange = '30';
+  const range = window._radarHistRange;
+
+  const now = Date.now();
+  const cutoffs = { '7': 7, '30': 30, '90': 90, 'all': null };
+  const days = cutoffs[range];
+  const cutoffTs = days != null ? now - days * 24 * 3600 * 1000 : 0;
+  const window_ = hist.filter(e => new Date(e.ts).getTime() >= cutoffTs);
+
+  // Boutons de range
+  const rangeBtn = (val, label) => {
+    const active = range === val;
+    return `<button type="button" onclick="window.radarSetHistRange('${val}')" style="appearance:none;background:${active?'var(--accent)':'transparent'};color:${active?'#fff':'var(--muted)'};border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:.72rem;font-weight:600;cursor:pointer;font-family:inherit">${label}</button>`;
+  };
+  const rangeBar = `<div style="display:flex;gap:6px;margin-bottom:14px">
+    ${rangeBtn('7', '7 jours')}${rangeBtn('30', '30 jours')}${rangeBtn('90', '90 jours')}${rangeBtn('all', 'Tout')}
+    <span style="margin-left:auto;font-size:.7rem;color:var(--muted);align-self:center">${window_.length} points · poll toutes les 6h</span>
+  </div>`;
+
+  // Une mini-carte par côté avec sparkline + stats
+  const buyChart  = radarSparklineCard('buy',  window_);
+  const sellChart = radarSparklineCard('sell', window_);
+
+  return `<div class="s">
+    <div class="st">Historique du spread P2P</div>
+    ${rangeBar}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:14px">
+      ${buyChart}
+      ${sellChart}
+    </div>
+    <div class="n" style="margin-top:10px;font-size:.7rem">Auto-collecté toutes les 6h par GitHub Actions (cf. <code>.github/workflows/poll-p2p.yml</code>). Median sur les 10 meilleures offres ≥ 10k AED / 20k MAD. Spread BUY = vs peg 3,6725. Spread SELL = vs USD/MAD live (fawazahmed0).</div>
+  </div>`;
+}
+
+window.radarSetHistRange = function(val) {
+  window._radarHistRange = val;
+  const body = document.getElementById('radarBody');
+  if (!body) return;
+  // Re-render only the spread history section
+  const sections = body.querySelectorAll('.s');
+  for (const sec of sections) {
+    const st = sec.querySelector('.st');
+    if (st && st.textContent.trim().startsWith('Historique du spread')) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = radarSpreadHistorySection();
+      sec.replaceWith(tmp.firstElementChild);
+      break;
+    }
+  }
+};
+
+function radarSparklineCard(side, entries) {
+  const isBuy = side === 'buy';
+  const title = isBuy ? '🇦🇪 Achat AED → USDT (spread vs peg)'
+                      : '🇲🇦 Vente USDT → MAD (spread vs marché)';
+  // Spread "bon" : pour buy = bas (vert si ≤ 0.35), pour sell = haut (vert si ≥ 3.0)
+  const goodThreshold = isBuy ? 0.35 : 3.0;
+  const directionTag  = isBuy ? '↓ bon' : '↑ bon';
+
+  // Filtre les entrées valides (non-null pour ce côté)
+  const series = entries
+    .map(e => ({ ts: new Date(e.ts).getTime(), v: e.spreads ? e.spreads[side] : null }))
+    .filter(p => p.v != null && isFinite(p.v));
+
+  if (!series.length) {
+    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+      <div style="font-size:.78rem;font-weight:700;margin-bottom:8px">${title}</div>
+      <div style="font-size:.75rem;color:var(--muted)">Pas de données pour cette période.</div>
+    </div>`;
+  }
+
+  // Stats
+  const vals = series.map(p => p.v);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const avg = vals.reduce((s,x) => s+x, 0) / vals.length;
+  const last = vals[vals.length - 1];
+  const lastVsAvg = last - avg;
+  const goodLast = isBuy ? (last <= goodThreshold) : (last >= goodThreshold);
+  const goodAvg  = isBuy ? (avg  <= goodThreshold) : (avg  >= goodThreshold);
+
+  // Sparkline SVG
+  const W = 320, H = 80, PAD = 6;
+  const tMin = series[0].ts, tMax = series[series.length-1].ts || (tMin + 1);
+  const tRange = Math.max(1, tMax - tMin);
+  // Pour buy: low values en haut (vert) → on inverse Y. Pour sell: high values en haut (vert) → standard.
+  const vMin = Math.min(min, isBuy ? 0 : 0);
+  const vMax = Math.max(max, isBuy ? goodThreshold * 1.5 : goodThreshold * 1.5);
+  const vRange = Math.max(0.0001, vMax - vMin);
+  const xOf = ts => PAD + ((ts - tMin) / tRange) * (W - 2*PAD);
+  // Pour buy: bas spread = bonne valeur → on veut HAUT du graph → invert
+  // Pour sell: haut spread = bonne valeur → standard
+  const yOf = v => {
+    const norm = (v - vMin) / vRange; // 0 = vMin (bas), 1 = vMax (haut)
+    return isBuy
+      ? PAD + norm * (H - 2*PAD)              // buy: bon = haut
+      : PAD + (1 - norm) * (H - 2*PAD);       // sell: bon = haut
+  };
+
+  // Polyline points
+  const pts = series.map(p => `${xOf(p.ts).toFixed(1)},${yOf(p.v).toFixed(1)}`).join(' ');
+  // Threshold line (zone "bon")
+  const yThresh = yOf(goodThreshold);
+
+  // Last point marker
+  const lastP = series[series.length - 1];
+  const lx = xOf(lastP.ts), ly = yOf(lastP.v);
+
+  const lineColor = goodLast ? '#16a34a' : (isBuy ? (last > 0.7 ? '#dc2626' : '#eab308') : (last < 1.0 ? '#dc2626' : '#eab308'));
+  const fillColor = lineColor + '22'; // alpha pour la zone sous la courbe
+
+  // Polyline avec fill (zone) — pour le fill on ajoute des points en bas
+  const fillPts = pts + ` ${xOf(tMax).toFixed(1)},${(H-PAD).toFixed(1)} ${PAD.toFixed(1)},${(H-PAD).toFixed(1)}`;
+
+  const svg = `<svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;border-radius:6px;background:var(--surface2)">
+    <!-- Threshold line -->
+    <line x1="${PAD}" y1="${yThresh.toFixed(1)}" x2="${W-PAD}" y2="${yThresh.toFixed(1)}" stroke="rgba(34,197,94,.4)" stroke-width="1" stroke-dasharray="3 3" />
+    <text x="${W-PAD}" y="${(yThresh-3).toFixed(1)}" text-anchor="end" fill="rgba(34,197,94,.7)" font-size="9" font-family="sans-serif">≥ ${goodThreshold}% bon</text>
+    <!-- Filled area -->
+    <polygon points="${fillPts}" fill="${fillColor}" />
+    <!-- Line -->
+    <polyline points="${pts}" fill="none" stroke="${lineColor}" stroke-width="1.5" />
+    <!-- Last point -->
+    <circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="3" fill="${lineColor}" stroke="#fff" stroke-width="1.5" />
+  </svg>`;
+
+  // Stats grid
+  const fmt = v => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
+  const trendIcon = lastVsAvg === 0 ? '→' : (lastVsAvg > 0 ? '↑' : '↓');
+  const trendColor = (isBuy ? lastVsAvg < 0 : lastVsAvg > 0) ? 'var(--green)' : 'var(--red)';
+
+  return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:10px">
+      <div style="font-size:.78rem;font-weight:700">${title}</div>
+      <div style="font-size:.6rem;color:var(--muted)">${directionTag}</div>
+    </div>
+    ${svg}
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;font-size:.7rem">
+      <div><div style="color:var(--muted);font-size:.62rem;text-transform:uppercase">Dernier</div><div style="font-weight:700;color:${goodLast?'var(--green)':'var(--red)'}">${fmt(last)}</div></div>
+      <div><div style="color:var(--muted);font-size:.62rem;text-transform:uppercase">Moyenne</div><div style="font-weight:700;color:${goodAvg?'var(--green)':'var(--yellow)'}">${fmt(avg)}</div></div>
+      <div><div style="color:var(--muted);font-size:.62rem;text-transform:uppercase">${isBuy?'Min (bon)':'Max (bon)'}</div><div style="font-weight:700;color:var(--green)">${fmt(isBuy?min:max)}</div></div>
+      <div><div style="color:var(--muted);font-size:.62rem;text-transform:uppercase">Tendance</div><div style="font-weight:700;color:${trendColor}">${trendIcon} ${fmt(lastVsAvg)}</div></div>
+    </div>
+  </div>`;
 }
 
 // ---- HISTORICAL CONTEXT -------------------------------------------

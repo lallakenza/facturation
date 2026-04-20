@@ -9,6 +9,56 @@ Le site a démarré sans versionnage ; l'introduction du système s'est faite en
 
 ---
 
+## `v7` — 2026-04-20
+
+### Background polling P2P (GitHub Actions, cron 6h)
+- Nouveau workflow `.github/workflows/poll-p2p.yml` qui tourne 4× par jour
+  (00h, 06h, 12h, 18h UTC) sur l'infra GitHub Actions (gratuit pour repos
+  publics).
+- Script `scripts/poll-p2p.js` (Node natif, zero dep) qui :
+  1. Fetch Binance P2P AED BUY (transAmount=10000) + MAD SELL (20000)
+  2. Fetch USD/MAD live (fawazahmed0)
+  3. Calcule les spreads (vs peg / vs marché)
+  4. Append au fichier `data-history.enc.js` (chiffré BINGA, AES-256-GCM)
+  5. Cap à 1500 entrées (≈ 1 an d'historique)
+- Workflow commit + push automatique du fichier mis à jour.
+- Robustesse : si une source échoue, les autres restent enregistrées
+  (sellSpread = null si USD/MAD down, etc.). Aucun commit vide.
+
+### Radar USDT — Section "Historique du spread"
+- Sparklines SVG inline (pas de Chart.js, zero dep) pour BUY et SELL.
+- Toggle de période : 7j / 30j / 90j / Tout.
+- Stats par côté : dernier, moyenne, min/max bon, tendance vs moyenne.
+- Ligne pointillée verte = seuil "bon" (0.35% pour BUY, 3% pour SELL).
+- Zone fillée sous la courbe colorée selon le verdict en cours.
+- Re-render seulement la section sur changement de période (pas de
+  re-fetch live).
+
+### Setup nécessaire (manuel, une seule fois)
+1. Créer secret GitHub `BINGA_PASSWORD = BINGA` :
+   https://github.com/lallakenza/2048/settings/secrets/actions
+2. Activer write permissions Actions :
+   https://github.com/lallakenza/2048/settings/actions
+3. Trigger un premier run manuel via UI Actions (workflow_dispatch)
+
+Voir `UPDATE_GUIDE.md` §12 pour les détails complets.
+
+Bump : v6.1 → v7 (2026-04-20)
+
+---
+
+## `v6.1` — 2026-04-20
+
+### Login
+- **Mode radar-only (BINANCE) sans dark theme ni overlay BINGA** : le mode
+  radar-only doit visuellement matcher TIGRE/COUPA. Le décryptage PRIV
+  reste actif (Radar a besoin des données privées) — c'est juste
+  l'apparence qui change. Plus de fanfare au login BINANCE.
+
+Bump : v6 → v6.1
+
+---
+
 ## `v6` — 2026-04-20
 
 ### Login

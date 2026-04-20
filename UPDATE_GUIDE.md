@@ -338,7 +338,80 @@ function renderNouveauClient() {
 4. **`render-main.js`** : ajouter un `case 'nouveauClient': el.innerHTML = renderNouveauClient(); break;` dans `renderPanel()`.
 5. **`index.html`** : ajouter `'render-nouveauClient.js'` à l'array de scripts du dynamic loader.
 
-### 12) Changer un mot de passe d'accès
+### 12) Setup / debug du poller P2P (GitHub Actions, cron 6h)
+
+Le repo a un workflow `.github/workflows/poll-p2p.yml` qui tourne toutes les
+6h pour fetcher les taux Binance P2P + USD/MAD et les sauvegarder chiffrés
+dans `data-history.enc.js`. Le Radar USDT lit ce fichier pour afficher
+l'historique du spread (sparklines + stats).
+
+#### Setup initial (une seule fois)
+
+1. **Créer le secret GitHub** :
+   - Aller sur https://github.com/lallakenza/2048/settings/secrets/actions
+   - Cliquer **New repository secret**
+   - Name : `BINGA_PASSWORD`
+   - Value : `BINGA` (le mdp de chiffrement de la couche PRIV)
+   - Cliquer **Add secret**
+
+2. **Vérifier les permissions Actions** :
+   - https://github.com/lallakenza/2048/settings/actions
+   - Sous "Workflow permissions" → cocher **Read and write permissions**
+   - Sauver
+
+3. **Trigger un premier run manuel** :
+   - https://github.com/lallakenza/2048/actions/workflows/poll-p2p.yml
+   - Cliquer **Run workflow** → Branch `main` → **Run workflow**
+   - Le run doit terminer en ~1 min
+
+4. **Vérifier que le commit est passé** :
+   - Un commit `auto: poll P2P YYYY-MM-DDTHH:MMZ` doit apparaître dans
+     l'historique (auteur `github-actions[bot]`).
+   - `data-history.enc.js` doit avoir été modifié.
+
+Après ça le cron prend le relais automatiquement (00h, 06h, 12h, 18h UTC).
+
+#### Debug si le workflow échoue
+
+- **Logs** : https://github.com/lallakenza/2048/actions
+- Cliquer le run rouge, dérouler la step "Run poll script" pour voir le
+  message d'erreur.
+
+Erreurs fréquentes :
+
+| Erreur | Cause | Fix |
+|---|---|---|
+| `BINGA_PASSWORD env variable is required` | Secret pas créé | Refaire l'étape 1 |
+| `Binance AED BUY: HTTP 451` | Binance bloque l'IP GitHub Actions | Rare. Réessayer plus tard ou ajouter un proxy. |
+| `permission denied` au push | Permissions pas en write | Refaire l'étape 2 |
+| `History decrypt failed` (côté site) | Le fichier a été chiffré avec un autre mdp | Vérifier le secret `BINGA_PASSWORD` matche bien la couche PRIV |
+| `Cannot find ENCRYPTED_HISTORY` | Premier déploiement, fichier pas encore généré | Trigger un run manuel (étape 3) |
+
+#### Tester le script en local
+
+```bash
+BINGA_PASSWORD=BINGA node scripts/poll-p2p.js
+# Devrait afficher:
+#   [poll] timestamp — Fetching live P2P + FX…
+#   [poll] buy  = fulfilled median 3.685
+#   [poll] sell = fulfilled median 9.57
+#   [poll] fx   = fulfilled usd/mad 9.25
+#   [poll] Entry added. Total: N.
+```
+
+Si OK en local, ça marchera dans Actions (env identique).
+
+#### Ajuster la fréquence ou les paramètres
+
+- **Cron** : éditer `.github/workflows/poll-p2p.yml`, ligne `cron:`. Format
+  GitHub : `'0 */N * * *'` pour toutes les N heures.
+- **Volume minimum** : éditer `scripts/poll-p2p.js`, constantes `MIN_AED`
+  et `MIN_MAD`.
+- **Cap de l'historique** : `HISTORY_CAP = 1500` (≈ 1 an avec 4 runs/jour).
+  Plus = grosse fenêtre, plus = fichier plus gros (mais reste petit
+  vu que c'est juste des nombres).
+
+### 13) Changer un mot de passe d'accès
 
 **`index.html`** : modifier la fonction `tryAccess` — l'UPPERCASE est appliqué
 automatiquement, donc taper le nouveau mot de passe en minuscules marchera.
