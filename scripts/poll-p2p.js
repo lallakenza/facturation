@@ -16,7 +16,7 @@
 // 4. Calcule les spreads (buy vs peg 3.6725, sell vs USD/MAD)
 // 5. Lit data-history.enc.js, append nouvelle entrée (cap FIFO ~ 1 mois)
 // 6. Re-chiffre et écrit data-history.enc.js
-// 7. Si sellSpread > ALERT_SELL_THRESHOLD (4%) ET cooldown passé,
+// 7. Si sellSpread > ALERT_SELL_THRESHOLD (5%) ET cooldown passé,
 //    génère ALERT.md (consommé par le workflow → gh issue create)
 //
 // Cadence : run TOUTES LES HEURES via le workflow GitHub Actions.
@@ -56,7 +56,7 @@ const CFG = {
 };
 
 // Alerte SELL : déclenche une notif si la moyenne top 3 dépasse ce %.
-const ALERT_SELL_THRESHOLD_PCT = 4.0;
+const ALERT_SELL_THRESHOLD_PCT = 5.0;
 const ALERT_COOLDOWN_HOURS     = 6;     // pas de re-notif avant N heures
 
 // ---- ENCRYPTION (même scheme que encrypt.js) -----------------------
@@ -164,7 +164,7 @@ async function fetchBinanceP2P(fiat, userSide, cfg) {
     aggregator:  cfg.agg,
     takeTop:     cfg.takeTop,
     payMethodFilter: cfg.payMethodFilter || null,
-    // On garde TOUTES les offres filtrées (jusqu'à 20) pour l'alerte (lister celles > 4%)
+    // On garde TOUTES les offres filtrées (jusqu'à 20) pour l'alerte (lister celles > 5%)
     offers:      offers.slice(0, 20),
     medianBasis: topN, // pour le calcul d'alerte (top 3 utilisés)
   };
@@ -313,13 +313,13 @@ async function main() {
       offers: [], medianBasis: [],
     };
     fx = { usdMad: 9.20, date: '2026-04-20' };
-    // Top 3 fake: prix élevés → spread moyen ~5.4% > 4%
+    // Top 3 fake: prix élevés → spread moyen ~5.4% > 5%
     const fakeMedianBasis = [
       { merchant: 'ELAOUNI-P2P-TEST',  price: 9.730, min: 10000, max: 42839 },
       { merchant: 'Zack-Crypto-TEST',  price: 9.700, min: 10000, max: 24000 },
       { merchant: 'Hero_buy_sell-TEST', price: 9.690, min: 16000, max: 40000 },
     ];
-    // Liste plus large: certaines > 4%, certaines pas
+    // Liste plus large: certaines > 5%, certaines pas
     const fakeAllOffers = [
       ...fakeMedianBasis,
       { merchant: 'p2p_maroc-TEST',     price: 9.680, min: 10000, max: 43000 },
