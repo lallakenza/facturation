@@ -9,6 +9,34 @@ Le site a démarré sans versionnage ; l'introduction du système s'est faite en
 
 ---
 
+## `v7.4` — 2026-04-23
+
+### 2048 cover — Thème Stitch
+Nouveau thème alternatif pour la façade 2048 : **👾 Stitch** (inspiré de
+Lilo & Stitch). Toggle classic/stitch persisté dans
+`localStorage.fx_2048_theme`.
+
+**Palette Stitch** (override des `--g-*` CSS vars + `.g-v2..v8192`) :
+- Fond aurora sky-blue → lavande (radial-gradient multi-couches)
+- Tuiles pale-blue → teal → pink → purple → midnight
+- Chrome bleu/rose-magenta, inputs pâles
+- Message overlays roses (win) / bleu-pâle (lose)
+
+**Mascotte Stitch** : vraie image PNG du perso (pngimg.com, transparente)
+affichée au-dessus du titre "2048", avec animations :
+- Bob idle 3.6s (-2° / +2° oscillation)
+- Wiggle au hover (rotation +8° / -8° + scale 1.04)
+- Masquée en thème classique
+
+**Badge "👾 Experiment 626"** : pill décorative rose au-dessus du Stitch.
+
+**Toggle** : pill segmentée "🟫 Classique" / "👾 Stitch", gradient
+bleu→magenta sur le bouton actif en Stitch mode.
+
+Bump : v7.3 → v7.4 (2026-04-23)
+
+---
+
 ## `v7.3` — 2026-04-23
 
 ### Radar USDT — Graphs interactifs

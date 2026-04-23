@@ -324,6 +324,128 @@ body.game-mode {
 .g-v4096 { background:#3c3a32; color:#f9f6f2; }
 .g-v8192 { background:#1f1c19; color:#f9f6f2; }
 
+/* ==================================================== */
+/* STITCH THEME — bleu/rose inspiré Lilo & Stitch (626)   */
+/* ==================================================== */
+body.game-mode.theme-stitch {
+  --g-bg:        #e4f1fb;
+  --g-text:      #1e3a5f;
+  --g-text-soft: #3b6091;
+  --g-grid-bg:   #4d8ec6;
+  --g-cell-bg:   rgba(200, 229, 245, 0.45);
+  --g-btn:       #3b6091;
+  --g-btn-hover: #2a4a74;
+  --g-input-bg:  #d0e4f4;
+  --g-input-bd:  #a8cae4;
+  --g-error:     #d63b6a;
+}
+/* Subtle aurora background — sky-blue → lavender — only in Stitch */
+body.game-mode.theme-stitch {
+  background:
+    radial-gradient(circle at 12% 18%, rgba(248, 193, 214, 0.35), transparent 38%),
+    radial-gradient(circle at 88% 22%, rgba(139, 196, 238, 0.40), transparent 42%),
+    radial-gradient(circle at 50% 95%, rgba(198, 169, 230, 0.32), transparent 50%),
+    linear-gradient(180deg, #e4f1fb 0%, #cfe3f6 100%);
+}
+/* Stitch tiles — pale blue → teal → pink → purple → midnight */
+body.theme-stitch .g-v2    { background:#e4f0f9; color:#1e3a5f; }
+body.theme-stitch .g-v4    { background:#c8e5f5; color:#1e3a5f; }
+body.theme-stitch .g-v8    { background:#8ec9ed; color:#f9f6f2; }
+body.theme-stitch .g-v16   { background:#62b4e4; color:#f9f6f2; }
+body.theme-stitch .g-v32   { background:#4fa3e0; color:#f9f6f2; }
+body.theme-stitch .g-v64   { background:#1e5a9c; color:#f9f6f2; }
+body.theme-stitch .g-v128  { background:#f8c1d6; color:#1e3a5f; box-shadow:0 0 24px 6px rgba(248,193,214,.32); }
+body.theme-stitch .g-v256  { background:#ef7ba9; color:#f9f6f2; box-shadow:0 0 24px 6px rgba(239,123,169,.40); }
+body.theme-stitch .g-v512  { background:#c9628f; color:#f9f6f2; box-shadow:0 0 24px 6px rgba(201,98,143,.44); }
+body.theme-stitch .g-v1024 { background:#6b3f8a; color:#f9f6f2; box-shadow:0 0 28px 8px rgba(107,63,138,.50); }
+body.theme-stitch .g-v2048 { background:#3a1f5a; color:#f9f6f2; box-shadow:0 0 34px 10px rgba(58,31,90,.58); }
+body.theme-stitch .g-v4096 { background:#0f1229; color:#f9f6f2; }
+body.theme-stitch .g-v8192 { background:#020515; color:#f9f6f2; }
+
+/* Stitch-theme message overlay — subtle pink vs yellow */
+body.theme-stitch .g-message          { background: rgba(200, 229, 245, .75); color: #1e3a5f; }
+body.theme-stitch .g-message.g-win    { background: rgba(248, 193, 214, .70); color: #1e3a5f; }
+body.theme-stitch .g-message.g-lose   { background: rgba(200, 229, 245, .85); color: #1e3a5f; }
+
+/* Theme switcher pill — segmented toggle */
+.theme-switch {
+  display: inline-flex;
+  background: rgba(255,255,255,.55);
+  border: 1px solid rgba(119,110,101,.22);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+  align-self: center;
+  backdrop-filter: blur(3px);
+}
+body.theme-stitch .theme-switch {
+  background: rgba(255,255,255,.62);
+  border-color: rgba(30, 90, 156, .22);
+}
+.theme-switch .theme-opt {
+  appearance: none;
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: .72rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--g-text-soft);
+  cursor: pointer;
+  letter-spacing: .02em;
+  transition: background .18s, color .18s, transform .08s;
+  white-space: nowrap;
+}
+.theme-switch .theme-opt:hover { color: var(--g-text); }
+.theme-switch .theme-opt:active { transform: scale(.96); }
+.theme-switch .theme-opt.active {
+  background: var(--g-btn);
+  color: #f9f6f2;
+  box-shadow: 0 1px 3px rgba(0,0,0,.12);
+}
+body.theme-stitch .theme-switch .theme-opt.active {
+  background: linear-gradient(135deg, #4fa3e0, #c9628f);
+}
+
+/* Decorative "626" badge — Stitch-only, above the game title */
+.stitch-mascot { display: none; }
+body.theme-stitch .stitch-mascot {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: .7rem; font-weight: 700; letter-spacing: .12em;
+  color: #c9628f;
+  padding: 3px 10px;
+  background: rgba(248, 193, 214, .35);
+  border: 1px solid rgba(201, 98, 143, .35);
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+
+/* Stitch — real PNG mascot, visible only in Stitch theme, centered above 2048 title */
+.stitch-face { display: none; text-align: center; margin: 0 0 8px; line-height: 0; }
+body.theme-stitch .stitch-face { display: block; }
+.stitch-face img {
+  width: 130px; height: auto; max-height: 175px;
+  user-select: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 8px 18px rgba(30,90,156,.28)) drop-shadow(0 3px 6px rgba(201,98,143,.20));
+  animation: stitchBob 3.6s ease-in-out infinite;
+  transform-origin: 50% 85%;
+  cursor: pointer;
+  transition: transform .2s;
+}
+.stitch-face:hover img { animation: stitchWiggle 0.7s ease-in-out; }
+@keyframes stitchBob {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50%      { transform: translateY(-6px) rotate(2deg); }
+}
+@keyframes stitchWiggle {
+  0%, 100% { transform: rotate(0) scale(1); }
+  25%      { transform: rotate(-8deg) scale(1.04); }
+  75%      { transform: rotate(8deg)  scale(1.04); }
+}
+@media(max-width:480px) { .stitch-face img { width: 108px; max-height: 145px; } }
+
 /* Win/Lose overlay over the board */
 .g-message {
   position: absolute;
@@ -583,6 +705,15 @@ th[data-sort].sort-desc::after{content:'▼';opacity:.7}
 <!-- ============================================ -->
 <div class="cover-wrap" id="coverWrap">
 
+  <!-- Stitch decorative badge — visible only in Stitch theme -->
+  <div class="stitch-mascot">👾 Experiment 626</div>
+
+  <!-- Stitch — real character image, visible only in Stitch theme.
+       Source: pngimg.com (Disney Stitch, transparent PNG). -->
+  <div class="stitch-face" aria-hidden="true" title="Stitch — Experiment 626">
+    <img src="assets/stitch.png" alt="" draggable="false" />
+  </div>
+
   <!-- Title bar — always visible -->
   <header class="cover-title">
     <h1>2048</h1>
@@ -591,6 +722,14 @@ th[data-sort].sort-desc::after{content:'▼';opacity:.7}
       <div class="score-box"><div class="l">Best</div><div class="v g-best-val" id="gameBest">0</div></div>
     </div>
   </header>
+
+  <!-- Theme switcher — classique (original 2048) ou Stitch (bleu/rose) -->
+  <div style="display:flex;justify-content:flex-end;margin:-2px 0 14px">
+    <div class="theme-switch" role="tablist" aria-label="Choix du thème">
+      <button type="button" class="theme-opt" data-theme="classic" role="tab">🟫 Classique</button>
+      <button type="button" class="theme-opt" data-theme="stitch" role="tab">👾 Stitch</button>
+    </div>
+  </div>
 
   <!-- Sub line — adapts depending on intro vs game state -->
   <div class="cover-sub">
@@ -673,7 +812,7 @@ th[data-sort].sort-desc::after{content:'▼';opacity:.7}
      once the user unlocks the reconciliation view. Bump on every
      substantive deploy (see project README / commit history). -->
 <script>
-  window.APP_VERSION = 'v7.3';
+  window.APP_VERSION = 'v7.4';
   window.APP_VERSION_DATE = '2026-04-23';
 </script>
 
@@ -732,6 +871,42 @@ async function decryptBlob(encB64, password) {
 window.ACCESS_MODE = null;
 window.PRIV = false;
 window.DATA = {};
+
+// ============================================
+// 2048 COVER — THEME SWITCHER (classic / stitch)
+// ============================================
+// Stitch = bleu/rose/violet palette inspirée du perso Disney.
+// Persistance via localStorage['fx_2048_theme'] ('classic'|'stitch').
+// Appliqué en ajoutant/retirant body.theme-stitch. Tous les CSS
+// variables (--g-*) + les tile backgrounds .g-v2..g-v8192 sont
+// overridés via ce sélecteur dans le <style> en haut de la page.
+(function(){
+  var STORE_KEY = 'fx_2048_theme';
+  function applyTheme(theme) {
+    var b = document.body;
+    if (theme === 'stitch') b.classList.add('theme-stitch');
+    else b.classList.remove('theme-stitch');
+    // Sync active state on both buttons
+    var btns = document.querySelectorAll('.theme-opt');
+    btns.forEach(function(btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-theme') === theme);
+      btn.setAttribute('aria-selected', btn.classList.contains('active') ? 'true' : 'false');
+    });
+  }
+  // Read saved preference (defaults to classic)
+  var saved = null;
+  try { saved = localStorage.getItem(STORE_KEY); } catch(e) {}
+  applyTheme(saved === 'stitch' ? 'stitch' : 'classic');
+
+  // Wire up the toggle buttons
+  document.querySelectorAll('.theme-opt').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var theme = btn.getAttribute('data-theme');
+      applyTheme(theme);
+      try { localStorage.setItem(STORE_KEY, theme); } catch(e) {}
+    });
+  });
+})();
 
 // ============================================
 // COVER (2048 game) → RECONCILIATION TRANSITION
