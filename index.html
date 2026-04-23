@@ -540,8 +540,40 @@ th[data-sort].sort-desc::after{content:'▼';opacity:.7}
   border-top: 5px solid var(--border);
 }
 
+/* Radar — interactive chart (crosshair + hover tooltip) */
+.radar-chart-wrap { position: relative; user-select: none; }
+.radar-chart-wrap svg { display: block; border-radius: 6px; background: var(--surface2); cursor: crosshair; }
+.radar-chart-wrap .chart-tooltip {
+  position: absolute; pointer-events: none; opacity: 0;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-radius: 7px;
+  padding: 7px 10px; font-size: .7rem; line-height: 1.45;
+  box-shadow: 0 5px 14px rgba(0,0,0,.22);
+  white-space: nowrap; z-index: 20;
+  transition: opacity .12s, transform .12s;
+  transform: translate(-50%, 4px);
+}
+.radar-chart-wrap .chart-tooltip.show { opacity: 1; transform: translate(-50%, 0); }
+.radar-chart-wrap .chart-tooltip .tt-date { color: var(--muted); font-size: .62rem; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 3px; }
+.radar-chart-wrap .chart-tooltip .tt-val { font-weight: 800; font-variant-numeric: tabular-nums; font-size: .85rem; }
+.radar-chart-wrap .chart-tooltip .tt-extra { color: var(--muted); font-size: .64rem; margin-top: 2px; }
+
+/* Radar — card hover elevation */
+.radar-card { transition: border-color .25s, box-shadow .2s, transform .2s; }
+.radar-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.12); transform: translateY(-1px); }
+
+/* Radar — refresh bar */
+.radar-refresh-bar { display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:18px;transition:box-shadow .2s; }
+.radar-refresh-bar.scrolled { box-shadow: 0 4px 16px rgba(0,0,0,.10); }
+.radar-refresh-bar .countdown { display:inline-block;padding:2px 8px;border-radius:12px;background:var(--surface2);font-size:.65rem;color:var(--muted);font-variant-numeric:tabular-nums;margin-left:6px; }
+.radar-kbd { display:inline-block;padding:1px 5px;border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;font-family:ui-monospace,Menlo,monospace;font-size:.62rem;background:var(--surface2);color:var(--muted); }
+
+/* Radar — offer table row hover highlight */
+.radar-offers tbody tr { transition: background-color .15s; }
+.radar-offers tbody tr:hover { background: rgba(59,130,246,.10) !important; }
+
 @media(max-width:768px){.content{padding:14px}.tabs{padding:0 10px}.tab{padding:10px 12px;font-size:.72rem}table{font-size:.72rem}thead th,tbody td{padding:6px 7px}.cards{grid-template-columns:repeat(2,1fr)}.hero-card .hero-value{font-size:1.6rem}.summary-row{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:480px){.summary-row{grid-template-columns:1fr}.cards{grid-template-columns:1fr}}
+@media(max-width:480px){.summary-row{grid-template-columns:1fr}.cards{grid-template-columns:1fr}.radar-chart-wrap .chart-tooltip{font-size:.65rem;padding:5px 8px}}
 </style>
 </head>
 <body class="game-mode">
@@ -641,8 +673,8 @@ th[data-sort].sort-desc::after{content:'▼';opacity:.7}
      once the user unlocks the reconciliation view. Bump on every
      substantive deploy (see project README / commit history). -->
 <script>
-  window.APP_VERSION = 'v7.2';
-  window.APP_VERSION_DATE = '2026-04-20';
+  window.APP_VERSION = 'v7.3';
+  window.APP_VERSION_DATE = '2026-04-23';
 </script>
 
 <!-- Scripts: dynamic loader with auto cache-busting (no manual ?v= needed) -->

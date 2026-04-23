@@ -9,6 +9,39 @@ Le site a démarré sans versionnage ; l'introduction du système s'est faite en
 
 ---
 
+## `v7.3` — 2026-04-23
+
+### Radar USDT — Graphs interactifs
+- **Sparklines BUY + SELL devenus interactifs** : crosshair vertical + dot
+  plus large au hover, tooltip flottant qui affiche date/heure, spread,
+  verdict coloré (✅/⚠️/❌) et diff vs moyenne.
+- **Hauteur passée de 80px → 140px** avec padding pour accueillir axes.
+- **Axe Y** : 3 ticks labelled (min, threshold, max) avec gridlines subtiles
+  et highlight vert sur la ligne du seuil "bon".
+- **Axe X** : 3 dates (début / milieu / fin) en monospace.
+- **Tous les points visibles** comme dots subtils (opacity .35), le dernier
+  point mis en évidence avec bordure blanche.
+- **Auto-flip du tooltip** : si le dot est près du haut du graph, le tooltip
+  passe en-dessous pour éviter de chevaucher le titre de la card.
+- Support tactile (touchmove + touchend) pour mobile.
+- Hover handler utilise une binary search O(log n) pour trouver le point
+  le plus proche du curseur.
+
+### Radar USDT — UX polish
+- **Countdown live vers le prochain auto-refresh** : pill "auto dans 34s"
+  qui décompte chaque seconde (cohérent avec les cycles de 60s).
+- **Raccourci clavier `R`** pour rafraîchir (quand le tab radar est actif
+  et qu'aucun input n'est focus). Hint visible dans le bouton Rafraîchir.
+- **Cards avec hover elevation** : shadow + translate(-1px) pour feedback.
+- **Rows des tables d'offres** : hover highlight bleu-ciel.
+- **Transitions fluides** sur les éléments interactifs (border-color,
+  box-shadow, transform).
+- **Responsive mobile** : tooltips plus compacts < 480px.
+
+Bump : v7.2 → v7.3 (2026-04-23)
+
+---
+
 ## `v7.2` — 2026-04-20
 
 ### Refonte sémantique SELL (Maroc)

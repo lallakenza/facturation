@@ -58,11 +58,11 @@ function renderRadar() {
       Jugement temps réel du marché Binance P2P : bon moment pour <strong>acheter (AED→USDT)</strong> ou <strong>vendre (USDT→MAD)</strong> ?
     </p>
 
-    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:18px">
-      <button id="radarRefreshBtn" onclick="window.radarLoad(true)" style="appearance:none;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit">🔄 Rafraîchir</button>
-      <div style="font-size:.72rem;color:var(--muted)">
-        Dernière mise à jour : <span id="radarLastUpdate" style="color:var(--text);font-weight:600">—</span>
-        <span id="radarAutoInfo" style="margin-left:8px">· auto toutes les 60s</span>
+    <div class="radar-refresh-bar" id="radarRefreshBar">
+      <button id="radarRefreshBtn" onclick="window.radarLoad(true)" title="Raccourci : R" style="appearance:none;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px">🔄 Rafraîchir <span class="radar-kbd" style="color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.12)">R</span></button>
+      <div style="font-size:.72rem;color:var(--muted);line-height:1.5">
+        Dernière MAJ : <span id="radarLastUpdate" style="color:var(--text);font-weight:600">—</span>
+        <span class="countdown" id="radarCountdown">auto 60s</span>
       </div>
       <div id="radarStatus" style="margin-left:auto;font-size:.72rem;color:var(--muted)">⏳ Chargement…</div>
     </div>
@@ -87,8 +87,45 @@ function renderRadar() {
   setTimeout(function(){ radarLoad(false); }, 20);
   radarStartAutoRefresh();
   radarStartFreshnessTick();
+  radarStartCountdownTick();
+  radarInstallKeyboardShortcut();
 
   return skeleton;
+}
+
+// Auto-refresh countdown pill — live "auto dans 34s" so the user knows
+// when the next fetch will happen. Recomputed every 1s from lastLoadAt.
+function radarStartCountdownTick() {
+  if (window._radarState.cdTimer) return;
+  window._radarState.cdTimer = setInterval(function(){
+    const panel = document.getElementById('radar');
+    if (!panel || panel.offsetParent === null) return;
+    const el = document.getElementById('radarCountdown');
+    if (!el) return;
+    const t = window._radarState.lastLoadAt;
+    if (!t) { el.textContent = 'auto 60s'; return; }
+    const elapsed = Math.floor((Date.now() - t) / 1000);
+    const remaining = Math.max(0, 60 - elapsed);
+    el.textContent = remaining > 0 ? `auto dans ${remaining}s` : 'auto imminent…';
+  }, 1000);
+}
+
+// Keyboard shortcut: press "R" while the radar tab is active to refresh.
+// Ignored when focus is inside an input/textarea so typing price values
+// doesn't trigger refreshes.
+function radarInstallKeyboardShortcut() {
+  if (window._radarState.kbInstalled) return;
+  window._radarState.kbInstalled = true;
+  document.addEventListener('keydown', function(e) {
+    if (e.key !== 'r' && e.key !== 'R') return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const panel = document.getElementById('radar');
+    if (!panel || panel.offsetParent === null) return;
+    const tag = (document.activeElement && document.activeElement.tagName) || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    e.preventDefault();
+    radarLoad(true);
+  });
 }
 
 // ---- AUTO REFRESH --------------------------------------------------
@@ -696,7 +733,7 @@ function radarBuyCardHTML() {
   const priceStr = price.toFixed(4).replace('.', ',');
 
   return `
-    <div style="background:var(--surface);border:2px solid ${v.color};border-radius:12px;padding:18px 20px;transition:border-color .25s">
+    <div class="radar-card" style="background:var(--surface);border:2px solid ${v.color};border-radius:12px;padding:18px 20px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px">
         <div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">🇦🇪 Achat AED → USDT · Dubai</div>
         <div style="font-size:.8rem;font-weight:700;color:${v.color}" id="buyVerdictPill">${v.em} ${v.label}</div>
@@ -746,7 +783,7 @@ function radarSellCardHTML() {
   const usdMadStr = usdMad.toFixed(4).replace('.', ',');
 
   return `
-    <div style="background:var(--surface);border:2px solid ${v.color};border-radius:12px;padding:18px 20px;transition:border-color .25s">
+    <div class="radar-card" style="background:var(--surface);border:2px solid ${v.color};border-radius:12px;padding:18px 20px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px">
         <div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">🇲🇦 Vente USDT → MAD · Maroc</div>
         <div style="font-size:.8rem;font-weight:700;color:${v.color}" id="sellVerdictPill">${v.em} ${v.label}</div>
@@ -1031,6 +1068,11 @@ window.radarSetHistRange = function(val) {
   }
 };
 
+// Store series on the window so the hover handler — invoked from inline
+// pointermove via onmousemove — can resolve index → {ts, v} in O(1) without
+// re-fetching. Keyed by side ('buy' | 'sell'). Re-written on each render.
+window._radarChartData = window._radarChartData || {};
+
 function radarSparklineCard(side, entries) {
   const isBuy = side === 'buy';
   const title = isBuy ? '🇦🇪 Achat AED → USDT (spread vs peg)'
@@ -1060,49 +1102,107 @@ function radarSparklineCard(side, entries) {
   const goodLast = isBuy ? (last <= goodThreshold) : (last >= goodThreshold);
   const goodAvg  = isBuy ? (avg  <= goodThreshold) : (avg  >= goodThreshold);
 
-  // Sparkline SVG
-  const W = 320, H = 80, PAD = 6;
+  // Sparkline SVG — taller than before (140px) to fit axis + grid
+  const W = 320, H = 140;
+  const PL = 32, PR = 10, PT = 10, PB = 22; // left / right / top / bottom padding
+  const plotW = W - PL - PR, plotH = H - PT - PB;
   const tMin = series[0].ts, tMax = series[series.length-1].ts || (tMin + 1);
   const tRange = Math.max(1, tMax - tMin);
-  // Pour buy: low values en haut (vert) → on inverse Y. Pour sell: high values en haut (vert) → standard.
-  const vMin = Math.min(min, isBuy ? 0 : 0);
-  const vMax = Math.max(max, isBuy ? goodThreshold * 1.5 : goodThreshold * 1.5);
+  const vMin = Math.min(min, 0);
+  const vMax = Math.max(max, goodThreshold * 1.4);
   const vRange = Math.max(0.0001, vMax - vMin);
-  const xOf = ts => PAD + ((ts - tMin) / tRange) * (W - 2*PAD);
-  // Pour buy: bas spread = bonne valeur → on veut HAUT du graph → invert
-  // Pour sell: haut spread = bonne valeur → standard
+  const xOf = ts => PL + ((ts - tMin) / tRange) * plotW;
+  // Pour buy: bas spread = bon → on veut HAUT du graph → invert Y
+  // Pour sell: haut spread = bon → standard (haut = haut)
   const yOf = v => {
     const norm = (v - vMin) / vRange; // 0 = vMin (bas), 1 = vMax (haut)
     return isBuy
-      ? PAD + norm * (H - 2*PAD)              // buy: bon = haut
-      : PAD + (1 - norm) * (H - 2*PAD);       // sell: bon = haut
+      ? PT + norm * plotH              // buy: bon (bas spread) = haut du graph
+      : PT + (1 - norm) * plotH;       // sell: bon (haut spread) = haut du graph
   };
 
-  // Polyline points
-  const pts = series.map(p => `${xOf(p.ts).toFixed(1)},${yOf(p.v).toFixed(1)}`).join(' ');
-  // Threshold line (zone "bon")
   const yThresh = yOf(goodThreshold);
+  const lineColor = goodLast ? '#16a34a' : (isBuy ? (last > 0.7 ? '#dc2626' : '#eab308') : (last < 1.0 ? '#dc2626' : '#eab308'));
+  const fillColor = lineColor + '22';
+
+  // Polyline
+  const pts = series.map(p => `${xOf(p.ts).toFixed(1)},${yOf(p.v).toFixed(1)}`).join(' ');
+  const fillPts = pts + ` ${xOf(tMax).toFixed(1)},${(H-PB).toFixed(1)} ${PL.toFixed(1)},${(H-PB).toFixed(1)}`;
 
   // Last point marker
   const lastP = series[series.length - 1];
   const lx = xOf(lastP.ts), ly = yOf(lastP.v);
 
-  const lineColor = goodLast ? '#16a34a' : (isBuy ? (last > 0.7 ? '#dc2626' : '#eab308') : (last < 1.0 ? '#dc2626' : '#eab308'));
-  const fillColor = lineColor + '22'; // alpha pour la zone sous la courbe
+  // ---- Grid & axes --------------------------------------------
+  // Y-axis: 3 labels (min, threshold, max) aligned with gridlines
+  const yTicks = [vMin, goodThreshold, vMax].filter((v, i, arr) => arr.indexOf(v) === i);
+  const yAxisHTML = yTicks.map(v => {
+    const y = yOf(v);
+    const isThreshold = Math.abs(v - goodThreshold) < 0.001;
+    const color = isThreshold ? 'rgba(34,197,94,.7)' : 'var(--muted)';
+    const stroke = isThreshold ? 'rgba(34,197,94,.35)' : 'rgba(148,163,184,.18)';
+    const dash = isThreshold ? 'stroke-dasharray="3 3"' : '';
+    const label = `${v >= 0 ? '+' : ''}${v.toFixed(v === goodThreshold ? 2 : 1)}%`;
+    return `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="${stroke}" stroke-width="1" ${dash} />
+            <text x="${PL-4}" y="${(y+3).toFixed(1)}" text-anchor="end" fill="${color}" font-size="9" font-family="ui-monospace,Menlo,monospace">${label}</text>`;
+  }).join('');
 
-  // Polyline avec fill (zone) — pour le fill on ajoute des points en bas
-  const fillPts = pts + ` ${xOf(tMax).toFixed(1)},${(H-PAD).toFixed(1)} ${PAD.toFixed(1)},${(H-PAD).toFixed(1)}`;
+  // X-axis: 3 date labels (start, middle, end)
+  const fmtShortDate = (ts) => {
+    const d = new Date(ts);
+    return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+  };
+  const xTicks = [tMin, (tMin + tMax) / 2, tMax];
+  const xAxisHTML = xTicks.map((ts, i) => {
+    const x = xOf(ts);
+    const anchor = i === 0 ? 'start' : (i === xTicks.length - 1 ? 'end' : 'middle');
+    return `<text x="${x.toFixed(1)}" y="${(H-6).toFixed(1)}" text-anchor="${anchor}" fill="var(--muted)" font-size="9" font-family="ui-monospace,Menlo,monospace">${fmtShortDate(ts)}</text>`;
+  }).join('');
 
-  const svg = `<svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;border-radius:6px;background:var(--surface2)">
-    <!-- Threshold line -->
-    <line x1="${PAD}" y1="${yThresh.toFixed(1)}" x2="${W-PAD}" y2="${yThresh.toFixed(1)}" stroke="rgba(34,197,94,.4)" stroke-width="1" stroke-dasharray="3 3" />
-    <text x="${W-PAD}" y="${(yThresh-3).toFixed(1)}" text-anchor="end" fill="rgba(34,197,94,.7)" font-size="9" font-family="sans-serif">≥ ${goodThreshold}% bon</text>
+  // Data dots — subtle by default, highlighted by the hover handler
+  const dotsHTML = series.map((p, i) =>
+    `<circle cx="${xOf(p.ts).toFixed(1)}" cy="${yOf(p.v).toFixed(1)}" r="2" fill="${lineColor}" opacity="0.35" data-idx="${i}" />`
+  ).join('');
+
+  // Stash coords + series in a module map so the inline pointermove
+  // handler can find the nearest point in O(log n).
+  window._radarChartData[side] = {
+    series, W, H, PL, PR, PT, PB, tMin, tMax, tRange, vMin, vMax, vRange,
+    isBuy, goodThreshold, lineColor,
+  };
+
+  const svgId = `radarChart-${side}`;
+  const tooltipId = `radarChartTooltip-${side}`;
+  const crosshairId = `radarCrosshair-${side}`;
+  const hoverDotId = `radarHoverDot-${side}`;
+  const threshLabel = isBuy ? `≤ ${goodThreshold}% bon` : `≥ ${goodThreshold}% bon`;
+
+  const svg = `<svg id="${svgId}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"
+    style="width:100%;height:140px"
+    onmousemove="window.radarChartHover(event,'${side}')"
+    onmouseleave="window.radarChartHoverEnd('${side}')"
+    ontouchmove="window.radarChartHover(event.touches[0],'${side}');event.preventDefault()"
+    ontouchend="window.radarChartHoverEnd('${side}')">
+    <!-- Grid + Y-axis labels -->
+    ${yAxisHTML}
+    <!-- Threshold hint text (aligned right) -->
+    <text x="${(W-PR-2).toFixed(1)}" y="${(yThresh-4).toFixed(1)}" text-anchor="end" fill="rgba(34,197,94,.7)" font-size="9" font-family="sans-serif">${threshLabel}</text>
     <!-- Filled area -->
     <polygon points="${fillPts}" fill="${fillColor}" />
     <!-- Line -->
-    <polyline points="${pts}" fill="none" stroke="${lineColor}" stroke-width="1.5" />
-    <!-- Last point -->
-    <circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="3" fill="${lineColor}" stroke="#fff" stroke-width="1.5" />
+    <polyline points="${pts}" fill="none" stroke="${lineColor}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
+    <!-- All data dots -->
+    ${dotsHTML}
+    <!-- Last point marker -->
+    <circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="3.5" fill="${lineColor}" stroke="#fff" stroke-width="1.5" />
+    <!-- X-axis date labels -->
+    ${xAxisHTML}
+    <!-- Crosshair (hidden by default, moved by hover handler) -->
+    <g id="${crosshairId}" style="display:none;pointer-events:none">
+      <line x1="0" y1="${PT}" x2="0" y2="${(H-PB).toFixed(1)}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="2 3" opacity="0.7" />
+    </g>
+    <!-- Hover dot (hidden by default) -->
+    <circle id="${hoverDotId}" cx="0" cy="0" r="5" fill="${lineColor}" stroke="#fff" stroke-width="2" style="display:none;pointer-events:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))" />
   </svg>`;
 
   // Stats grid
@@ -1113,9 +1213,16 @@ function radarSparklineCard(side, entries) {
   return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
     <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:10px">
       <div style="font-size:.78rem;font-weight:700">${title}</div>
-      <div style="font-size:.6rem;color:var(--muted)">${directionTag}</div>
+      <div style="font-size:.6rem;color:var(--muted)">${directionTag} · ${series.length} pts</div>
     </div>
-    ${svg}
+    <div class="radar-chart-wrap">
+      ${svg}
+      <div class="chart-tooltip" id="${tooltipId}">
+        <div class="tt-date">—</div>
+        <div class="tt-val">—</div>
+        <div class="tt-extra">—</div>
+      </div>
+    </div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;font-size:.7rem">
       <div><div style="color:var(--muted);font-size:.62rem;text-transform:uppercase">Dernier</div><div style="font-weight:700;color:${goodLast?'var(--green)':'var(--red)'}">${fmt(last)}</div></div>
       <div><div style="color:var(--muted);font-size:.62rem;text-transform:uppercase">Moyenne</div><div style="font-weight:700;color:${goodAvg?'var(--green)':'var(--yellow)'}">${fmt(avg)}</div></div>
@@ -1124,6 +1231,107 @@ function radarSparklineCard(side, entries) {
     </div>
   </div>`;
 }
+
+// ---- CHART HOVER HANDLERS ------------------------------------------
+// Pointer moves across the sparkline SVG → compute nearest data point,
+// position the crosshair + hover dot in SVG user-coords (0..W, 0..H),
+// and position the HTML tooltip in pixel-coords relative to the chart
+// wrap. The SVG uses preserveAspectRatio=none, so user-coords map
+// proportionally to the rendered pixel box — we can rescale with
+// getBoundingClientRect().
+window.radarChartHover = function(evt, side) {
+  const st = window._radarChartData && window._radarChartData[side];
+  if (!st || !st.series.length) return;
+  const svg = document.getElementById('radarChart-' + side);
+  if (!svg) return;
+  const rect = svg.getBoundingClientRect();
+  // Support both mouse and touch events (touch has clientX directly on the Touch obj)
+  const clientX = evt.clientX;
+  const xPx = clientX - rect.left;
+  // Map px → SVG user-coord on X axis
+  const xUser = (xPx / rect.width) * st.W;
+  // Binary search for nearest point by timestamp (xUser → ts back-projected)
+  let targetTs;
+  if (xUser <= st.PL)            targetTs = st.tMin;
+  else if (xUser >= st.W - st.PR) targetTs = st.tMax;
+  else targetTs = st.tMin + ((xUser - st.PL) / (st.W - st.PL - st.PR)) * st.tRange;
+
+  // Find nearest index
+  let lo = 0, hi = st.series.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (st.series[mid].ts < targetTs) lo = mid + 1;
+    else hi = mid;
+  }
+  // Check lo-1 too (closer to left)
+  let idx = lo;
+  if (lo > 0 && Math.abs(st.series[lo-1].ts - targetTs) < Math.abs(st.series[lo].ts - targetTs)) {
+    idx = lo - 1;
+  }
+  const p = st.series[idx];
+
+  // Project to SVG coords
+  const cxU = st.PL + ((p.ts - st.tMin) / st.tRange) * (st.W - st.PL - st.PR);
+  const normV = (p.v - st.vMin) / st.vRange;
+  const cyU = st.isBuy
+    ? st.PT + normV * (st.H - st.PT - st.PB)
+    : st.PT + (1 - normV) * (st.H - st.PT - st.PB);
+
+  // Update crosshair (SVG user-coords)
+  const cross = document.getElementById('radarCrosshair-' + side);
+  if (cross) {
+    cross.style.display = '';
+    const line = cross.querySelector('line');
+    if (line) {
+      line.setAttribute('x1', cxU.toFixed(1));
+      line.setAttribute('x2', cxU.toFixed(1));
+    }
+  }
+  // Update hover dot
+  const dot = document.getElementById('radarHoverDot-' + side);
+  if (dot) {
+    dot.setAttribute('cx', cxU.toFixed(1));
+    dot.setAttribute('cy', cyU.toFixed(1));
+    dot.style.display = '';
+  }
+
+  // Update HTML tooltip — position in px relative to the chart wrap
+  const tip = document.getElementById('radarChartTooltip-' + side);
+  if (tip) {
+    const scaleX = rect.width / st.W, scaleY = rect.height / st.H;
+    const cxPx = cxU * scaleX;
+    const cyPx = cyU * scaleY;
+    // Place tooltip above the dot; flip below if too close to top.
+    // Threshold is the tooltip's own height budget (~60px for 3 rows),
+    // so we avoid clipping the title when the dot is near the chart top.
+    const above = cyPx > 60;
+    tip.style.left = cxPx + 'px';
+    tip.style.top  = (above ? (cyPx - 8) : (cyPx + 18)) + 'px';
+    tip.style.transform = above ? 'translate(-50%, -100%)' : 'translate(-50%, 0)';
+    const d = new Date(p.ts);
+    const dStr = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const spreadStr = `${p.v >= 0 ? '+' : ''}${p.v.toFixed(2)}%`;
+    const good = st.isBuy ? p.v <= st.goodThreshold : p.v >= st.goodThreshold;
+    const color = good ? 'var(--green)' : (st.isBuy ? (p.v > 0.7 ? 'var(--red)' : 'var(--yellow)') : (p.v < 1.0 ? 'var(--red)' : 'var(--yellow)'));
+    const verdictEmoji = good ? '✅' : (st.isBuy ? (p.v > 0.7 ? '❌' : '⚠️') : (p.v < 1.0 ? '❌' : '⚠️'));
+    const diffVsAvg = p.v - (st.series.reduce((s,x)=>s+x.v,0) / st.series.length);
+    tip.querySelector('.tt-date').textContent = dStr;
+    const valEl = tip.querySelector('.tt-val');
+    valEl.textContent = `${verdictEmoji} ${spreadStr}`;
+    valEl.style.color = color;
+    tip.querySelector('.tt-extra').textContent = `${diffVsAvg >= 0 ? '+' : ''}${diffVsAvg.toFixed(2)}% vs moyenne`;
+    tip.classList.add('show');
+  }
+};
+
+window.radarChartHoverEnd = function(side) {
+  const cross = document.getElementById('radarCrosshair-' + side);
+  if (cross) cross.style.display = 'none';
+  const dot = document.getElementById('radarHoverDot-' + side);
+  if (dot) dot.style.display = 'none';
+  const tip = document.getElementById('radarChartTooltip-' + side);
+  if (tip) tip.classList.remove('show');
+};
 
 // ---- HISTORICAL CONTEXT -------------------------------------------
 function radarHistoricalContext(buy, sell, fx, peg) {
@@ -1267,7 +1475,7 @@ function radarOffersTable(data, tradeType, refRate) {
     Clique sur l'icône à gauche d'un marchand pour le cycler (nouveau → RIB → confirmé → nouveau).
   </div>`;
 
-  return `<div class="s"><div class="st">${title}${knownSummary}</div>${helperNote}<table>
+  return `<div class="s"><div class="st">${title}${knownSummary}</div>${helperNote}<table class="radar-offers">
     <thead><tr>
       <th>#</th>
       <th>Marchand</th>
